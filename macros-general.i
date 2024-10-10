@@ -2106,7 +2106,7 @@ INIT_CUSTOM_ERROR_ENTRY		MACRO
 ; \3 BYTE_SIGNED:	Länge des Fehrlertexts
 ; Result
 	moveq	#\1-1,d0
-	MULUF.W	8,d0,d1			; 68000er unterstützt kein variables Register-Index
+	MULUF.W	8,d0,d1
 	lea	\2(pc),a1
 	move.l	a1,(a0,d0.w)
 	moveq	#\3,d1
