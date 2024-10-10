@@ -1,0 +1,3709 @@
+; Datum:	26.09.2024
+; Version:	1.0
+; CPU:		68000+
+; OS:		1.3+
+
+; Globale Labels
+
+; SYS_TAKEN_OVER
+; PASS_RETURN_CODE
+; PASS_GLOBAL_REFERENCES
+; WRAPPER
+
+; CUSTOM_MEMORY_USED
+
+; TRAP0
+; TRAP1
+; TRAP2
+
+; SET_SECOND_COPPERLIST
+
+; MEASURE_RASTERTIME
+
+
+	IFND SYS_TAKEN_OVER
+		INCLUDE "cleared-pointer-data.i"
+
+		INCLUDE "custom-error-entry.i"
+
+		INCLUDE "taglists-offsets.i"
+
+		INCLUDE "screen-colors.i"
+	ENDC
+
+	IFD PASS_GLOBAL_REFERENCES
+		INCLUDE "global-references-offsets.i"
+	ENDC
+
+
+WAITMOUSE			MACRO
+wm
+	move.w	$dff006,$dff180
+	btst	#2,$dff016
+	bne.s	wm
+	ENDM
+
+
+; ** Beginn **
+	movem.l d2-d7/a2-a6,-(a7)
+	lea	variables(pc),a3	; Basisadresse aller Variablen
+	bsr	init_variables
+	IFD SYS_TAKEN_OVER
+		tst.l	dos_return_code(a3)
+		bne	end_final
+	ENDC
+	bsr	init_structures
+
+	IFD SYS_TAKEN_OVER
+		IFD CUSTOM_MEMORY_USED
+			bsr	init_custom_memory_table ; Externe Routine
+			bsr	extend_global_references_table ; Externe Routine
+		ENDC
+	ELSE
+		IFEQ workbench_start_enabled
+			bsr	check_workbench_start
+			move.l	d0,dos_return_code(a3)
+			bne	end_final
+		ENDC
+
+		bsr	open_dos_library
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_workbench_message
+		IFEQ text_output_enabled
+			bsr	get_output
+			move.l	d0,dos_return_code(a3)
+			bne	cleanup_dos_library
+     		ENDC
+		bsr	open_graphics_library
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_dos_library
+		bsr	open_intuition_library
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_graphics_library
+
+		bsr	check_system_properties
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_error_message
+
+		IFEQ requires_030_cpu
+			bsr	check_cpu_requirements
+			move.l	d0,dos_return_code(a3)
+			bne	cleanup_error_message
+		ENDC
+		IFEQ requires_040_cpu
+			bsr	check_cpu_requirements
+			move.l	d0,dos_return_code(a3)
+			bne	cleanup_error_message
+		ENDC
+		IFEQ requires_060_cpu
+			bsr	check_cpu_requirements
+			move.l	d0,dos_return_code(a3)
+			bne	cleanup_error_message
+		ENDC
+		IFEQ requires_fast_memory
+			bsr	check_memory_requirements
+			move.l	d0,dos_return_code(a3)
+			bne	cleanup_error_message
+		ENDC
+		IFEQ requires_multiscan_monitor
+			bsr	do_monitor_request
+			move.l	d0,dos_return_code(a3)
+			bne	cleanup_error_message
+		ENDC
+
+		IFNE intena_bits&INTF_PORTS
+			bsr	check_tcp_stack
+			move.l	d0,dos_return_code(a3)
+			bne	cleanup_error_message
+		ENDC
+
+		bsr	open_ciaa_resource
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_error_message
+		bsr	open_ciab_resource
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_error_message
+
+		bsr	open_timer_device
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_error_message
+	ENDC
+
+	IFNE cl1_size1
+		bsr	alloc_cl1_memory1
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+	IFNE cl1_size2
+		bsr	alloc_cl1_memory2
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+	IFNE cl1_size3
+		bsr	alloc_cl1_memory3
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+
+	IFNE cl2_size1
+		bsr	alloc_cl2_memory1
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+	IFNE cl2_size2
+		bsr	alloc_cl2_memory2
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+	IFNE cl2_size3
+		bsr	alloc_cl2_memory3
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+
+	IFNE pf1_x_size1
+		bsr	alloc_pf1_memory1
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+		bsr	check_pf1_memory1
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+	IFNE pf1_x_size2
+		bsr	alloc_pf1_memory2
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+		bsr	check_pf1_memory2
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+	IFNE pf1_x_size3
+		bsr	alloc_pf1_memory3
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+		bsr	check_pf1_memory3
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+	
+	IFNE pf2_x_size1
+		bsr	alloc_pf2_memory1
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+		bsr	check_pf2_memory1
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup__all_memory
+	ENDC
+	IFNE pf2_x_size2
+		bsr	alloc_pf2_memory2
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+		bsr	check_pf2_memory2
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+	IFNE pf2_x_size3
+		bsr	alloc_pf2_memory3
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+		bsr	check_pf2_memory3
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+
+	IFNE pf_extra_number
+		bsr	alloc_pf_extra_memory
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+		bsr	check_pf_extra_memory
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+
+	IFNE spr_number
+		IFNE spr_x_size1
+			bsr	alloc_sprite_memory1
+			move.l	d0,dos_return_code(a3)
+			bne	cleanup_all_memory
+			bsr	check_sprite_memory1
+			move.l	d0,dos_return_code(a3)
+			bne	cleanup_all_memory
+		ENDC
+		IFNE spr_x_size2
+			bsr	alloc_sprite_memory2
+			move.l	d0,dos_return_code(a3)
+			bne	cleanup_all_memory
+			bsr	check_sprite_memory2
+			move.l	d0,dos_return_code(a3)
+			bne	cleanup_all_memory
+		ENDC
+	ENDC
+
+	IFNE audio_memory_size
+		bsr	alloc_audio_memory
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+
+	IFNE disk_memory_size
+		bsr	alloc_disk_memory
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+
+	IFNE extra_memory_size
+		bsr	alloc_extra_memory
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	ENDC
+
+	IFNE chip_memory_size
+		bsr	alloc_chip_memory
+		move.l	d0,dos_return_code(a3)
+		bne.s	cleanup_all_memory
+	ENDC
+	
+	IFD SYS_TAKEN_OVER
+		IFD CUSTOM_MEMORY_USED
+			bsr	alloc_custom_memory ; Externe Routine
+			move.l	d0,dos_return_code(a3)
+			bne.s	cleanup_all_memory
+		ENDC
+	ELSE
+		bsr	alloc_vectors_base_memory
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+
+		bsr	alloc_mouse_pointer_data
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+	
+		IFEQ screen_fader_enabled
+			bsr	sf_alloc_screen_color_table
+			move.l	d0,dos_return_code(a3)
+			bne     cleanup_all_memory
+			bsr	sf_alloc_screen_color_cache
+			move.l	d0,dos_return_code(a3)
+			bne	cleanup_all_memory
+		ENDC
+
+		IFD PASS_GLOBAL_REFERENCES
+			bsr	init_global_references_table
+		ENDC
+	ENDC
+
+	bsr	init_main_variables	; Externe Routine
+
+	IFND SYS_TAKEN_OVER
+		bsr	wait_drives_motor
+
+		bsr	get_active_screen
+		bsr	get_sprite_resolution
+		bsr	get_first_window
+		bsr	get_active_screen_mode
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_all_memory
+		IFEQ screen_fader_enabled
+			bsr	sf_get_active_screen_colors
+			bsr	sf_copy_screen_color_table
+			bsr	sf_fade_out_screen
+		ENDC
+
+		bsr	open_pal_screen
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_active_screen
+		bsr	check_pal_screen_mode
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_active_screen
+		bsr	load_pal_screen_rgb4_colors
+		bsr	open_invisible_window
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_pal_screen
+		bsr	clear_mousepointer
+		bsr	blank_display
+		bsr	wait_monitor_switch
+
+		bsr	enable_exclusive_blitter
+		bsr	get_system_time
+
+		bsr	disable_system
+
+		bsr	save_exception_vectors
+	ENDC
+
+	bsr	init_exception_vectors
+	
+	IFND SYS_TAKEN_OVER
+		bsr	move_exception_vectors
+	ENDC
+
+	move.l	#_CIAB,a5
+	lea	_CIAA-_CIAB(a5),a4	; CIA-A-Base
+	move.l	#_CUSTOM+DMACONR,a6
+	
+	IFND SYS_TAKEN_OVER
+		bsr	save_copperlist_pointers
+		bsr	get_tod_time
+		bsr	save_chips_registers
+		bsr	clear_chips_registers1
+		bsr	turn_off_drive_motors
+	ENDC
+
+	move.w	#dma_bits&(~(DMAF_SPRITE|DMAF_COPPER|DMAF_RASTER)),DMACON-DMACONR(a6) ; DMA ausser Sprite/Copper/Bitplane-DMA an
+	bsr	init_main		; Externe Routine
+	bsr	start_own_display
+	IFNE (intena_bits-INTF_SETCLR)|(ciaa_icr_bits-CIAICRF_SETCLR)|(ciab_icr_bits-CIAICRF_SETCLR)
+		bsr	start_own_interrupts
+	ENDC
+	IFEQ ciaa_ta_continuous_enabled&ciaa_tb_continuous_enabled&ciab_ta_continuous_enabled&ciab_tb_continuous_enabled
+		bsr	start_CIA_timers
+	ENDC
+
+	IFD SYS_TAKEN_OVER
+		IFD PASS_RETURN_CODE
+			move.l	dos_return_code(a3),d0
+			move.w	custom_error_code(a3),d1
+		ENDC
+		IFD PASS_GLOBAL_REFERENCES
+			move.l	global_references_table(a3),a0
+		ENDC
+	ELSE
+		IFD PASS_RETURN_CODE
+			move.l	dos_return_code(a3),d0
+			move.w	custom_error_code(a3),d1
+		ENDC
+		IFD PASS_GLOBAL_REFERENCES
+			lea	global_references_table(pc),a0
+		ENDC
+	ENDC
+
+	bsr	main		; Externe Routine
+
+	IFD PASS_RETURN_CODE
+		move.l	d0,dos_return_code(a3)
+		move.w	d1,custom_error_code(a3)
+	ENDC
+
+	IFEQ ciaa_ta_continuous_enabled&ciaa_tb_continuous_enabled&ciab_ta_continuous_enabled&ciab_tb_continuous_enabled
+		bsr	stop_cia_timers
+	ENDC
+	IFNE (intena_bits-INTF_SETCLR)|(ciaa_icr_bits-CIAICRF_SETCLR)|(ciab_icr_bits-CIAICRF_SETCLR)
+		bsr	stop_own_interrupts
+	ENDC
+	bsr	stop_own_display
+
+	IFND SYS_TAKEN_OVER
+		bsr	clear_chips_registers2
+		bsr	restore_chips_registers
+		bsr	get_tod_duration
+
+		bsr	restore_vbr
+
+		bsr	restore_exception_vectors
+
+		bsr	enable_system
+
+		bsr	update_system_time
+
+		bsr	disable_exclusive_blitter
+
+		bsr	restore_sprite_resolution
+		bsr	wait_monitor_switch
+		bsr	close_invisible_window
+cleanup_pal_screen
+		bsr	close_pal_screen
+cleanup_active_screen
+		bsr	active_screen_to_front
+		bsr	activate_first_window
+
+		IFEQ screen_fader_enabled
+			bsr	sf_fade_in_screen
+		ENDC
+
+		IFEQ text_output_enabled
+			bsr	print_formatted_text
+		ENDC
+	ENDC
+
+cleanup_all_memory
+	IFD SYS_TAKEN_OVER
+		IFD CUSTOM_MEMORY_USED
+			bsr	free_custom_memory ; Externe Routine
+		ENDC
+	ELSE
+		IFEQ screen_fader_enabled
+			bsr	sf_free_screen_color_cache
+			bsr	sf_free_screen_color_table
+		ENDC
+
+		bsr	free_mouse_pointer_data
+
+		bsr	free_vectors_base_memory
+	ENDC
+
+	IFNE chip_memory_size
+		bsr	free_chip_memory
+	ENDC
+
+	IFNE extra_memory_size
+		bsr	free_extra_memory
+	ENDC
+
+	IFNE disk_memory_size
+		bsr	free_disk_memory
+	ENDC
+
+	IFNE audio_memory_size
+		bsr	free_audio_memory
+	ENDC
+
+	IFNE spr_x_size2
+		bsr	free_sprite_memory2
+	ENDC
+	IFNE spr_x_size1
+		bsr	free_sprite_memory1
+	ENDC
+
+	IFNE pf_extra_number
+		bsr	free_pf_extra_memory
+	ENDC
+
+	IFNE pf2_x_size3
+		bsr	free_pf2_memory3
+	ENDC
+	IFNE pf2_x_size2
+		bsr	free_pf2_memory2
+	ENDC
+	IFNE pf2_x_size1
+		bsr	free_pf2_memory1
+	ENDC
+
+	IFNE pf1_x_size3
+		bsr	free_pf1_memory3
+	ENDC
+	IFNE pf1_x_size2
+		bsr	free_pf1_memory2
+	ENDC
+	IFNE pf1_x_size1
+		bsr	free_pf1_memory1
+	ENDC
+
+	IFNE cl2_size3
+		bsr	free_cl2_memory3
+	ENDC
+	IFNE cl2_size2
+		bsr	free_cl2_memory2
+	ENDC
+	IFNE cl2_size1
+		bsr	free_cl2_memory1
+	ENDC
+
+	IFNE cl1_size3
+		bsr	free_cl1_memory3
+	ENDC
+	IFNE cl1_size2
+		bsr	free_cl1_memory2
+	ENDC
+	IFNE cl1_size1
+		bsr	free_cl1_memory1
+	ENDC
+
+	IFND SYS_TAKEN_OVER
+cleanup_timer_device
+		bsr	close_timer_device
+
+cleanup_error_message
+		bsr	print_error_message
+		move.l	d0,dos_return_code(a3)
+
+cleanup_intuition_library
+		bsr	close_intuition_library
+
+cleanup_graphics_library
+		bsr	close_graphics_library
+
+cleanup_dos_library
+		bsr	close_dos_library
+
+cleanup_workbench_message
+		IFEQ workbench_start_enabled
+			bsr	reply_workbench_message
+		ENDC
+	ENDC
+
+end_final
+	IFD MEASURE_RASTERTIME
+		move.l	rt_rasterlines_number(a3),d0
+output_rasterlines_number
+	ELSE
+		move.l	dos_return_code(a3),d0
+	ENDC
+
+	IFD SYS_TAKEN_OVER
+		IFD PASS_RETURN_CODE
+			move.w	custom_error_code(a3),d1
+		ENDC
+		IFD PASS_GLOBAL_REFERENCES
+			move.l	global_references_table(a3),a0
+		ENDC
+	ENDC
+
+	movem.l (a7)+,d2-d7/a2-a6
+	rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert	
+	CNOP 0,4
+init_variables
+	IFD SYS_TAKEN_OVER
+		IFD PASS_GLOBAL_REFERENCES
+			move.l	a0,global_references_table(a3)
+			lea	_SysBase(pc),a1
+			move.l	(a0)+,(a1)
+			lea	_GfxBase(pc),a1
+			move.l	(a0),(a1)
+		ENDC
+		IFD WRAPPER
+			moveq	#RETURN_OK,d2
+			move.l	d2,dos_return_code(a3)
+			move.w	#NO_CUSTOM_ERROR,custom_error_code(a3)
+		ELSE
+			IFD PASS_RETURN_CODE
+				move.l	d0,dos_return_code(a3)
+				move.w	d1,custom_error_code(a3)
+			ENDC
+		ENDC
+	ELSE
+		move.l	a0,shell_parameters(a3)
+		move.l	d0,shell_parameters_length(a3)
+
+		moveq	#TRUE,d0
+		IFEQ workbench_start_enabled
+			move.l	d0,workbench_message(a3)
+		ENDC
+		moveq	#FALSE,d1
+		move.w	d1,fast_memory_available(a3)
+
+		IFEQ screen_fader_enabled
+			move.w	d0,sfi_rgb4_active(a3)
+			move.w	d0,sfo_rgb4_active(a3)
+		ENDC
+
+		move.l	d0,exception_vectors_base(a3)
+
+		moveq	#RETURN_OK,d2
+		move.l	d2,dos_return_code(a3)
+		move.w	#NO_CUSTOM_ERROR,custom_error_code(a3)
+
+		lea	_SysBase(pc),a0
+		move.l	exec_base.w,(a0)
+	ENDC
+
+	IFD MEASURE_RASTERTIME
+		move.l	d0,rt_rasterlines_number(a3)
+	ENDC
+	rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert	
+	CNOP 0,4
+init_structures
+	IFND SYS_TAKEN_OVER
+		bsr	init_custom_error_table
+		bsr	init_auto_request_texts
+		bsr	init_timer_io
+		bsr	init_pal_extended_newscreen
+		IFNE screen_fader_enabled
+			bsr	init_pal_screen_rgb4_colors
+        	ENDC
+		bsr	init_video_control_tags
+		bsr	init_pal_screen_tags
+		bsr	init_invisible_extended_newwindow
+		bsr	init_invisible_window_tags
+	ENDC
+	IFNE pf_extra_number
+		bsr	init_pf_extra_structure
+	ENDC
+	IFNE spr_x_size1|spr_x_size2
+		bsr	spr_init_structure
+	ENDC
+	rts
+
+	IFND SYS_TAKEN_OVER
+; Input
+; Result
+; d0.l	... Kein Rückgabewert	
+		CNOP 0,4
+init_custom_error_table
+		lea	custom_error_table(pc),a0
+		INIT_CUSTOM_ERROR_ENTRY CONFIG_NO_PAL,error_text_config,error_text_config_end-error_text_config
+
+		IFEQ requires_030_cpu
+			INIT_CUSTOM_ERROR_ENTRY CPU_030_REQUIRED,error_text_cpu_2,error_text_cpu_2_end-error_text_cpu_2
+		ENDC
+		IFEQ requires_040_cpu
+			INIT_CUSTOM_ERROR_ENTRY CPU_040_REQUIRED,error_text_cpu_2,error_text_cpu_2_end-error_text_cpu_2
+		ENDC
+		IFEQ requires_060_cpu
+			INIT_CUSTOM_ERROR_ENTRY CPU_060_REQUIRED,error_text_cpu_2,error_text_cpu_2_end-error_text_cpu_2
+		ENDC
+
+		IFEQ requires_fast_memory
+			INIT_CUSTOM_ERROR_ENTRY FAST_MEMORY_REQUIRED,error_text_fast_memory,error_text_fast_memory_end-error_text_fast_memory
+		ENDC
+
+		INIT_CUSTOM_ERROR_ENTRY CIAA_RESOURCE_COULD_NOT_OPEN,error_text_ciaa_resource,error_text_ciaa_resource_end-error_text_ciaa_resource
+		INIT_CUSTOM_ERROR_ENTRY CIAB_RESOURCE_COULD_NOT_OPEN,error_text_ciab_resource,error_text_ciab_resource_end-error_text_ciaa_resource
+
+		INIT_CUSTOM_ERROR_ENTRY TIMER_DEVICE_COULD_NOT_OPEN,error_text_timer_device,error_text_timer_device_end-error_text_timer_device
+
+		INIT_CUSTOM_ERROR_ENTRY CL1_CONSTR1_NO_MEMORY-1,error_text_cl1_constr1,error_text_cl1_constr1_end-error_text_cl1_constr1
+		INIT_CUSTOM_ERROR_ENTRY CL1_CONSTR2_NO_MEMORY-1,error_text_cl1_constr2,error_text_cl1_constr2_end-error_text_cl1_constr2
+		INIT_CUSTOM_ERROR_ENTRY CL1_DISPLAY_NO_MEMORY-1,error_text_cl1_display,error_text_cl1_display_end-error_text_cl1_display
+
+		INIT_CUSTOM_ERROR_ENTRY CL2_CONSTR1_NO_MEMORY,error_text_cl2_constr1,error_text_cl2_constr1_end-error_text_cl2_constr1
+		INIT_CUSTOM_ERROR_ENTRY CL2_CONSTR2_NO_MEMORY,error_text_cl2_constr2,error_text_cl2_constr2_end-error_text_cl2_constr2
+		INIT_CUSTOM_ERROR_ENTRY CL2_DISPLAY_NO_MEMORY,error_text_cl2_display,error_text_cl2_display_end-error_text_cl2_display
+
+		INIT_CUSTOM_ERROR_ENTRY PF1_CONSTR1_NO_MEMORY,error_text_pf1_constr1_1,error_text_pf1_constr1_1_end-error_text_pf1_constr1_1
+		INIT_CUSTOM_ERROR_ENTRY PF1_CONSTR2_NO_MEMORY,error_text_pf1_constr2_1,error_text_pf1_constr2_1_end-error_text_pf1_constr2_1
+		INIT_CUSTOM_ERROR_ENTRY PF1_DISPLAY_NO_MEMORY,error_text_pf1_display_1,error_text_pf1_display_1_end-error_text_pf1_display_1
+
+		INIT_CUSTOM_ERROR_ENTRY PF2_CONSTR1_NO_MEMORY,error_text_pf2_constr1_1,error_text_pf2_constr1_1_end-error_text_pf2_constr1_1
+		INIT_CUSTOM_ERROR_ENTRY PF2_CONSTR2_NO_MEMORY,error_text_pf2_constr2_1,error_text_pf2_constr2_1_end-error_text_pf2_constr2_1
+		INIT_CUSTOM_ERROR_ENTRY PF2_DISPLAY_NO_MEMORY,error_text_pf2_display_1,error_text_pf2_display_1_end-error_text_pf2_display_1
+
+		INIT_CUSTOM_ERROR_ENTRY PF_EXTRA_NO_MEMORY,error_text_pf_extra_1,error_text_pf_extra_1_end-error_text_pf_extra_1
+
+		INIT_CUSTOM_ERROR_ENTRY SPR_CONSTR_NO_MEMORY,error_text_spr_constr_1,error_text_spr_constr_1_end-error_text_spr_constr_1
+		INIT_CUSTOM_ERROR_ENTRY SPR_DISPLAY_NO_MEMORY,error_text_spr_display_1,error_text_spr_display_1_end-error_text_spr_display_1
+
+		INIT_CUSTOM_ERROR_ENTRY AUDIO_NO_MEMORY,error_text_audio,error_text_audio_end-error_text_audio
+
+		INIT_CUSTOM_ERROR_ENTRY DISK_NO_MEMORY,error_text_disk,error_text_disk_end-error_text_disk
+
+		INIT_CUSTOM_ERROR_ENTRY EXTRA_MEMORY_NO_MEMORY,error_text_extra_memory,error_text_extra_memory_end-error_text_extra_memory
+
+		INIT_CUSTOM_ERROR_ENTRY CHIP_MEMORY_NO_MEMORY,error_text_chip_memory2,error_text_chip_memory2_end-error_text_chip_memory2
+
+		INIT_CUSTOM_ERROR_ENTRY CUSTOM_MEMORY_NO_MEMORY,error_text_custom_memory,error_text_custom_memory_end-error_text_custom_memory
+
+		INIT_CUSTOM_ERROR_ENTRY EXCEPTION_VECTORS_NO_MEMORY,error_text_exception_vectors,error_text_exception_vectors_end-error_text_exception_vectors
+
+		INIT_CUSTOM_ERROR_ENTRY CLEARED_SPRITE_NO_MEMORY,error_text_cleared_sprite,error_text_cleared_sprite_end-error_text_cleared_sprite
+
+		INIT_CUSTOM_ERROR_ENTRY VIEWPORT_MONITOR_ID_NOT_FOUND,error_text_viewport,error_text_viewport_end-error_text_viewport
+
+		IFEQ screen_fader_enabled
+			INIT_CUSTOM_ERROR_ENTRY SCREEN_FADER_NO_MEMORY,error_text_screen_fader,error_text_screen_fader_end-error_text_screen_fader
+        	ELSE
+			INIT_CUSTOM_ERROR_ENTRY SCREEN_NO_MEMORY,error_text_screen1,error_text_screen1_end-error_text_screen1
+		ENDC
+
+		INIT_CUSTOM_ERROR_ENTRY SCREEN_COULD_NOT_OPEN,error_text_screen2,error_text_screen2_end-error_text_screen2
+
+		INIT_CUSTOM_ERROR_ENTRY SCREEN_MODE_NOT_AVAILABLE,error_text_screen3,error_text_screen3_end-error_text_screen3
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert	
+		CNOP 0,4
+init_auto_request_texts
+		IFEQ requires_multiscan_monitor
+			INIT_INTUI_TEXT monitor_request_intui_text_body,0,1,10,10,monitor_request_string_body
+			INIT_INTUI_TEXT monitor_request_intui_text_pos,0,1,5,3,monitor_request_string_pos
+			INIT_INTUI_TEXT monitor_request_intui_text_neg,0,1,5,3,monitor_request_string_neg
+		ENDC
+		IFNE intena_bits&INTF_PORTS
+			INIT_INTUI_TEXT tcp_stack_request_intui_text_body,0,1,10,10,tcp_stack_request_string_body
+			INIT_INTUI_TEXT tcp_stack_request_intui_text_pos,0,1,5,3,tcp_stack_request_string_pos
+			INIT_INTUI_TEXT tcp_stack_request_intui_text_neg,0,1,5,3,tcp_stack_request_string_neg
+		ENDC
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert	
+		CNOP 0,4
+init_timer_io
+		lea	timer_io(pc),a0
+		moveq	#0,d0
+		move.b	d0,LN_Type(a0)	; Eintragstyp = Null
+		move.b	d0,LN_Pri(a0)	; Priorität der Struktur = Null
+		move.l	d0,LN_Name(a0)	; Keine Name der Struktur
+		move.l	d0,MN_ReplyPort(a0) ; Kein Reply-Port
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+init_pal_extended_newscreen
+		lea	pal_extended_newscreen(pc),a0
+		move.w	#pal_screen_pre_36_left,ns_LeftEdge(a0)
+		move.w	#pal_screen_pre_36_top,ns_TopEdge(a0)
+		move.w	#pal_screen_pre_36_x_size,ns_Width(a0)
+		move.w	#pal_screen_pre_36_y_size,ns_Height(a0)
+		move.w	#pal_screen_depth,ns_Depth(a0)
+		moveq	#0,d0
+		move.b	d0,ns_DetailPen(a0)
+		move.b	d0,ns_BlockPen(a0)
+		move.w	d0,ns_ViewModes(a0)
+		move.w	#CUSTOMSCREEN|NS_EXTENDED,ns_Type(a0)
+		move.l	d0,ns_Font(a0)
+		lea	pal_screen_name(pc),a1
+		move.l	a1,ns_DefaultTitle(a0)
+		move.l	d0,ns_Gadgets(a0)
+		move.l	d0,ns_CustomBitMap(a0)
+		lea	pal_screen_tags(pc),a1
+		move.l	a1,ens_Extension(a0)
+		rts
+
+
+		IFNE screen_fader_enabled
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+			CNOP 0,4
+init_pal_screen_rgb4_colors
+			lea	pal_screen_rgb4_colors(pc),a0
+			move.w	pf1_rgb4_color_table(pc),d0
+			MOVEF.W	pal_screen_colors_number-1,d7
+init_pal_screen_rgb4_colors_loop
+			move.w	d0,(a0)+ ; COLORxx RGB4-Wert
+	               	dbf	d7,init_pal_screen_rgb4_colors_loop
+			rts
+		ENDC
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+init_video_control_tags
+		lea	video_control_tags+(ti_SIZEOF*1)(pc),a0
+		moveq	#TAG_DONE,d2
+		move.l	d2,(a0)
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+init_pal_screen_tags
+		lea	pal_screen_tags(pc),a0
+		move.l	#SA_Left,(a0)+
+	     	moveq	#pal_screen_left,d2
+		move.l	d2,(a0)+
+		move.l	#SA_Top,(a0)+
+     		moveq	#pal_screen_top,d2
+		move.l	d2,(a0)+
+		move.l	#SA_Width,(a0)+
+		moveq	#pal_screen_x_size,d2
+		move.l	d2,(a0)+
+		move.l	#SA_Height,(a0)+
+		moveq	#pal_screen_y_size,d2
+		move.l	d2,(a0)+
+		move.l	#SA_Depth,(a0)+
+		moveq	#pal_screen_depth,d2
+		move.l	d2,(a0)+
+		move.l	#SA_DisplayID,(a0)+
+		IFEQ requires_multiscan_monitor
+			move.l	#VGA_MONITOR_ID|VGAPRODUCT_KEY,(a0)+
+		ELSE
+			move.l	#PAL_MONITOR_ID|LORES_KEY,(a0)+
+		ENDC
+		move.l	#SA_DetailPen,(a0)+
+		moveq	#0,d0
+		move.l	d0,(a0)+
+		move.l	#SA_BlockPen,(a0)+
+		move.l	d0,(a0)+
+		move.l	#SA_Title,(a0)+
+		lea	pal_screen_name(pc),a1
+		move.l	a1,(a0)+
+		move.l	#SA_Colors,(a0)+
+		move.l	d0,(a0)+	; Wird später initialisiert
+		move.l	#SA_VideoControl,(a0)+
+		lea	video_control_tags(pc),a1
+		move.l	#VTAG_SPRITERESN_SET,+vctl_VTAG_SPRITERESN+ti_tag(a1)
+		move.l	#SPRITERESN_140NS,vctl_VTAG_SPRITERESN+ti_data(a1)
+		move.l	a1,(a0)+
+		move.l	#SA_Font,(a0)+
+		move.l	d0,(a0)+
+		move.l	#SA_SysFont,(a0)+
+		move.l	d0,(a0)+
+		move.l	#SA_Type,(a0)+
+		move.l	#CUSTOMSCREEN,(a0)+
+		move.l	#SA_Behind,(a0)+
+		moveq	#BOOL_FALSE,d2
+		move.l	d2,(a0)+
+		move.l	#SA_Quiet,(a0)+
+		move.l	d2,(a0)+
+		move.l	#SA_ShowTitle,(a0)+
+		move.l	d2,(a0)+
+		move.l	#SA_AutoScroll,(a0)+
+		move.l	d2,(a0)+
+		move.l	#SA_Draggable,(a0)+
+		move.l	d2,(a0)+
+		move.l	#SA_Interleaved,(a0)+
+		move.l	d2,(a0)+
+		moveq	#TAG_DONE,d2
+		move.l	d2,(a0)
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+init_invisible_extended_newwindow
+		lea	invisible_extended_newwindow(pc),a0
+		move.w	#invisible_window_pre_36_left,nw_LeftEdge(a0)
+		move.w	#invisible_window_pre_36_top,nw_TopEdge(a0)
+		move.w	#invisible_window_pre_36_x_size,nw_Width(a0)
+		move.w	#invisible_window_pre_36_y_size,nw_Height(a0)
+		moveq	#0,d0
+		move.b	d0,nw_DetailPen(a0)
+		move.b	d0,nw_BlockPen(a0)
+		move.l	d0,nw_IDCMPFlags(a0)
+		move.l	#WFLG_NW_EXTENDED|WFLG_BACKDROP|WFLG_BORDERLESS|WFLG_ACTIVATE,nw_Flags(a0)
+		move.l	d0,nw_FirstGadget(a0)
+		move.l	d0,nw_CheckMark(a0)
+		lea	invisible_window_name(pc),a1
+		move.l	a1,nw_Title(a0)
+		move.l	d0,nw_Screen(a0) ; Zeiger wird später initialisiert
+		move.l	d0,nw_BitMap(a0)
+		move.w	#invisible_window_pre_36_x_size,nw_MinWidth(a0)
+		move.w	#invisible_window_pre_36_y_size,nw_MinHeight(a0)
+		move.w	#invisible_window_pre_36_x_size,nw_MaxWidth(a0)
+		move.w	#invisible_window_pre_36_y_size,nw_MaxHeight(a0)
+		move.w	#CUSTOMSCREEN,nw_Type(a0)
+		lea	invisible_window_tags(pc),a1
+		move.l	a1,enw_Extension(a0)
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+init_invisible_window_tags
+		lea	invisible_window_tags(pc),a0
+		move.l	#WA_Left,(a0)+
+		moveq	#invisible_window_left,d2
+		move.l	d2,(a0)+
+		move.l	#WA_Top,(a0)+
+		moveq	#invisible_window_top,d2
+		move.l	d2,(a0)+
+		move.l	#WA_Width,(a0)+
+		moveq	#invisible_window_x_size,d2
+		move.l	d2,(a0)+
+		move.l	#WA_Height,(a0)+
+		moveq	#invisible_window_y_size,d2
+		move.l	d2,(a0)+
+		move.l	#WA_DetailPen,(a0)+
+		moveq	#0,d0
+		move.l	d0,(a0)+
+		move.l	#WA_BlockPen,(a0)+
+		move.l	d0,(a0)+
+		move.l	#WA_IDCMP,(a0)+
+		move.l	d0,(a0)+
+		move.l	#WA_Title,(a0)+
+		lea	invisible_window_name(pc),a1
+		move.l	a1,(a0)+
+		move.l	#WA_CustomScreen,(a0)+
+		move.l	d0,(a0)+		; Zeiger wird später initialisiert
+		move.l	#WA_MinWidth,(a0)+
+		moveq	#invisible_window_x_size,d2
+		move.l	d2,(a0)+
+		move.l	#WA_MinHeight,(a0)+
+		moveq	#invisible_window_y_size,d2
+		move.l	d2,(a0)+
+		move.l	#WA_MaxWidth,(a0)+
+		moveq	#invisible_window_x_size,d2
+		move.l	d2,(a0)+
+		move.l	#WA_MaxHeight,(a0)+
+		moveq	#invisible_window_y_size,d2
+		move.l	d2,(a0)+
+		move.l	#WA_AutoAdjust,(a0)+
+		moveq	#BOOL_TRUE,d2
+		move.l	d2,(a0)+
+		move.l	#WA_Flags,(a0)+
+		move.l	#WFLG_BACKDROP|WFLG_BORDERLESS|WFLG_ACTIVATE,(a0)+
+		moveq	#TAG_DONE,d2
+		move.l	d2,(a0)
+		rts
+	ENDC
+
+
+	IFNE pf_extra_number
+; Input
+; Result
+; d0.l	... Kein Rückgabewert	
+		CNOP 0,4
+init_pf_extra_structure
+		lea	pf_extra_attributes(pc),a0
+		IFGE pf_extra_number-1
+			move.l	#extra_pf1_x_size,(a0)+
+			move.l	#extra_pf1_y_size,(a0)+
+			moveq	#extra_pf1_depth,d0
+			IFEQ pf_extra_number-1
+				move.l	d0,(a0)
+			ELSE
+				move.l	d0,(a0)+
+			ENDC
+		ENDC
+		IFGE pf_extra_number-2
+			move.l	#extra_pf2_x_size,(a0)+
+			move.l	#extra_pf2_y_size,(a0)+
+			moveq	#extra_pf2_depth,d0
+			IFEQ pf_extra_number-2
+				move.l	d0,(a0)
+			ELSE
+				move.l	d0,(a0)+
+			ENDC
+		ENDC
+		IFGE pf_extra_number-3
+			move.l	#extra_pf3_x_size,(a0)+
+			move.l	#extra_pf3_y_size,(a0)+
+			moveq	#extra_pf3_depth,d0
+			IFEQ pf_extra_number-3
+				move.l	d0,(a0)
+			ELSE
+				move.l	d0,(a0)+
+			ENDC
+		ENDC
+		IFGE pf_extra_number-4
+			move.l	#extra_pf4_x_size,(a0)+
+			move.l	#extra_pf4_y_size,(a0)+
+			moveq	#extra_pf4_depth,d0
+			IFEQ pf_extra_number-4
+				move.l	d0,(a0)
+			ELSE
+				move.l	d0,(a0)+
+			ENDC
+		ENDC
+		IFGE pf_extra_number-5
+			move.l	#extra_pf5_x_size,(a0)+
+			move.l	#extra_pf5_y_size,(a0)+
+			moveq	#extra_pf5_depth,d0
+			IFEQ pf_extra_number-5
+				move.l	d0,(a0)
+			ELSE
+				move.l	d0,(a0)+
+			ENDC
+		ENDC
+		IFGE pf_extra_number-6
+			move.l	#extra_pf6_x_size,(a0)+
+			move.l	#extra_pf6_y_size,(a0)+
+			moveq	#extra_pf6_depth,d0
+			IFEQ pf_extra_number-6
+				move.l	d0,(a0)
+			ELSE
+				move.l	d0,(a0)+
+			ENDC
+		ENDC
+		IFGE pf_extra_number-7
+			move.l	#extra_pf7_x_size,(a0)+
+			move.l	#extra_pf7_y_size,(a0)+
+			moveq	#extra_pf7_depth,d0
+			IFEQ pf_extra_number-7
+				move.l	d0,(a0)
+			ELSE
+				move.l	d0,(a0)+
+			ENDC
+		ENDC
+		IFGE pf_extra_number-8
+			move.l	#extra_pf8_x_size,(a0)+
+			move.l	#extra_pf8_y_size,(a0)+
+			moveq	#extra_pf8_depth,d0
+			IFEQ pf_extra_number-8
+				move.l	d0,(a0)
+			ELSE
+				move.l	d0,(a0)+
+			ENDC
+		ENDC
+		rts
+	ENDC
+
+	IFNE spr_x_size1|spr_x_size2
+; Input
+; Result
+; d0.l	... Kein Rückgabewert	
+		CNOP 0,4
+spr_init_structure
+		IFNE spr_x_size1
+			lea	sprite_attributes1(pc),a0
+			moveq	#spr0_x_size1,d0
+			move.l	d0,(a0)+
+			move.l	#spr0_y_size1,(a0)+
+			moveq	#spr_depth,d1
+			move.l	d1,(a0)+
+
+			moveq	#spr1_x_size1,d0
+			move.l	d0,(a0)+
+			move.l	#spr1_y_size1,(a0)+
+			move.l	d1,(a0)+
+
+			moveq	#spr2_x_size1,d0
+			move.l	d0,(a0)+
+			move.l	#spr2_y_size1,(a0)+
+			move.l	d1,(a0)+
+
+			moveq	#spr3_x_size1,d0
+			move.l	d0,(a0)+
+			move.l	#spr3_y_size1,(a0)+
+			move.l	d1,(a0)+
+
+			moveq	#spr4_x_size1,d0
+			move.l	d0,(a0)+
+			move.l	#spr4_y_size1,(a0)+
+			move.l	d1,(a0)+
+
+			moveq	#spr5_x_size1,d0
+			move.l	d0,(a0)+
+			move.l	#spr5_y_size1,(a0)+
+			move.l	d1,(a0)+
+
+			moveq	#spr6_x_size1,d0
+			move.l	d0,(a0)+
+			move.l	#spr6_y_size1,(a0)+
+			move.l	d1,(a0)+
+
+			moveq	#spr7_x_size1,d0
+			move.l	d0,(a0)+
+			move.l	#spr7_y_size1,(a0)+
+			move.l	d1,(a0)
+		ENDC
+		IFNE spr_x_size2
+			lea	sprite_attributes2(pc),a0
+			moveq	#spr0_x_size2,d0
+			move.l	d0,(a0)+
+			move.l	#spr0_y_size2,(a0)+
+			moveq	#spr_depth,d1
+			move.l	d1,(a0)+
+
+			moveq	#spr1_x_size2,d0
+			move.l	d0,(a0)+
+			move.l	#spr1_y_size2,(a0)+
+			move.l	d1,(a0)+
+
+			moveq	#spr2_x_size2,d0
+			move.l	d0,(a0)+
+			move.l	#spr2_y_size2,(a0)+
+			move.l	d1,(a0)+
+
+			moveq	#spr3_x_size2,d0
+			move.l	d0,(a0)+
+			move.l	#spr3_y_size2,(a0)+
+			move.l	d1,(a0)+
+
+			moveq	#spr4_x_size2,d0
+			move.l	d0,(a0)+
+			move.l	#spr4_y_size2,(a0)+
+			move.l	d1,(a0)+
+
+			moveq	#spr5_x_size2,d0
+			move.l	d0,(a0)+
+			move.l	#spr5_y_size2,(a0)+
+			move.l	d1,(a0)+
+
+			moveq	#spr6_x_size2,d0
+			move.l	d0,(a0)+
+			move.l	#spr6_y_size2,(a0)+
+			move.l	d1,(a0)+
+
+			moveq	#spr7_x_size2,d0
+			move.l	d0,(a0)+
+			move.l	#spr7_y_size2,(a0)+
+			move.l	d1,(a0)
+		ENDC
+		rts
+	ENDC
+
+	IFND SYS_TAKEN_OVER
+		IFEQ workbench_start_enabled
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+			CNOP 0,4
+check_workbench_start
+			sub.l	a1,a1	; Nach dem eigenen Task suchen
+			CALLEXEC FindTask
+			tst.l	d0
+			bne.s	check_workbench_start_skip1
+			moveq	#RETURN_FAIL,d0
+			rts
+			CNOP 0,4
+check_workbench_start_skip1
+			move.l	d0,a2	; aktueller Task
+			tst.l	pr_CLI(a2)
+			beq.s	check_workbench_start_skip2
+check_workbench_start_ok
+			moveq	#RETURN_OK,d0
+			rts
+			CNOP 0,4
+check_workbench_start_skip2
+			lea	pr_MsgPort(a2),a0
+			CALLLIBS WaitPort
+			lea	pr_MsgPort(a2),a0
+			CALLLIBS GetMsg
+			move.l	d0,workbench_message(a3)
+			bra.s	check_workbench_start_ok
+		ENDC
+	
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+		CNOP 0,4
+open_dos_library
+		lea	dos_name(pc),a1
+		moveq	#ANY_LIBRARY_VERSION,d0
+		CALLEXEC OpenLibrary
+		lea	_DOSBase(pc),a0
+		move.l	d0,(a0)
+		bne.s	open_dos_library_ok
+		moveq	 #RETURN_FAIL,d0
+		rts
+		CNOP 0,4
+open_dos_library_ok
+		moveq	 #RETURN_OK,d0
+		rts
+
+
+		IFEQ text_output_enabled
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+			CNOP 0,4
+get_output
+			CALLDOS Output
+			move.l	d0,output_handle(a3)
+			bne.s   get_output_ok
+			CALLLIBQ IoErr
+			CNOP 0,4
+get_output_ok
+			moveq	#RETURN_OK,d0
+			rts
+		ENDC
+
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+		CNOP 0,4
+open_graphics_library
+		lea	graphics_name(pc),a1
+		moveq	#ANY_LIBRARY_VERSION,d0
+		CALLEXEC OpenLibrary
+		lea	_GfxBase(pc),a0
+		move.l	d0,(a0)
+		bne.s	open_graphics_library_ok
+		moveq	#RETURN_FAIL,d0
+		rts
+		CNOP 0,4
+open_graphics_library_ok
+		moveq	#RETURN_OK,d0
+		rts
+
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+		CNOP 0,4
+open_intuition_library
+		lea	intuition_name(pc),a1
+		moveq	#ANY_LIBRARY_VERSION,d0
+		CALLEXEC OpenLibrary
+		lea	_IntuitionBase(pc),a0
+		move.l	d0,(a0)
+		bne.s	open_intuition_library_ok
+		moveq	#RETURN_FAIL,d0
+		rts
+		CNOP 0,4
+open_intuition_library_ok
+		moveq	#RETURN_OK,d0
+		rts
+
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+		CNOP 0,4
+check_system_properties
+		move.l	_SysBase(pc),a6
+		move.w	Lib_Version(a6),os_version(a3)
+		move.w	AttnFlags(a6),cpu_flags(a3)
+		move.l	_GfxBase(pc),a1
+		cmp.w	#OS2_VERSION,os_version(a3)
+		blt.s	check_fast_memory
+		btst	#REALLY_PALn,gb_DisplayFlags+BYTE_SIZE(a1)
+		bne.s	check_fast_memory
+		move.w	#CONFIG_NO_PAL,custom_error_code(a3)
+		moveq	#RETURN_FAIL,d0
+		rts
+		CNOP 0,4
+check_fast_memory
+		moveq	#MEMF_FAST,d1
+		CALLLIBS AvailMem
+		tst.l	d0
+		beq.s	check_system_properties_ok
+		clr.w	fast_memory_available(a3)
+check_system_properties_ok
+		moveq	#RETURN_OK,d0
+		rts
+
+
+		IFEQ requires_030_cpu
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+			CNOP 0,4
+check_cpu_requirements
+			btst	#AFB_68030,cpu_flags+BYTE_SIZE(a3)
+			bne.s	check_cpu_requirements_ok
+			move.w	#CPU_030_REQUIRED,custom_error_code(a3)
+			moveq	#RETURN_FAIL,d0
+			rts
+			CNOP 0,4
+check_cpu_requirements_ok
+			moveq	#RETURN_OK,d0
+			rts
+		ENDC
+		IFEQ requires_040_cpu
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+			CNOP 0,4
+check_cpu_requirements
+			btst	#AFB_68040,cpu_flags+BYTE_SIZE(a3)
+			bne.s	check_cpu_requirements_ok
+			move.w	#CPU_040_REQUIRED,custom_error_code(a3)
+			moveq	#RETURN_FAIL,d0
+			rts
+			CNOP 0,4
+check_cpu_requirements_ok
+			moveq	#RETURN_OK,d0
+			rts
+		ENDC
+		IFEQ requires_060_cpu
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+			CNOP 0,4
+check_cpu_requirements
+			tst.b	cpu_flags+BYTE_SIZE(a3)
+			bmi.s	check_cpu_requirements_ok
+			move.w	#CPU_060_REQUIRED,custom_error_code(a3)
+			moveq	#RETURN_FAIL,d0
+			rts
+			CNOP 0,4
+check_cpu_requirements_ok
+			moveq	#RETURN_OK,d0
+			rts
+		ENDC
+
+
+		IFEQ requires_fast_memory
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+			CNOP 0,4
+check_memory_requirements
+			tst.w	fast_memory_available(a3)
+			beq.s	check_memory_requirements_ok
+			move.w	#FAST_MEMORY_REQUIRED,custom_error_code(a3)
+			moveq	#RETURN_FAIL,d0
+			rts
+			CNOP 0,4
+check_memory_requirements_ok
+			moveq	#RETURN_OK,d0
+			rts
+		ENDC
+
+
+		IFEQ requires_multiscan_monitor
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+			CNOP 0,4
+do_monitor_request
+			sub.l	a0,a0	; Requester erscheint auf Workbench/Public-Screen
+                        lea	monitor_request_intui_text_body(pc),a1
+                        lea	monitor_request_intui_text_pos(pc),a2
+			move.l	a3,-(a7)
+                        lea	monitor_request_intui_text_neg(pc),a3
+			moveq	#0,d0	; Keine Positiv-Flags
+			moveq	#0,d1	; Keine Negativ-Flags
+			MOVEF.L	monitor_request_x_size,d2
+			moveq	#monitor_request_y_size,d3
+			CALLINT AutoRequest
+			move.l	(a7)+,a3
+			CMPF.L	BOOL_FALSE,d0 ; Gadget "Quit" angeklickt ?
+			bne.s	do_monitor_request_ok
+			moveq	#RETURN_FAIL,d0
+			rts
+			CNOP 0,4
+do_monitor_request_ok
+			moveq	#RETURN_OK,d0
+			rts
+		ENDC
+
+
+		IFNE intena_bits&INTF_PORTS
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+			CNOP 0,4
+check_tcp_stack
+			CALLEXEC Forbid
+			lea	LibList(a6),a0
+			lea	bsdsocket_name(pc),a1
+			CALLLIBS FindName
+			tst.l	d0
+			beq.s	check_tcp_stack_skip
+			move.l	d0,a0
+			tst.w	LIB_OPENCNT(a0)
+			bne.s	do_tcp_stack_request
+check_tcp_stack_skip
+			CALLLIBS Permit
+			moveq	#RETURN_OK,d0
+			rts
+			CNOP 0,4
+do_tcp_stack_request
+			CALLLIBS Permit
+			sub.l	a0,a0	; Requester auf WB/Public-Screen
+                        lea	tcp_stack_request_intui_text_body(pc),a1
+                        lea	tcp_stack_request_intui_text_pos(pc),a2
+			move.l	a3,-(a7)
+                        lea	tcp_stack_request_intui_text_neg(pc),a3
+			moveq	#0,d1	; Keine Negativ-Flags
+			MOVEF.L	tcp_stack_request_x_size,d2
+			moveq	#tcp_stack_request_y_size,d3
+			CALLINT AutoRequest
+			move.l	(a7)+,a3
+			CMPF.L	BOOL_FALSE,d0 ; Gadget "Quit" angeklickt ?
+			bne.s	do_tcp_stack_request_ok
+			moveq	#RETURN_FAIL,d0
+			rts
+			CNOP 0,4
+do_tcp_stack_request_ok
+			moveq	#RETURN_OK,d0
+			rts
+		ENDC
+
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+		CNOP 0,4
+open_ciaa_resource
+		lea	CIAA_name(pc),a1
+		CALLEXEC OpenResource
+		lea	_CIABase(pc),a0
+		move.l	d0,(a0)
+		bne.s	open_ciaa_resource_save
+		move.w	#CIAA_RESOURCE_COULD_NOT_OPEN,custom_error_code(a3)
+		moveq	#RETURN_FAIL,d0
+		rts
+		CNOP 0,4
+open_ciaa_resource_save
+		moveq	#0,d0		; keine Maske
+		CALLCIA AbleICR
+		move.b	d0,old_ciaa_icr(a3)
+		moveq	#RETURN_OK,d0
+		rts
+
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code
+		CNOP 0,4
+open_ciab_resource	
+		lea	CIAB_name(pc),a1
+		CALLEXEC OpenResource
+		lea	_CIABase(pc),a0
+		move.l	d0,(a0)
+		bne.s	open_ciab_resource_save
+		move.w	#CIAB_RESOURCE_COULD_NOT_OPEN,custom_error_code(a3)
+		moveq	#RETURN_FAIL,d0
+		rts
+		CNOP 0,4
+open_ciab_resource_save
+		moveq	#0,d0		; keine Maske
+		CALLCIA AbleICR
+		move.b	d0,old_ciab_icr(a3)
+		moveq	#RETURN_OK,d0
+		rts
+
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+		CNOP 0,4
+open_timer_device
+		lea	timer_device_name(pc),a0
+		lea	timer_io(pc),a1
+		moveq	#UNIT_MICROHZ,d0
+		moveq	#0,d1		; Keine Flags
+		CALLEXEC OpenDevice
+		tst.l	d0
+		beq.s	open_timer_device_ok
+		move.w	#TIMER_DEVICE_COULD_NOT_OPEN,custom_error_code(a3)
+		moveq	#RETURN_FAIL,d0
+		rts
+		CNOP 0,4
+open_timer_device_ok
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+
+
+	IFNE cl1_size1
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_cl1_memory1
+		MOVEF.L	cl1_size1,d0
+		bsr	do_alloc_chip_memory
+		move.l	d0,cl1_construction1(a3)
+		bne.s	alloc_cl1_memory1_ok
+		move.w	#CL1_CONSTR1_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_cl1_memory1_ok
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+	IFNE cl1_size2
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_cl1_memory2
+		MOVEF.L	cl1_size2,d0
+		bsr	do_alloc_chip_memory
+		move.l	d0,cl1_construction2(a3)
+		bne.s	alloc_cl1_memory2_ok
+		move.w	#CL1_CONSTR2_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_cl1_memory2_ok
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+	IFNE cl1_size3
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_cl1_memory3
+		MOVEF.L	cl1_size3,d0
+		bsr	do_alloc_chip_memory
+		move.l	d0,cl1_display(a3)
+		bne.s	alloc_cl1_memory3_ok
+		move.w	#CL1_DISPLAY_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_cl1_memory3_ok
+		moveq	 #RETURN_OK,d0
+		rts
+	ENDC
+
+
+	IFNE cl2_size1
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code	
+		CNOP 0,4
+alloc_cl2_memory1
+		MOVEF.L	cl2_size1,d0
+		bsr	do_alloc_chip_memory
+		move.l	d0,cl2_construction1(a3)
+		bne.s	alloc_cl2_memory1_ok
+		move.w	#CL2_CONSTR1_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_cl2_memory1_ok
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+	IFNE cl2_size2
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_cl2_memory2
+		MOVEF.L	cl2_size2,d0
+		bsr	do_alloc_chip_memory
+		move.l	d0,cl2_construction2(a3)
+		bne.s	alloc_cl2_memory2_ok
+		move.w	#CL2_CONSTR2_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_cl2_memory2_ok
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+	IFNE cl2_size3
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_cl2_memory3
+		MOVEF.L	cl2_size3,d0
+		bsr	do_alloc_chip_memory
+		move.l	d0,cl2_display(a3)
+		bne.s	alloc_cl2_memory3_ok
+		move.w	#CL2_DISPLAY_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_cl2_memory3_ok
+		moveq	 #RETURN_OK,d0
+		rts
+	ENDC
+
+
+	IFNE pf1_x_size1
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_pf1_memory1
+		MOVEF.L	pf1_x_size1,d0
+		MOVEF.L	pf1_y_size1*pf1_depth1,d1
+		bsr	do_alloc_bitmap_memory
+		move.l	d0,pf1_bitmap1(a3)
+		bne.s	alloc_pf1_memory1_ok
+		move.w	#PF1_CONSTR1_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_pf1_memory1_ok
+		move.l	d0,pf1_construction1(a3)
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+	IFNE pf1_x_size2
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_pf1_memory2
+		MOVEF.L	pf1_x_size2,d0
+		MOVEF.L	pf1_y_size2*pf1_depth2,d1
+		bsr	do_alloc_bitmap_memory
+		move.l	d0,pf1_bitmap2(a3)
+		bne.s	alloc_pf1_memory2_ok
+		move.w	#PF1_CONSTR2_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_pf1_memory2_ok
+		move.l	d0,pf1_construction2(a3)
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+	IFNE pf1_x_size3
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_pf1_memory3
+		MOVEF.L	pf1_x_size3,d0
+		MOVEF.L	pf1_y_size3*pf1_depth3,d1
+		bsr	do_alloc_bitmap_memory
+		move.l	d0,pf1_bitmap3(a3)
+		bne.s	alloc_pf1_memory3_ok
+		move.w	#PF1_DISPLAY_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_pf1_memory3_ok
+		move.l	d0,pf1_display(a3)
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+
+
+	IFNE pf2_x_size1
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_pf2_memory1
+		MOVEF.L	pf2_x_size1,d0
+		MOVEF.L	pf2_y_size1*pf2_depth1,d1
+		bsr	do_alloc_bitmap_memory
+		move.l	d0,pf2_bitmap1(a3)
+		bne.s	alloc_pf2_memory1_ok
+		move.w	#PF2_CONSTR1_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_pf2_memory1_ok
+		move.l	d0,pf2_construction1(a3)
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+	IFNE pf2_x_size2
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_pf2_memory2
+		MOVEF.L	pf2_x_size2,d0
+		MOVEF.L	pf2_y_size2*pf2_depth2,d1
+		bsr	do_alloc_bitmap_memory
+		move.l	d0,pf2_bitmap2(a3)
+		bne.s	alloc_pf2_memory2_ok
+		move.w	#PF2_CONSTR2_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_pf2_memory2_ok
+		move.l	d0,pf2_construction2(a3)
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+	IFNE pf2_x_size3
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_pf2_memory3
+		MOVEF.L	pf2_x_size3,d0
+		MOVEF.L	pf2_y_size3*pf2_depth3,d1
+		bsr	do_alloc_bitmap_memory
+		move.l	d0,pf2_bitmap3(a3)
+		bne.s	alloc_pf2_memory3_ok
+		move.w	#PF2_DISPLAY_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_pf2_memory3_ok
+		move.l	d0,pf2_display(a3)
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+
+
+	IFNE pf_extra_number
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_pf_extra_memory
+		lea	pf_extra_bitmap1(a3),a2
+		lea	extra_pf1(a3),a4
+		lea	pf_extra_attributes(pc),a5
+		moveq	#pf_extra_number-1,d7
+alloc_pf_extra_memory_loop
+		move.l	(a5)+,d0	; Breite des Playfields
+		move.l	(a5)+,d1	; Höhe des Playfields
+		move.l	(a5)+,d2	; Anzahl der Bitplanes
+		mulu.w	d2,d1
+		bsr	do_alloc_bitmap_memory
+		move.l	d0,(a2)+	; Zeiger auf Bitmap
+		beq.s	alloc_pf_extra_memory_fail
+		move.l	d0,(a4)+
+		dbf	d7,alloc_pf_extra_memory_loop
+		moveq	#RETURN_OK,d0
+		rts
+		CNOP 0,4
+alloc_pf_extra_memory_fail
+		move.w	#PF_EXTRA_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+	ENDC
+
+
+	IFNE spr_x_size1
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_sprite_memory1
+		lea	spr0_bitmap1(a3),a2
+		lea	spr0_construction(a3),a4
+		lea	sprite_attributes1(pc),a5
+		moveq	#spr_number-1,d7 ; Anzahl der Hardware-Sprites [1..8]
+alloc_sprite_memory1_loop
+		move.l	(a5)+,d0	; Breite des Sprites
+		move.l	(a5)+,d1	; Höhe des Sprites
+		move.l	(a5)+,d2	; Anzahl der Bitplanes
+		mulu.w	d2,d1
+		bsr	do_alloc_bitmap_memory
+		move.l	d0,(a2)+	; Zeiger auf Sprite-Bitmap
+		beq.s	alloc_sprite_memory1_fail
+		move.l	d0,(a4)+
+		dbf	d7,alloc_sprite_memory1_loop
+		moveq	#RETURN_OK,d0
+		rts
+		CNOP 0,4
+alloc_sprite_memory1_fail
+		move.w	#SPR_CONSTR_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+	ENDC
+
+
+	IFNE spr_x_size2
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_sprite_memory2
+		lea	spr0_bitmap2(a3),a2
+		lea	spr0_display(a3),a4
+		lea	sprite_attributes2(pc),a5
+		moveq	#spr_number-1,d7 ; Anzahl der Hardware-Sprites [1..8]
+alloc_sprite_memory2_loop
+		move.l	(a5)+,d0	; Breite des Sprites
+		move.l	(a5)+,d1	; Höhe des Sprites
+		move.l	(a5)+,d2	; Anzahl der Bitplanes
+		mulu.w	d2,d1
+		bsr	do_alloc_bitmap_memory
+		move.l	d0,(a2)+	; Zeiger auf Sprite-Bitmap
+		beq.s	alloc_sprite_memory2_fail
+		move.l	d0,(a4)+
+		dbf	d7,alloc_sprite_memory2_loop
+		moveq	#RETURN_OK,d0
+		rts
+		CNOP 0,4
+alloc_sprite_memory2_fail
+		move.w	#SPR_DISPLAY_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+	ENDC
+
+
+	IFNE audio_memory_size
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_audio_memory
+		MOVEF.L	audio_memory_size,d0
+		bsr	do_alloc_chip_memory
+		move.l	d0,audio_data(a3)
+		bne.s	alloc_audio_memory_ok
+		move.w	#AUDIO_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_audio_memory_ok
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+
+
+	IFNE disk_memory_size
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code	
+		CNOP 0,4
+alloc_disk_memory
+		MOVEF.L disk_memory_size,d0
+		bsr	do_alloc_chip_memory
+		move.l	d0,disk_data(a3)
+		bne.s	alloc_disk_memory_ok
+		move.w	#DISK_MEMORY_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_disk_memory_ok
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+
+
+	IFNE extra_memory_size
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_extra_memory
+		MOVEF.L	extra_memory_size,d0
+		bsr	do_alloc_memory
+		move.l	d0,extra_memory(a3)
+		bne.s	alloc_extra_memory_ok
+		move.w	#EXTRA_MEMORY_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_extra_memory_ok
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+
+
+	IFNE chip_memory_size
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code	
+		CNOP 0,4
+alloc_chip_memory
+		MOVEF.L	chip_memory_size,d0
+		bsr	do_alloc_chip_memory
+		move.l	d0,chip_memory(a3)
+		bne.s	alloc_chip_memory_ok
+		move.w	#CHIP_MEMORY_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_chip_memory_ok
+		moveq	#RETURN_OK,d0
+		rts
+	ENDC
+
+	IFND SYS_TAKEN_OVER
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_vectors_base_memory
+		btst	#AFB_68020,cpu_flags+BYTE_SIZE(a3)
+		beq.s   alloc_vectors_base_memory_ok
+		lea	read_vbr(pc),a5
+		CALLEXEC Supervisor
+		move.l	d0,old_vbr(a3)
+		move.l	d0,a1
+		CALLLIBS TypeOfMem
+		and.b	#MEMF_FAST,d0
+		bne.s	alloc_vectors_base_memory_skip
+		tst.w	fast_memory_available(a3)
+		bne.s	alloc_vectors_base_memory_skip
+		move.l	#exception_vectors_size,d0
+		bsr	do_alloc_fast_memory
+		move.l	d0,exception_vectors_base(a3)
+		bne.s	alloc_vectors_base_memory_ok
+		move.w	#EXCEPTION_VECTORS_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_vectors_base_memory_skip
+		move.l	old_vbr(a3),vbr_save(a3)
+alloc_vectors_base_memory_ok
+		moveq	#RETURN_OK,d0
+		rts
+
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+		CNOP 0,4
+alloc_mouse_pointer_data
+		moveq	#cleared_pointer_data_size,d0
+		MOVEF.L	MEMF_CLEAR|MEMF_CHIP|MEMF_PUBLIC|MEMF_REVERSE,d1
+		CALLEXEC AllocMem
+		move.l	d0,mouse_pointer_data(a3)
+		bne.s	alloc_mouse_pointer_data_ok
+		move.w	#CLEARED_SPRITE_NO_MEMORY,custom_error_code(a3)
+		moveq	#ERROR_NO_FREE_STORE,d0
+		rts
+		CNOP 0,4
+alloc_mouse_pointer_data_ok
+		moveq	#RETURN_OK,d0
+		rts
+
+
+		IFEQ screen_fader_enabled
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+			CNOP 0,4
+sf_alloc_screen_color_table
+			MOVEF.L	sf_rgb4_colors_number*WORD_SIZE,d0 ; RGB4-Werte
+			bsr	do_alloc_memory
+			move.l	d0,sf_screen_color_table(a3)
+			bne.s	sf_alloc_screen_color_table_ok
+			move.w	#SCREEN_FADER_NO_MEMORY,custom_error_code(a3)
+			moveq	#ERROR_NO_FREE_STORE,d0
+			rts
+			CNOP 0,4
+sf_alloc_screen_color_table_ok
+			moveq	#RETURN_OK,d0
+			rts
+
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+	CNOP 0,4
+sf_alloc_screen_color_cache
+			MOVEF.L	sf_rgb4_colors_number*WORD_SIZE,d0 ; RGB4-Werte
+			bsr	do_alloc_memory
+			move.l	d0,sf_screen_color_cache(a3)
+			bne.s	sf_alloc_screen_color_cache_ok
+			move.w	#SCREEN_FADER_NO_MEMORY,custom_error_code(a3)
+			moveq	#ERROR_NO_FREE_STORE,d0
+			rts
+			CNOP 0,4
+sf_alloc_screen_color_cache_ok
+			moveq	#RETURN_OK,d0
+			rts
+		ENDC
+
+
+		IFD PASS_GLOBAL_REFERENCES
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code/Error-Code
+			CNOP 0,4
+init_global_references_table
+			lea	global_references_table(pc),a0
+			move.l	_SysBase(pc),(a0)
+			move.l	_GfxBase(pc),gr_graphics_base(a0)
+			rts
+		ENDC
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert	
+		CNOP 0,4
+wait_drives_motor
+		MOVEF.L	drives_motor_delay,d1
+		CALLDOSQ Delay
+
+
+; Input
+; Result
+; d0.l ... kein Rückgabewert
+	CNOP 0,4
+get_active_screen
+		moveq	#0,d0		; Alle Locks
+		CALLINT LockIBase
+		move.l	d0,a0
+		move.l	ib_ActiveScreen(a6),active_screen(a3)
+		CALLLIBQ UnlockIBase
+
+
+; Input
+; Result
+; d0.l	... kein Rückgabewert
+	CNOP 0,4
+get_sprite_resolution
+		cmp.w	#OS2_VERSION,os_version(a3)
+		blt.s	get_sprite_resolution_quit
+		move.l	active_screen(a3),d0
+		beq.s	get_sprite_resolution_quit
+		move.l	d0,a0
+		move.l  sc_ViewPort+vp_ColorMap(a0),a0
+		lea	video_control_tags(pc),a1
+		move.l	#VTAG_SPRITERESN_GET,vctl_VTAG_SPRITERESN+ti_tag(a1)
+		clr.l	vctl_VTAG_SPRITERESN+ti_Data(a1)
+		CALLGRAF VideoControl
+		lea     video_control_tags(pc),a0
+		move.l  vctl_VTAG_SPRITERESN+ti_Data(a0),old_sprite_resolution(a3)
+get_sprite_resolution_quit
+		rts
+
+
+; Input
+; Result
+; d0.l	... kein Rückgabewert
+	CNOP 0,4
+get_first_window
+		move.l	active_screen(a3),d0
+		beq.s	get_first_window_quit
+		move.l	d0,a0
+		move.l	sc_FirstWindow(a0),first_window(a3)
+get_first_window_quit
+		rts
+
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code
+		CNOP 0,4
+get_active_screen_mode
+		cmp.w	#OS2_VERSION,os_version(a3)
+		blt.s   get_active_screen_mode_ok
+		move.l	active_screen(a3),d0
+		beq.s	get_active_screen_mode_ok
+		move.l	d0,a0
+		ADDF.W	sc_ViewPort,a0
+		CALLGRAF GetVPModeID
+		cmp.l	#INVALID_ID,d0
+		bne.s	get_active_screen_mode_save
+		move.w	#VIEWPORT_MONITOR_ID_NOT_FOUND,custom_error_code(a3)
+		moveq	#RETURN_FAIL,d0
+		rts
+		CNOP 0,4
+get_active_screen_mode_save
+		and.l	#MONITOR_ID_MASK,d0	; Ohne Auflösung
+		move.l	d0,active_screen_mode(a3)
+get_active_screen_mode_ok
+		moveq	#RETURN_OK,d0
+		rts
+
+
+		IFEQ screen_fader_enabled
+; Input
+; Result
+; d0 ... keine Rückgabewert
+			CNOP 0,4
+sf_get_active_screen_colors
+			move.l	active_screen(a3),d0
+			bne.s	sf_get_active_screen_colors_skip1
+sf_get_active_screen_colors_quit
+			rts
+			CNOP 0,4
+sf_get_active_screen_colors_skip1
+			move.l	d0,a0
+			move.l	sc_ViewPort+vp_ColorMap(a0),a0
+			moveq	#0,d2	; Index in Farbtabelle
+			move.l	a0,a2   ; Color-Map
+			move.l	sf_screen_color_table(a3),a4
+			move.l	_GfxBase(pc),a6
+			moveq	#sf_rgb4_colors_number-1,d7
+sf_get_active_screen_colors_loop
+			move.l	d2,d0	; Index in Farbtabelle
+			move.l	a2,a0	; Color-Map
+			CALLLIBS GetRGB4
+			cmp.w	#-1,d0
+			beq.s	sf_get_active_screen_colors_quit
+			move.w	d0,(a4)+ ; RGB4-Farbwert
+			addq.w	#1,d2	; nächste Farbe
+			dbf	d7,sf_get_active_screen_colors_loop
+			bra.s	sf_get_active_screen_colors_quit
+
+
+; Input
+; Result
+; d0 ... keine Rückgabewert
+	CNOP 0,4
+sf_copy_screen_color_table
+			move.l	sf_screen_color_table(a3),a0 ; Quelle RGB-Werte
+			move.l	sf_screen_color_cache(a3),a1 ; Ziel RGB-Werte
+			MOVEF.W	sf_rgb4_colors_number-1,d7
+sf_copy_screen_color_table_loop
+			move.w	(a0)+,(a1)+ ; RGB4-Wert
+			dbf	d7,sf_copy_screen_color_table_loop
+			rts
+
+
+; Input
+; Result
+; d0 ... keine Rückgabewert
+	CNOP 0,4
+sf_fade_out_screen
+			CALLGRAF WaitTOF
+			bsr.s	rgb4_screen_fader_out
+			bsr	sf_rgb4_set_new_colors
+			tst.w	sfo_rgb4_active(a3)
+			beq.s	sf_fade_out_screen
+			rts
+
+
+; Input
+; Result
+; d0 ... keine Rückgabewert
+      CNOP 0,4
+rgb4_screen_fader_out
+			MOVEF.W	sf_rgb4_colors_number*3,d6 ; Zähler
+			move.l	sf_screen_color_cache(a3),a0 ; Istwerte
+			move.w	pf1_rgb4_color_table(pc),a1 ; Sollwert COLOR00
+			move.w  #sfo_fader_speed,a4 ; Additions-/Subtraktionswert RGB-Werte
+			MOVEF.W sf_rgb4_colors_number-1,d7
+rgb4_screen_fader_out_loop
+			move.w  (a0),d0
+			lsr.w	#8,d0	; R4-Istwert
+			move.w  a1,d3
+			lsr.w	#8,d3	; R4-Sollwert
+			moveq	#0,d1
+			move.b  1(a0),d1
+			moveq	#$f,d2
+			and.b	d1,d2	; B4-Istwert
+			move.w  a1,d5
+			and.w	#$000f,d5 ; B4-Sollwert
+			lsr.b	#4,d1	; G4-Istwert
+			move.w  a1,d4
+			lsr.b   #4,d4	
+			and.w	#$000f,d4 ; G4-Sollwert
+
+			cmp.w	d3,d0
+			bgt.s	sfo_rgb4_decrease_red
+			blt.s	sfo_rgb4_increase_red
+sfo_rgb4_matched_red
+			subq.w  #1,d6	; Zielwert erreicht
+sfo_rgb4_check_green
+			cmp.w	d4,d1
+			bgt.s	sfo_rgb4_decrease_green
+			blt.s	sfo_rgb4_increase_green
+sfo_rgb4_matched_green
+			subq.w  #1,d6	; Zielwert erreicht
+sfo_rgb4_check_blue
+			cmp.w	d5,d2
+			bgt.s	sfo_rgb4_decrease_blue
+			blt.s	sfo_rgb4_increase_blue
+sfo_rgb4_matched_blue
+			subq.w	#1,d6	; Zielwert erreicht
+sfo_set_rgb4
+			lsl.w	#8,d0	; Rotwert
+			move.b	d1,d0
+			lsl.b	#4,d0	; Grünwert
+			or.b	d2,d0	; Blauwert
+			move.w	d0,(a0)+ ; RGB4-Wert in Cache schreiben
+			dbf	d7,rgb4_screen_fader_out_loop
+			tst.w   d6	; Fertig mit ausblenden ?
+			bne.s   sfo_rgb4_flush_caches
+			move.w  #FALSE,sfo_rgb4_active(a3)
+sfo_rgb4_flush_caches
+			cmp.w	#OS2_VERSION,os_version(a3)
+			blt.s	sfo_rgb4_flush_caches_skip
+			CALLEXEC CacheClearU
+sfo_rgb4_flush_caches_skip
+			rts
+			CNOP 0,4
+sfo_rgb4_decrease_red
+			sub.w	a4,d0
+			cmp.w	d3,d0
+			bgt.s	sfo_rgb4_check_green
+			move.w	d3,d0
+			bra.s	sfo_rgb4_matched_red
+			CNOP 0,4
+sfo_rgb4_increase_red
+			add.w	a4,d0
+			cmp.w	d3,d0
+			blt.s	sfo_rgb4_check_green
+			move.w	d3,d0
+			bra.s	sfo_rgb4_matched_red
+			CNOP 0,4
+sfo_rgb4_decrease_green
+			sub.w	a4,d1
+			cmp.w	d4,d1
+			bgt.s	sfo_rgb4_check_blue
+			move.w	d4,d1
+			bra.s	sfo_rgb4_matched_green
+			CNOP 0,4
+sfo_rgb4_increase_green
+			add.w	a4,d1
+			cmp.w	d4,d1
+			blt.s	sfo_rgb4_check_blue
+			move.w	d4,d1
+			bra.s	sfo_rgb4_matched_green
+			CNOP 0,4
+sfo_rgb4_decrease_blue
+			sub.w	a4,d2
+			cmp.w	d5,d2
+			bgt.s	sfo_set_rgb4
+			move.w	d5,d2
+			bra.s	sfo_rgb4_matched_blue
+			CNOP 0,4
+sfo_rgb4_increase_blue
+			add.w	a4,d2
+			cmp.w	d5,d2
+			blt.s	sfo_set_rgb4
+			move.w	d5,d2
+			bra.s	sfo_rgb4_matched_blue
+
+
+; Input
+; Result
+; d0 ... keine Rückgabewert
+			CNOP 0,4
+sf_rgb4_set_new_colors
+			move.l	active_screen(a3),d0
+			bne.s   sf_rgb4_set_new_colors_skip1
+sf_rgb4_set_new_colors_quit
+			rts
+			CNOP 0,4
+sf_rgb4_set_new_colors_skip1
+			move.l	d0,a0
+			ADDF.W	sc_ViewPort,a0
+			move.l	sf_screen_color_cache(a3),a1
+			moveq	#sf_rgb4_colors_number,d0
+			CALLGRAF LoadRGB4
+			bra.s	sf_rgb4_set_new_colors_quit
+		ENDC
+	
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code
+	CNOP 0,4
+open_pal_screen
+		lea	pal_extended_newscreen(pc),a0
+		CALLINT OpenScreen
+		move.l	d0,pal_screen(a3)
+		bne.s	open_pal_screen_ok
+open_pal_screen_fail
+		move.w	#SCREEN_COULD_NOT_OPEN,custom_error_code(a3)
+		moveq	#RETURN_FAIL,d0
+		rts
+		CNOP 0,4
+open_pal_screen_ok
+		moveq	#RETURN_OK,d0
+		rts
+
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code
+		CNOP 0,4
+check_pal_screen_mode
+		cmp.w	#OS2_VERSION,os_version(a3)
+		blt.s	check_pal_screen_mode_ok
+		move.l	pal_screen(a3),d0
+		beq.s	check_pal_screen_mode_ok
+		move.l	d0,a0
+		ADDF.W	sc_ViewPort,a0
+		CALLGRAF GetVPModeID
+		IFEQ requires_multiscan_monitor
+			cmp.l	 #VGA_MONITOR_ID|VGAPRODUCT_KEY,d0
+		ELSE
+			cmp.l	 #PAL_MONITOR_ID|LORES_KEY,d0
+		ENDC
+		beq.s	check_pal_screen_mode_ok
+		move.w	#SCREEN_MODE_NOT_AVAILABLE,custom_error_code(a3)
+		moveq	#RETURN_FAIL,d0
+		rts
+		CNOP 0,4
+check_pal_screen_mode_ok
+		moveq	#RETURN_OK,d0
+		rts
+
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code
+		CNOP 0,4
+load_pal_screen_rgb4_colors
+		move.l	pal_screen(a3),a0
+		ADDF.W	sc_ViewPort,a0
+		IFEQ screen_fader_enabled
+                        move.l	sf_screen_color_cache(a3),a1
+		ELSE
+			lea	pal_screen_rgb4_colors(pc),a1
+		ENDC
+		moveq	#pal_screen_colors_number,d0
+		CALLGRAFQ LoadRGB4
+
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code
+		CNOP 0,4
+open_invisible_window
+		move.l	pal_screen(a3),d0
+		lea	invisible_extended_newwindow(pc),a0
+		move.l	d0,nw_screen(a0)
+		lea	invisible_window_tags(pc),a1
+		move.l	d0,wtl_WA_CustomScreen+ti_data(a1)
+		CALLINT OpenWindow
+		move.l	d0,invisible_window(a3)
+		bne.s	open_invisible_window_ok
+open_invisible_window_fail
+		move.w	#WINDOW_COULD_NOT_OPEN,custom_error_code(a3)
+		moveq	#RETURN_FAIL,d0
+		rts
+		CNOP 0,4
+open_invisible_window_ok
+		moveq	#RETURN_OK,d0
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+	CNOP 0,4
+clear_mousepointer
+		move.l	invisible_window(a3),a0
+		move.l	mouse_pointer_data(a3),a1
+		moveq	#cleared_sprite_y_size,d0
+		moveq	#cleared_sprite_x_size,d1
+		moveq	#cleared_sprite_x_offset,d2
+		moveq	#cleared_sprite_y_offset,d3
+		CALLINTQ SetPointer
+
+
+; Input
+; Result
+; d0	... Kein Rückgabewert
+		CNOP 0,4
+blank_display
+		sub.l	a1,a1			; View auf ECS-Werte zurücksetzen
+		CALLGRAF LoadView
+		CALLLIBS WaitTOF		; Warten bis Änderung sichtbar ist
+		CALLLIBS WaitTOF		; Warten bis Interlace-Screens mit 2 Copperlisten auch voll geändert sind
+		tst.l	gb_ActiView(a6)		; Erschien zwischenzeitlich ein anderer View ?
+		bne.s	blank_display	; Ja -> neuer Versuch
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+wait_monitor_switch
+		move.l	active_screen_mode(a3),d0
+		beq.s	wait_monitor_switch_quit
+		cmp.l	#DEFAULT_MONITOR_ID,d0
+		beq.s	wait_monitor_switch_quit
+		cmp.l	#PAL_MONITOR_ID,d0
+		bne.s	do_wait_monitor_switch
+wait_monitor_switch_quit
+		rts
+		CNOP 0,4
+do_wait_monitor_switch
+		MOVEF.L	monitor_switch_delay,d1
+		CALLDOS Delay
+		bra.s	wait_monitor_switch_quit
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+enable_exclusive_blitter
+		CALLGRAF OwnBlitter
+		CALLLIBQ WaitBlit
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+get_system_time
+		lea	timer_io(pc),a1
+		move.w	#TR_GETSYSTIME,IO_command(a1)
+		CALLEXECQ DoIO
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+disable_system
+		CALLEXECQ Disable
+	
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+save_exception_vectors
+		move.l	old_vbr(a3),a0	; Quelle = Reset (Initial SSP)
+		lea	exception_vecs_save(pc),a1 ; Ziel
+		MOVEF.W	(exception_vectors_size/LONGWORD_SIZE)-1,d7 ; Anzahl der Vektoren
+copy_exception_vectors_loop
+		move.l	(a0)+,(a1)+	; Vektor kopieren
+		dbf	d7,copy_exception_vectors_loop
+		rts
+	ENDC
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+	CNOP 0,4
+init_exception_vectors
+	IFD SYS_TAKEN_OVER
+		IFNE intena_bits&(~INTF_SETCLR)
+			sub.l	a0,a0
+			btst	#AFB_68020,cpu_flags+BYTE_SIZE(a3)
+			beq.s	init_exception_vectors_skip1
+			lea	read_vbr(pc),a5
+			CALLEXEC Supervisor
+			move.l	d0,a0
+init_exception_vectors_skip1
+		ENDC
+	ELSE
+		sub.l	a0,a0
+		btst	#AFB_68020,cpu_flags+BYTE_SIZE(a3)
+		beq.s	init_exception_vectors_skip
+		lea	read_vbr(pc),a5
+		CALLEXEC Supervisor
+		move.l	d0,a0
+init_exception_vectors_skip
+	ENDC
+
+	IFNE intena_bits&(INTF_TBE|INTF_DSKBLK|INTF_SOFTINT)
+		lea	level_1_int_handler(pc),a1
+		move.l	a1,LEVEL_1_AUTOVECTOR(a0)
+	ENDC
+	IFNE intena_bits&INTF_PORTS
+		lea	level_2_int_handler(pc),a1
+		move.l	a1,LEVEL_2_AUTOVECTOR(a0)
+	ENDC
+	IFNE intena_bits&(INTF_COPER|INTF_VERTB|INTF_BLIT)
+		lea	level_3_int_handler(pc),a1
+		move.l	a1,LEVEL_3_AUTOVECTOR(a0)
+	ENDC
+	IFNE intena_bits&(INTF_AUD0|INTF_AUD1|INTF_AUD2|INTF_AUD3)
+		lea	level_4_int_handler(pc),a1
+		move.l	a1,LEVEL_4_AUTOVECTOR(a0)
+	ENDC
+	IFNE intena_bits&(INTF_RBF|INTF_DSKSYNC)
+		lea	level_5_int_handler(pc),a1
+		move.l	a1,LEVEL_5_AUTOVECTOR(a0)
+	ENDC
+	IFNE intena_bits&INTF_EXTER
+		lea	level_6_int_handler(pc),a1
+		move.l	a1,LEVEL_6_AUTOVECTOR(a0)
+	ENDC
+	IFND SYS_TAKEN_OVER
+		lea	level_7_int_handler(pc),a1
+		move.l	a1,LEVEL_7_AUTOVECTOR(a0)
+	ENDC
+
+	IFD TRAP0
+		lea	trap_0_handler(pc),a1
+		move.l	a1,TRAP_0_VECTOR(a0)
+	ENDC
+	IFD TRAP1
+		lea	trap_1_handler(pc),a1
+		move.l	a1,TRAP_1_VECTOR(a0)
+	ENDC
+	IFD TRAP2
+		lea	trap_2_handler(pc),a1
+		move.l	a1,TRAP_2_VECTOR(a0)
+	ENDC
+	btst	#AFB_68020,cpu_flags+BYTE_SIZE(a3)
+	beq.s	init_exception_vectors_quit
+	CALLEXEC CacheClearU
+init_exception_vectors_quit
+	rts
+
+
+	IFND SYS_TAKEN_OVER
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+move_exception_vectors
+		btst	#AFB_68020,cpu_flags+BYTE_SIZE(a3)
+		beq.s	move_exception_vectors_quit
+		move.l	exception_vectors_base(a3),d0
+		beq.s	move_exception_vectors_quit
+		move.l	d0,a1		; Ziel = Fast-Memory
+		move.l	old_vbr(a3),a0	; Quelle = Reset (Initial SSP)
+		MOVEF.W	(exception_vectors_size/LONGWORD_SIZE)-1,d7 ; Anzahl der Vektoren
+move_exception_vectors_loop
+		move.l	(a0)+,(a1)+	; Vektoren kopieren
+		dbf	d7,move_exception_vectors_loop
+		CALLEXEC CacheClearU
+		move.l	exception_vectors_base(a3),d0
+		move.l	d0,vbr_save(a3)
+		lea	write_vbr(pc),a5
+		CALLLIBQ Supervisor
+		CNOP 0,4
+move_exception_vectors_quit
+		rts
+	
+
+; Input
+; Result
+; d0.l	... Rückgabewert: Return-Code
+save_copperlist_pointers
+		move.l	_GfxBase(pc),a0
+		IFNE cl1_size3
+			move.l	gb_Copinit(a0),old_cop1lc(a3)
+		ENDC
+		IFNE cl2_size3
+			move.l	gb_LOFlist(a0),old_cop2lc(a3) ; LOFlist, da OS das LOF-Bit bei non-Interlaced immer setzt!
+		ENDC
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+get_tod_time
+		moveq	#0,d0
+		move.b	CIATODHI(a4),d0	; TOD-clock Bits 23-16
+		swap	d0		; Bits in richtige Position bringen
+		move.b	CIATODMID(a4),d0 ; TOD-clock Bits 15-8
+		lsl.w	#8,d0		; Bits in richtige Position bringen
+		move.b	CIATODLOW(a4),d0 ; TOD-clock Bits 7-0
+		move.l	d0,tod_time(a3)
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+save_chips_registers
+		move.w	(a6),old_dmacon(a3)
+		move.w	INTENAR-DMACONR(a6),old_intena(a3)
+		move.w	ADKCONR-DMACONR(a6),old_adkcon(a3)
+	
+		move.b	CIAPRA(a4),old_ciaa_pra(a3)
+		move.b	CIACRA(a4),d0
+		move.b	d0,old_ciaa_cra(a3)
+		and.b	#~(CIACRAF_START),d0 ; Timer A stoppen
+		or.b	#CIACRAF_LOAD,d0 ; Zählwert laden
+		move.b	d0,CIACRA(a4)
+		nop
+		move.b	CIATALO(a4),old_ciaa_talo(a3)
+		move.b	CIATAHI(a4),old_ciaa_tahi(a3)
+	
+		move.b	CIACRB(a4),d0
+		move.b	d0,old_ciaa_crb(a3)
+		and.b	#~(CIACRBF_ALARM-CIACRBF_START),d0 ; Timer B stoppen
+		or.b	#CIACRBF_LOAD,d0 ; Zählwert laden
+		move.b	d0,CIACRB(a4)
+		nop
+		move.b	CIATBLO(a4),old_ciaa_tblo(a3)
+		move.b	CIATBHI(a4),old_ciaa_tbhi(a3)
+		
+		move.b	CIAPRB(a5),old_ciab_prb(a3)
+		move.b	CIACRA(a5),d0
+		move.b	d0,old_ciaa_cra(a3)
+		and.b	#~(CIACRAF_START),d0 ; Timer A stoppen
+		or.b	#CIACRAF_LOAD,d0 ; Zählwert laden
+		move.b	d0,CIACRA(a5)
+		nop
+		move.b	CIATALO(a5),old_ciab_talo(a3)
+		move.b	CIATAHI(a5),old_ciab_tahi(a3)
+	
+		move.b	CIACRB(a5),d0
+		move.b	d0,old_ciab_crb(a3)
+		and.b	#~(CIACRBF_ALARM-CIACRBF_START),d0 ;Timer B stoppen
+		or.b	#CIACRBF_LOAD,d0 ;Zählwert laden
+		move.b	d0,CIACRB(a5)
+		nop
+		move.b	CIATBLO(a5),old_ciab_tblo(a3)
+		move.b	CIATBHI(a5),old_ciab_tbhi(a3)
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+clear_chips_registers1
+		move.w	#$7fff,d0
+		move.w	d0,DMACON-DMACONR(a6) ; DMA aus
+		move.w	d0,INTENA-DMACONR(a6) ; Interrupts aus
+		move.w	d0,INTREQ-DMACONR(a6) ; Interrupts löschen
+		move.w	d0,ADKCON-DMACONR(a6) ; ADKCON löschen
+	
+		moveq	#$7f,d0
+		move.b	d0,CIAICR(a4)	; CIA-A-Interrupts aus
+		move.b	d0,CIAICR(a5)	; CIA-B-Interrupts aus
+		move.b	CIAICR(a4),d0	; CIA-A-Interrupts löschen
+		move.b	CIAICR(a5),d0	; CIA-B-Interrupts löschen
+
+		moveq	#0,d0
+		move.w	d0,JOYTEST-DMACONR(a6) ; Maus- und Joystickposition zurücksetzen
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+turn_off_drive_motors
+		move.b	CIAPRB(a5),d0
+		moveq	#CIAF_DSKSEL0|CIAF_DSKSEL1|CIAF_DSKSEL2|CIAF_DSKSEL3,d1
+		or.b	d1,d0
+		move.b	d0,CIAPRB(a5)	; df0: bis df3: deaktivieren
+		tas	d0
+		move.b	d0,CIAPRB(a5)	; Motor aus
+		eor.b	d1,d0
+		move.b	d0,CIAPRB(a5)	; df0: bis df3: aus
+		or.b	d1,d0
+		move.b	d0,CIAPRB(a5)	; df0: bis df3: deaktivieren
+		rts
+	ENDC
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+	CNOP 0,4
+start_own_display
+	bsr	wait_vbi
+	bsr	wait_vbi
+	moveq	#copcon_bits,d0		; Copper kann ggf. auf Blitteregister zurückgreifen
+	move.w	d0,COPCON-DMACONR(a6)
+	IFNE cl2_size3
+		IFD SET_SECOND_COPPERLIST
+			move.l	cl2_display(a3),COP2LC-DMACONR(a6)
+		ENDC
+	ENDC
+	IFNE cl1_size3
+		move.l	cl1_display(a3),COP1LC-DMACONR(a6)
+		moveq	#0,d0
+		move.w	d0,COPJMP1-DMACONR(a6) ; manuell starten
+	ENDC
+	move.w	#dma_bits&(DMAF_SPRITE|DMAF_COPPER|DMAF_RASTER|DMAF_SETCLR),DMACON-DMACONR(a6) ; Sprite/Copper/Bitplane-DMA an
+	rts
+
+
+	IFNE (intena_bits-INTF_SETCLR)|(ciaa_icr_bits-CIAICRF_SETCLR)|(ciab_icr_bits-CIAICRF_SETCLR)
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+start_own_interrupts
+		IFNE intena_bits-INTF_SETCLR
+			move.w	#intena_bits,INTENA-DMACONR(a6)
+		ENDC
+		IFNE ciaa_icr_bits-CIAICRF_SETCLR
+			MOVEF.B	ciaa_icr_bits,d0
+			move.b	d0,CIAICR(a4) ; CIA-A-Interrupts an
+		ENDC
+		IFNE ciab_icr_bits-CIAICRF_SETCLR
+			MOVEF.B	ciab_icr_bits,d0
+			move.b	d0,CIAICR(a5) ; CIA-B-Interrupts an
+		ENDC
+		rts
+	ENDC
+
+
+	IFEQ ciaa_ta_continuous_enabled&ciaa_tb_continuous_enabled&ciab_ta_continuous_enabled&ciab_tb_continuous_enabled
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+start_cia_timers
+		IFEQ ciaa_ta_continuous_enabled
+			moveq	#CIACRAF_START,d0
+			or.b	d0,CIACRA(a4)
+		ENDC
+		IFEQ ciaa_tb_continuous_enabled
+			moveq	#CIACRBF_START,d0
+			or.b	d0,CIACRB(a4)
+		ENDC
+		IFEQ ciab_ta_continuous_enabled
+			moveq	#CIACRAF_START,d0
+			or.b	d0,CIACRA(a5)
+		ENDC
+		IFEQ ciab_tb_continuous_enabled
+			moveq	#CIACRBF_START,d0
+			or.b	d0,CIACRB(a5)
+		ENDC
+		rts
+	ENDC
+
+
+	IFEQ ciaa_ta_continuous_enabled&ciaa_tb_continuous_enabled&ciab_ta_continuous_enabled&ciab_tb_continuous_enabled
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+stop_cia_timers
+		IFNE ciaa_ta_time
+			moveq	#~(CIACRAF_START),d0
+			and.b	d0,CIACRA(a4) ; CIA-A-Timer-A stoppen
+		ENDC
+		IFNE ciaa_tb_time
+			moveq	#~(CIACRBF_START),d0
+			and.b	d0,CIACRB(a4) ; CIA-A-Timer-B stoppen
+		ENDC
+		IFNE ciab_ta_time
+			moveq	#~(CIACRAF_START),d0
+			and.b	d0,CIACRA(a5) ; CIA-B-Timer-A stoppen
+		ENDC
+		IFNE ciab_tb_time
+			moveq	#~(CIACRBF_START),d0
+			and.b	d0,CIACRB(a5) ; CIA-B-Timer-B stoppen
+		ENDC
+		rts
+	ENDC
+
+
+	IFNE (intena_bits-INTF_SETCLR)|(ciaa_icr_bits-CIAICRF_SETCLR)|(ciab_icr_bits-CIAICRF_SETCLR)
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+stop_own_interrupts
+		IFNE intena_bits-INTF_SETCLR
+			IFD SYS_TAKEN_OVER
+				move.w	#intena_bits&(~INTF_SETCLR),INTENA-DMACONR(a6) ; Interrupts aus
+			ELSE
+				move.w	#INTF_INTEN,INTENA-DMACONR(a6) ; Interrupts aus
+			ENDC
+		ENDC
+		rts
+	ENDC
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+	CNOP 0,4
+stop_own_display
+	IFNE copcon_bits&COPCONF_CDANG
+		moveq	#0,d0
+		move.w	d0,COPCON-DMACONR(a6) ; Copper kann nicht auf Blitterregister zugreifen
+	ENDC
+	bsr	wait_beam_position	; Externe Routine
+	IFNE dma_bits&DMAF_BLITTER
+		WAITBLIT
+	ENDC
+	IFD SYS_TAKEN_OVER
+		move.w	#dma_bits&(~DMAF_SETCLR),DMACON-DMACONR(a6) ; DMA aus
+	ELSE
+		move.w	#DMAF_MASTER,DMACON-DMACONR(a6) ; DMA aus
+	ENDC
+	rts
+
+
+	IFND SYS_TAKEN_OVER
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+clear_chips_registers2
+		move.w	#$7fff,d0
+		move.w	d0,DMACON-DMACONR(a6) ; DMA aus
+		move.w	d0,INTENA-DMACONR(a6) ; Interrupts aus
+		move.w	d0,INTREQ-DMACONR(a6) ; Interrupts löschen
+		move.w	d0,ADKCON-DMACONR(a6) ; ADKCON löschen
+	
+		moveq	#$7f,d0
+		move.b	d0,CIAICR(a4)	; CIA-A-Interrupts aus
+		move.b	d0,CIAICR(a5)	; CIA-B-Interrupts aus
+		IFNE ciaa_icr_bits-CIAICRF_SETCLR
+			move.b	CIAICR(a4),d0 ; CIA-A-Interrupts löschen
+		ENDC
+		IFNE ciab_icr_bits-CIAICRF_SETCLR
+			move.b	CIAICR(a5),d0 ; CIA-B-Interrupts löschen
+		ENDC
+
+		moveq	#0,d0
+		move.w	d0,AUD0VOL-DMACONR(a6) ; Lautstärke aus
+		move.w	d0,AUD1VOL-DMACONR(a6)
+		move.w	d0,AUD2VOL-DMACONR(a6)
+		move.w	d0,AUD3VOL-DMACONR(a6)
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+restore_chips_registers
+		move.b	old_ciaa_pra(a3),CIAPRA(a4)
+	
+		move.b	old_ciaa_talo(a3),CIATALO(a4)
+		nop
+		move.b	old_ciaa_tahi(a3),CIATAHI(a4)
+	
+		move.b	old_ciaa_tblo(a3),CIATBLO(a4)
+		nop
+		move.b	old_ciaa_tbhi(a3),CIATBHI(a4)
+	
+		move.b	old_ciaa_icr(a3),d0
+		tas	d0		; Bit 7 ggf. setzen
+		move.b	d0,CIAICR(a4)
+	
+		move.b	old_ciaa_cra(a3),d0
+		btst	#CIACRAB_RUNMODE,d0 ; Continuous-Modus ?
+		bne.s	restore_chips_registers_skip1
+		or.b	#CIACRAF_START,d0
+restore_chips_registers_skip1
+		move.b	d0,CIACRA(a4)
+	
+		move.b	old_ciaa_crb(a3),d0
+		btst	#CIACRBB_RUNMODE,d0 ;Continuous-Modus ?
+		bne.s	restore_chips_registers_skip2
+		or.b	#CIACRBF_START,d0
+restore_chips_registers_skip2
+		move.b	d0,CIACRB(a4)
+	
+		move.b	old_ciab_prb(a3),CIAPRB(a5)
+	
+		move.b	old_ciab_talo(a3),CIATALO(a5)
+		nop
+		move.b	old_ciab_tahi(a3),CIATAHI(a5)
+	
+		move.b	old_ciab_tblo(a3),CIATBLO(a5)
+		nop
+		move.b	old_ciab_tbhi(a3),CIATBHI(a5)
+	
+		move.b	old_ciab_icr(a3),d0
+		tas	d0		; Bit 7 ggf. setzen
+		move.b	d0,CIAICR(a5)
+	
+		move.b	old_ciab_cra(a3),d0
+		btst	#CIACRAB_RUNMODE,d0 ; Continuous-Modus ?
+		bne.s	restore_chips_registers_skip3
+		or.b	#CIACRAF_START,d0
+restore_chips_registers_skip3
+		move.b	d0,CIACRA(a5)
+	
+		move.b	old_ciab_crb(a3),d0
+		btst	#CIACRBB_RUNMODE,d0 ; Continuous-Modus ?
+		bne.s restore_chips_registers_skip4
+		or.b	#CIACRBF_START,d0
+restore_chips_registers_skip4
+		move.b	d0,CIACRB(a5)
+
+		IFNE cl2_size3
+			move.l	old_cop2lc(a3),COP2LC-DMACONR(a6)
+		ENDC
+		IFNE cl1_size3
+			move.l	old_cop1lc(a3),COP1LC-DMACONR(a6)
+			moveq	#0,d0
+			move.w	d0,COPJMP1-DMACONR(a6)
+		ENDC
+	
+		move.w	old_dmacon(a3),d0
+		and.w	#~DMAF_RASTER,d0 ; Bitplane-DMA ggf. aus
+		or.w	#DMAF_SETCLR,d0
+		move.w	d0,DMACON-DMACONR(a6)
+		move.w	old_intena(a3),d0
+		or.w	#INTF_SETCLR,d0
+		move.w	d0,INTENA-DMACONR(a6)
+		move.w	old_adkcon(a3),d0
+		or.w	#ADKF_SETCLR,d0
+		move.w	d0,ADKCON-DMACONR(a6)
+		rts
+	
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+get_tod_duration	
+		move.l	tod_time(a3),d0 ; Zeit vor Programmstart
+		moveq	#0,d1
+		move.b	CIATODHI(a4),d1	; Bits 23-16
+		swap	d1		; Bits in richtige Position bringen
+		move.b	CIATODMID(a4),d1 ; Bits 15-8
+		lsl.w	#8,d1		; Bits in richtige Position bringen
+		move.b	CIATODLOW(a4),d1 ; Bits 7-0
+		cmp.l	d0,d1		; TOD Überlauf ?
+		bge.s	get_tod_duration_skip
+		move.l	#$ffffff,d2	; Maximalwert
+		sub.l	d0,d2		; Differenz bis zum Überlauf
+		add.l	d2,d1		; zuzüglich Wert nach dem Überlauf
+		bra.s	get_tod_duration_save
+		CNOP 0,4
+get_tod_duration_skip
+		sub.l	d0,d1		; Normale Differenz
+get_tod_duration_save
+		move.l	d1,tod_time(a3)
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+restore_vbr
+		btst	#AFB_68020,cpu_flags+BYTE_SIZE(a3)
+		beq.s	restore_vbr_quit
+		move.l	old_vbr(a3),d0
+		lea	write_VBR(pc),a5
+		CALLEXEC Supervisor
+restore_vbr_quit
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+restore_exception_vectors
+		lea	exception_vecs_save(pc),a0 ; Quelle
+		move.l	old_vbr(a3),a1	; Ziel = Reset (Initial SSP)
+		MOVEF.W	(exception_vectors_size/LONGWORD_SIZE)-1,d7 ; Anzahl der Vektoren
+restore_exception_vectors_loop
+		move.l	(a0)+,(a1)+	; Vektor kopieren
+		dbf	d7,restore_exception_vectors_loop
+		cmp.w	#OS2_VERSION,os_version(a3)
+		blt.s   restore_exception_vectors_quit
+		CALLEXEC CacheClearU
+restore_exception_vectors_quit
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+enable_system
+		CALLEXECQ Enable
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+update_system_time
+		move.l	exec_base.w,a6
+		move.l	tod_time(a3),d0 ; Vergangene Zeit, als System ausgeschaltet war
+		moveq	#0,d1
+		move.b	VBlankFrequency(a6),d1
+		divu.w	d1,d0		; / Vertikalfrequenz (50Hz) = Unix-Sekunden, Rest Unix-Microsekunden
+		lea	timer_io(pc),a1
+		move.w	#TR_SETSYSTIME,IO_command(a1)
+		move.l	d0,d1
+		ext.l	d0
+		swap	d1		; Rest der Division
+		add.l	d0,IO_size+TV_SECS(a1) ; Unix-Sekunden
+		mulu.w	#10000,d1	; In Mikrosekunden
+		add.l	d1,IO_size+TV_MICRO(a1) ; Unix-Mikrosekunden
+		CALLLIBQ DoIO
+	
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+disable_exclusive_blitter
+		CALLGRAFQ DisownBlitter
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+restore_sprite_resolution
+		cmp.w	#OS2_VERSION,os_version(a3)
+		bge.s	restore_sprite_resolution_skip
+restore_sprite_resolution_quit
+		rts
+		CNOP 0,4
+restore_sprite_resolution_skip
+		move.l	pal_screen(a3),a2
+		move.l	sc_ViewPort+vp_ColorMap(a2),a0
+		lea	video_control_tags(pc),a1
+		move.l	#VTAG_SPRITERESN_SET,vctl_VTAG_SPRITERESN+ti_tag(a1)
+		move.l	old_sprite_resolution(a3),vctl_VTAG_SPRITERESN+ti_data(a1)
+		CALLGRAF VideoControl
+		move.l	a2,a0			; Zeiger auf Screen
+		CALLINT MakeScreen
+		CALLLIBS RethinkDisplay
+		bra.s	restore_sprite_resolution_quit
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+	CNOP 0,4
+close_invisible_window
+		move.l	invisible_window(a3),a0
+		CALLINTQ CloseWindow
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+close_pal_screen
+		move.l	pal_screen(a3),a0
+		CALLINTQ CloseScreen
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+	CNOP 0,4
+active_screen_to_front
+		tst.l	active_screen(a3)
+		beq.s	active_screen_to_front_quit
+		moveq	#0,d0		; alle Locks
+		CALLINT LockIBase
+		move.l	d0,a0
+		move.l	ib_FirstScreen(a6),a2
+		CALLLIBS UnLockIBase
+		cmp.l	active_screen(a3),a2
+		beq.s	active_screen_to_front_quit
+		move.l	active_screen(a3),a0
+		CALLLIBS ScreenToFront
+active_screen_to_front_quit
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+	CNOP 0,4
+activate_first_window
+		move.l	first_window(a3),d0
+		beq.s	activate_first_window_quit
+		move.l	d0,a0
+		CALLINT ActivateWindow
+activate_first_window_quit
+		rts
+
+
+		IFEQ screen_fader_enabled
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+			CNOP 0,4
+sf_fade_in_screen
+			CALLGRAF WaitTOF
+			bsr	rgb4_screen_fader_in
+			bsr	sf_rgb4_set_new_colors
+			tst.w	sfi_rgb4_active(a3)
+			beq.s	sf_fade_in_screen
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+			CNOP 0,4	
+rgb4_screen_fader_in
+			MOVEF.W	sf_rgb4_colors_number*3,d6; Zähler
+			move.l	sf_screen_color_cache(a3),a0 ; Puffer für Farbwerte
+			move.l	sf_screen_color_table(a3),a1 ; RGB4-Sollwerte
+			move.w	#sfi_fader_speed,a4 ; Additions-/Subtraktionswert für RGB-Werte
+			MOVEF.W	sf_rgb4_colors_number-1,d7
+rgb4_screen_fader_in_loop
+			move.w  (a0),d0
+			lsr.w	#8,d0	; 4-Bit Rot-Istwert
+			move.w  (a1),d3
+			lsr.w	#8,d3	; 4-Bit Rot-Sollwert
+			moveq	#0,d1
+			move.b  1(a0),d1
+			moveq	#$f,d2
+			and.b	d1,d2	; 4-Bit Blau-Istwert
+			moveq	#0,d4
+			move.b	1(a1),d4
+			moveq	#$f,d5
+			and.b	d4,d5	; 4-Bit Blau-Sollwert
+			lsr.b	#4,d1	; 4-Bit Grün-Istwert
+			lsr.b   #4,d4	; 4-Bit Grün-Sollwert
+
+			cmp.w	d3,d0
+			bgt.s	sfi_rgb4_decrease_red
+			blt.s	sfi_rgb4_increase_red
+sfi_rgb4_matched_red
+			subq.w	#1,d6 ; Ziel-Rotwert erreicht
+sfi_rgb4_check_green
+			cmp.w	d4,d1
+			bgt.s	sfi_rgb4_decrease_green
+			blt.s	sfi_rgb4_increase_green
+sfi_rgb4_matched_green
+			subq.w	#1,d6 ; Ziel-Grünwert erreicht
+sfi_rgb4_check_blue
+			cmp.w	d5,d2
+			bgt.s	sfi_rgb4_decrease_blue
+			blt.s	sfi_rgb4_increase_blue
+sfi_rgb4_matched_blue
+			subq.w	#1,d6 ; Ziel-Blauwert erreicht
+
+sfi_set_rgb4
+			lsl.w	#8,d0	; Rotwert
+			move.b	d1,d0
+			lsl.b	#4,d0	; Grünwert
+			or.b	d2,d0	; Blauwert
+			move.w	d0,(a0)+ ; RGB4-Wert in Cache schreiben
+			addq.w	#WORD_SIZE,a1
+			dbf	d7,rgb4_screen_fader_in_loop
+			tst.w	d6	; Fertig mit ausblenden ?
+			bne.s	sfi_rgb4_flush_caches ; Nein -> verzweige
+			move.w	#FALSE,sfi_rgb4_active(a3) ; Fading-In aus
+sfi_rgb4_flush_caches
+			cmp.w	#OS2_VERSION,os_version(a3)
+                        blt.s	sfi_rgb4_flush_caches_quit
+			CALLEXEC CacheClearU
+sfi_rgb4_flush_caches_quit
+			rts
+			CNOP 0,4
+sfi_rgb4_decrease_red
+			sub.w	a4,d0
+			cmp.w	d3,d0
+			bgt.s	sfi_rgb4_check_green
+			move.w	d3,d0
+			bra.s	sfi_rgb4_matched_red
+			CNOP 0,4
+sfi_rgb4_increase_red
+			add.w   a4,d0
+			cmp.w   d3,d0
+			blt.s   sfi_rgb4_check_green
+			move.w  d3,d0
+			bra.s   sfi_rgb4_matched_red
+			CNOP 0,4
+sfi_rgb4_decrease_green
+			sub.w	a4,d1
+			cmp.w	d4,d1
+			bgt.s	sfi_rgb4_check_blue
+			move.w	d4,d1
+			bra.s	sfi_rgb4_matched_green
+			CNOP 0,4
+sfi_rgb4_increase_green
+			add.w	a4,d1
+			cmp.w	d4,d1
+			blt.s	sfi_rgb4_check_blue
+			move.w	d4,d1
+			bra.s	sfi_rgb4_matched_green
+			CNOP 0,4
+sfi_rgb4_decrease_blue
+			sub.w	a4,d2
+			cmp.w	d5,d2
+			bgt.s	sfi_set_rgb4
+			move.w	d5,d2
+			bra.s	sfi_rgb4_matched_blue
+			CNOP 0,4
+sfi_rgb4_increase_blue
+			add.w	a4,d2
+			cmp.w	d5,d2
+			blt.s	sfi_set_rgb4
+			move.w	d5,d2
+			bra.s	sfi_rgb4_matched_blue
+		ENDC
+
+
+		IFEQ text_output_enabled
+; ** formatierten Text ausgeben **
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+			CNOP 0,4
+print_formatted_text
+			lea	format_string(pc),a0
+			lea	data_stream(pc),a1 ; Daten für den Format-String
+			lea	put_ch_process(pc),a2 ; Zeiger auf Kopierroutine
+			move.l	a3,-(a7)
+			lea	put_ch_data(pc),a3 ; Zeiger auf Ausgabestring
+			CALLEXEC RawDoFmt
+			move.l	(a7)+,a3
+			move.l	output_handle(a3),d1
+			lea	put_ch_data(pc),a0 
+			move.l	a0,d2	; Zeiger auf Text
+			moveq	#-1,d3	; Zeichenzähler
+print_formatted_text_loop
+			addq.w	#1,d3
+			tst.b	(a0)+	; Nullbyte ?
+			dbeq.s	print_formatted_text_loop
+			CALLLIBQ Write
+			CNOP 0,4
+put_ch_process
+			move.b	d0,(a3)+ ; Daten in den Ausgabestring schreiben
+			rts
+		ENDC
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_vectors_base_memory
+		move.l	exception_vectors_base(a3),d0
+		bne.s   free_vectors_base_memory_skip
+free_vectors_base_memory_quit
+		rts
+		CNOP 0,4
+free_vectors_base_memory_skip
+		move.l	d0,a1
+		move.l	#exception_vectors_size,d0
+		CALLEXEC FreeMem
+		bra.s	free_vectors_base_memory_quit
+	ENDC
+
+
+	IFNE CHIP_memory_size
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_chip_memory
+		move.l	chip_memory(a3),d0
+		bne.s	free_chip_memory_skip
+free_chip_memory_quit
+		rts
+		CNOP 0,4
+free_chip_memory_skip
+		move.l	d0,a1
+		MOVEF.L	chip_memory_size,d0
+		CALLEXEC FreeMem
+		bra.s	free_chip_memory_quit
+	ENDC
+
+
+	IFNE extra_memory_size
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_extra_memory
+		move.l	extra_memory(a3),d0
+		bne.s	free_extra_memory_skip
+free_extra_memory_quit
+		rts
+		CNOP 0,4
+free_extra_memory_skip
+		move.l	d0,a1
+		MOVEF.L extra_memory_size,d0
+		CALLEXEC FreeMem
+		bra.s	free_extra_memory_quit
+	ENDC
+
+
+	IFNE disk_memory_size
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_disk_memory
+		move.l	disk_data(a3),d0
+		beq.s	free_disk_memory_skip
+		rts
+		CNOP 0,4
+free_disk_memory_skip
+		move.l	d0,a1
+		MOVEF.L	disk_memory_size,d0
+		CALLEXECQ FreeMem
+	ENDC
+
+
+	IFNE audio_memory_size
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_audio_memory
+		move.l	audio_data(a3),d0
+		bne.s	free_audio_memory_skip
+free_audio_memory_quit
+		rts
+		CNOP 0,4
+free_audio_memory_skip
+		move.l	d0,a1
+		MOVEF.L	audio_memory_size,d0
+		CALLEXEC FreeMem
+		bra.s	free_audio_memory_quit
+	ENDC
+
+
+	IFNE spr_x_size2
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_sprite_memory2
+		lea	spr0_bitmap2(a3),a2
+		moveq	#spr_number-1,d7 ; Anzahl der Hardware-Sprites [1..8]
+free_sprite_memory2_loop
+		move.l	(a2)+,d0
+		beq.s	free_sprite_memory2_quit
+		move.l	d0,a0
+		moveq	#spr_x_size2,d0
+		MOVEF.L	spr_y_size2*spr_depth,d1
+		CALLGRAF FreeRaster
+		dbf	d7,free_sprite_memory2_loop
+free_sprite_memory2_quit
+		rts
+	ENDC
+
+
+	IFNE spr_x_size1
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_sprite_memory1
+		lea	spr0_bitmap1(a3),a2
+		moveq	#spr_number-1,d7 ; Anzahl der Hardware-Sprites [1..8]
+free_sprite_memory1_loop
+		move.l	(a2)+,d0
+		beq.s	free_sprite_memory1_quit
+		move.l	d0,a0
+		moveq	#spr_x_size1,d0
+		MOVEF.L	spr_y_size1*spr_depth,d1
+		CALLGRAF FreeRaster
+		dbf	d7,free_sprite_memory1_loop
+free_sprite_memory1_quit
+		rts
+	ENDC
+
+
+	IFNE pf_extra_number
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_pf_extra_memory
+		lea	pf_extra_bitmap1(a3),a2
+		lea	pf_extra_attributes(pc),a4
+		moveq	#pf_extra_number-1,d7
+free_pf_extra_memory_loop
+		move.l	(a2)+,d0
+		beq.s	free_pf_extra_memory_quit
+		move.l	d0,a0
+		move.l	(a4)+,d0	; Breite des Playfields
+		move.l	(a4)+,d1	; Höhe des Playfields
+		move.l	(a4)+,d2	; Anzahl der Bitplanes
+		mulu.w	d2,d1
+		CALLGRAF FreeRaster
+		dbf	d7,free_pf_extra_memory_loop
+free_pf_extra_memory_quit
+		rts
+	ENDC
+
+
+	IFNE pf2_x_size3
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_pf2_memory3
+		move.l	pf2_bitmap3(a3),d0
+		beq.s	free_pf2_memory3_quit
+		move.l	d0,a0
+		MOVEF.L	pf2_x_size3,d0
+		MOVEF.L	pf2_y_size3*pf2_depth3,d1
+		CALLGRAFQ FreeRaster
+		CNOP 0,4
+free_pf2_memory3_quit
+		rts
+	ENDC
+	IFNE pf2_x_size2
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_pf2_memory2
+		move.l	pf2_bitmap2(a3),d0
+		beq.s	free_pf2_memory2_quit
+		move.l	d0,a0
+		MOVEF.L	pf2_x_size2,d0
+		MOVEF.L	pf2_y_size2*pf2_depth2,d1
+		CALLGRAFQ FreeBitMap
+		CNOP 0,4
+free_pf2_memory2_quit
+		rts
+	ENDC
+	IFNE pf2_x_size1
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_pf2_memory1
+		move.l	pf2_bitmap1(a3),d0
+		beq.s	free_pf2_memory1_quit
+		move.l	d0,a0
+		MOVEF.L	pf2_x_size1,d0
+		MOVEF.L	pf2_y_size1*pf2_depth1,d1
+		CALLGRAFQ FreeRaster
+		CNOP 0,4
+free_pf2_memory1_quit
+		rts
+	ENDC
+
+
+	IFNE pf1_x_size3
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_pf1_memory3
+		move.l	pf1_bitmap3(a3),d0
+		beq.s	free_pf1_memory3_quit
+		move.l	d0,a0
+		MOVEF.L	pf1_x_size3,d0
+		MOVEF.L	pf1_y_size3*pf2_depth3,d1
+		CALLGRAFQ FreeRaster
+		CNOP 0,4
+free_pf1_memory3_quit
+		rts
+	ENDC
+	IFNE pf1_x_size2
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_pf1_memory2
+		move.l	pf1_bitmap2(a3),d0
+		beq.s	free_pf1_memory2_quit
+		move.l	d0,a0
+		MOVEF.L	pf1_x_size2,d0
+		MOVEF.L	pf1_y_size2*pf2_depth2,d1
+		CALLGRAFQ FreeRaster
+		CNOP 0,4
+free_pf1_memory2_quit
+		rts
+	ENDC
+	IFNE pf1_x_size1
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_pf1_memory1
+		move.l	pf1_bitmap1(a3),d0
+		beq.s	free_pf1_memory1_quit
+		move.l	d0,a0
+		MOVEF.L	pf1_x_size1,d0
+		MOVEF.L	pf1_y_size1*pf2_depth1,d1
+		CALLGRAFQ FreeRaster
+		CNOP 0,4
+free_pf1_memory1_quit
+		rts
+	ENDC
+
+
+	IFNE cl2_size3
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_cl2_memory3
+		move.l	cl2_display(a3),d0
+		bne.s	free_cl2_memory3_skip
+free_cl2_memory3_quit
+		rts
+		CNOP 0,4
+free_cl2_memory3_skip
+		move.l	d0,a1
+		MOVEF.L	cl2_size3,d0
+		CALLEXEC FreeMem
+		bra.s	free_cl2_memory3_quit
+	ENDC
+	IFNE cl2_size2
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_cl2_memory2
+		move.l	cl2_construction2(a3),d0
+		bne.s	free_cl2_memory2_skip
+free_cl2_memory2_quit
+		rts
+		CNOP 0,4
+free_cl2_memory2_skip
+		move.l	d0,a1
+		MOVEF.L	cl2_size2,d0
+		CALLEXEC FreeMem
+		bra.s	free_cl2_memory2_quit
+	ENDC
+	IFNE cl2_size1
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_cl2_memory1
+		move.l	cl2_construction1(a3),d0
+		bne.s	free_cl2_memory1_skip
+free_cl2_memory1_quit
+		rts
+		CNOP 0,4
+free_cl2_memory1_skip
+		move.l	d0,a1
+		MOVEF.L	cl2_size1,d0
+		CALLEXEC FreeMem
+		bra.s	free_cl2_memory1_quit
+	ENDC
+
+
+	IFNE cl1_size3
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_cl1_memory3
+		move.l	cl1_display(a3),d0
+		bne.s	free_cl1_memory3_skip
+free_cl1_memory3_quit
+		rts
+		CNOP 0,4
+free_cl1_memory3_skip
+		move.l	d0,a1
+		MOVEF.L	cl1_size3,d0
+		CALLEXEC FreeMem
+		bra.s	free_cl1_memory3_quit
+	ENDC
+	IFNE cl1_size2
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_cl1_memory2
+		move.l	cl1_construction2(a3),d0
+		bne.s	free_cl1_memory2_skip
+free_cl1_memory2_quit
+		rts
+		CNOP 0,4
+free_cl1_memory2_skip
+		move.l	d0,a1
+		MOVEF.L	cl1_size2,d0
+		CALLEXEC FreeMem
+		bra.s	free_cl1_memory2_quit
+	ENDC
+	IFNE cl1_size1
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_cl1_memory1
+		move.l	cl1_construction1(a3),d0
+		bne.s	free_cl1_memory1_skip
+free_cl1_memory1_quit
+		rts
+		CNOP 0,4
+free_cl1_memory1_skip
+		move.l	d0,a1
+		MOVEF.L	cl1_size1,d0
+		CALLEXEC FreeMem
+		bra.s	free_cl1_memory1_quit
+	ENDC
+
+
+	IFND SYS_TAKEN_OVER
+		IFEQ screen_fader_enabled
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+			CNOP 0,4
+sf_free_screen_color_cache
+			move.l	sf_screen_color_cache(a3),d0
+			bne.s	sf_free_screen_color_cache_skip
+sf_free_screen_color_cache_quit
+			rts
+			CNOP 0,4
+sf_free_screen_color_cache_skip
+			move.l	d0,a1
+			MOVEF.L	sf_rgb4_colors_number*WORD_SIZE,d0
+			CALLEXEC FreeMem
+			bra.s	sf_free_screen_color_cache_quit
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+			CNOP 0,4
+sf_free_screen_color_table
+			move.l	sf_screen_color_table(a3),d0
+			bne.s	sf_free_screen_color_table_skip
+sf_free_screen_color_table_quit
+			rts
+			CNOP 0,4
+sf_free_screen_color_table_skip
+			move.l	d0,a1
+			MOVEF.L	sf_rgb4_colors_number*WORD_SIZE,d0
+			CALLEXEC FreeMem
+			bra.s	sf_free_screen_color_table_quit
+		ENDC
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+free_mouse_pointer_data
+		move.l	mouse_pointer_data(a3),d0
+		bne.s	free_mouse_pointer_data_skip
+free_mouse_pointer_data_quit
+		rts
+		CNOP 0,4
+free_mouse_pointer_data_skip
+		move.l	d0,a1
+		moveq	#cleared_pointer_data_size,d0
+		CALLEXEC FreeMem
+		bra.s	free_mouse_pointer_data_quit
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+close_timer_device
+		lea	timer_io(pc),a1
+		CALLEXECQ CloseDevice
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+close_intuition_library
+		move.l	_IntuitionBase(pc),a1
+		CALLEXECQ CloseLibrary
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+close_graphics_library
+		move.l	_GfxBase(pc),a1
+		CALLEXECQ CloseLibrary
+
+	
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+print_error_message
+		move.w	custom_error_code(a3),d4
+		beq.s	print_error_message_ok
+		bsr	get_active_screen
+		CALLINT WBenchToFront
+		lea	raw_name(pc),a0
+		move.l	a0,d1
+		move.l	#MODE_OLDFILE,d2
+		CALLDOS Open
+		move.l	d0,raw_handle(a3)
+		bne.s	print_error_message_skip
+		moveq	#RETURN_FAIL,d0
+		rts
+		CNOP 0,4
+print_error_message_skip
+		subq.w	#1,d4		; Zählung beginnt mit 0
+		MULUF.W	8,d4,d1		; 68000er unterstützt kein variables Register-Index
+		lea	custom_error_table(pc),a0
+		move.l	(a0,d4.w),d2	; Zeiger auf Fehlertext
+		move.l	4(a0,d4.w),d3	; Länge des Fehlertextes
+		move.l	d0,d1		; Zeiger auf Datei-Handle
+		CALLLIBS Write
+		move.l	raw_handle(a3),d1
+		lea	raw_buffer(a3),a0
+		move.l	a0,d2		; Zeiger auf Puffer
+		moveq	#1,d3		; Anzahl der Zeichen zum Lesen
+		CALLLIBS Read
+		move.l	raw_handle(a3),d1
+		CALLLIBS Close
+		bsr	active_screen_to_front
+print_error_message_ok
+		moveq	#RETURN_OK,d0
+		rts
+
+
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+		CNOP 0,4
+close_dos_library
+		move.l	_DOSBase(pc),a1
+		CALLEXECQ CloseLibrary
+
+
+		IFEQ workbench_start_enabled
+; Input
+; Result
+; d0.l	... Kein Rückgabewert
+			CNOP 0,4
+reply_workbench_message
+			move.l	workbench_message(a3),d2
+			bne.s	workbench_message_ok
+reply_workbench_message_quit
+			rts
+			CNOP 0,4
+workbench_message_ok
+			CALLEXEC Forbid
+			move.l	d2,a1
+			CALLLIBS ReplyMsg
+			CALLLIBS Permit
+			bra.s	reply_workbench_message_quit
+		ENDC
+	ENDC

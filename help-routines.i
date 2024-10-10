@@ -1,0 +1,256 @@
+; Datum:	04.10.2024
+; Version:      1.0
+
+; ** Globale Labels **
+
+; SYS_TAKEN_OVER
+
+; COLOR_GRADIENT_RGB4
+
+
+; Input
+; d0.l	... Größe des Speicherbereichs
+; Result
+; d0.l	... Rückgabewert: Zeiger auf Speicherbereich wenn erfolgreich
+	CNOP 0,4
+do_alloc_memory
+	move.l	#MEMF_CLEAR|MEMF_PUBLIC,d1
+	CALLEXECQ AllocMem
+
+
+; Input
+; d0.l	... Größe des Speicherbereichs
+; Result
+; d0.l	... Rückgabewert: Zeiger auf Speicherbereich wenn erfolgreich
+	CNOP 0,4
+do_alloc_chip_memory
+	move.l	#MEMF_CLEAR|MEMF_CHIP|MEMF_PUBLIC,d1
+	CALLEXECQ AllocMem
+
+
+; Input
+; d0.l	... Größe des Speicherbereichs
+; Result
+; d0.l	... Rückgabewert: Zeiger auf Speicherbereich wenn erfolgreich
+	CNOP 0,4
+do_alloc_fast_memory
+	move.l	#MEMF_CLEAR|MEMF_FAST|MEMF_PUBLIC,d1
+	CALLEXECQ AllocMem
+
+
+; Input
+; d0.l	... Breite des Playfiels in Pixeln
+; d1.l	... Höhe des Playfiels in Zeilen * Tiefe
+; Result
+; d0.l	... Rückgabewert: Zeiger auf Speicherbereich wenn erfolgreich
+	CNOP 0,4
+do_alloc_bitmap_memory
+	CALLGRAFQ AllocRaster
+
+
+	IFD SYS_TAKEN_OVER
+		IFNE intena_bits&(~INTF_SETCLR)
+; Input
+; Result
+; d0.l	... Rückgabewert: Inhalt von VBR
+			MC68020
+			CNOP 0,4
+read_VBR
+			or.w	#SRF_I0|SRF_I1|SRF_I2,SR ; Level-7-Interruptebene
+			nop
+			movec	VBR,d0
+			nop
+			rte
+		ENDC
+	ELSE
+; Input
+; Result
+; d0 ... Rückgabewert Inhalt von VBR
+		MC68020
+		CNOP 0,4
+read_VBR
+		or.w	#SRF_I0|SRF_I1|SRF_I2,SR ; Level-7-Interruptebene
+		nop
+		movec	VBR,d0
+		nop
+		rte
+
+
+; Input
+; d0.l	... neuer Inhalt von VBR
+; Result
+; d0	... Kein Rückgabewert
+		MC68020
+		CNOP 0,4
+write_VBR
+		or.w	#SRF_I0|SRF_I1|SRF_I2,SR ; Level-7-Interruptebene
+		nop
+		movec	d0,VBR
+		nop
+		rte
+	ENDC
+
+
+; Input
+; Result
+; d0	... Kein Rückgabewert
+	CNOP 0,4
+wait_beam_position
+	move.l	#$0003ff00,d1		; Maske vertikale Position
+	move.l	#beam_position<<8,d2	; Y-Position
+	lea	VPOSR-DMACONR(a6),a0
+	lea	VHPOSR-DMACONR(a6),a1
+wait_beam_position_loop
+	move.w	(a0),d0			; VPOSR
+	swap	d0		 	; Bits in richtige Position bringen
+	move.w	(a1),d0			; VHPOSR
+	and.l	d1,d0			; Nur vertikale Position
+	cmp.l	d2,d0			; Auf bestimmte Rasterzeile warten
+	blt.s	wait_beam_position_loop
+	rts
+
+
+; Input
+; Result
+; d0	... Kein Rückgabewert
+	CNOP 0,4
+wait_vbi
+	lea	INTREQR-DMACONR(a6),a0
+wait_vbi_loop
+	moveq	#INTF_VERTB,d0
+	and.w	(a0),d0			; VERTB-Interrupt ?
+	beq.s	wait_vbi_loop		; Nein -> verzweige
+	move.w	d0,INTREQ-DMACONR(a6)	; VERTB-Interrupt löschen
+	rts
+
+
+; Input
+; Result
+; d0	... Kein Rückgabewert
+	CNOP 0,4
+wait_copint
+	lea	INTREQR-DMACONR(a6),a0
+wait_copint_loop
+	moveq	#INTF_COPER,d0
+	and.w	(a0),d0			; COPER-Interrupt ?
+	beq.s	wait_copint_loop	; Nein -> verzweige
+	move.w	d0,INTREQ-DMACONR(a6)	; COPER-Interrupt löschen
+	rts
+
+
+; Input
+; a0	... Copperliste
+; a1	... Tabelle mit Farbwerten
+; d3.w	... erstes Farbregister
+; d7.w	... Anzahl der Farben
+; Result
+; d0	... Kein Rückgabewert
+	CNOP 0,4
+cop_init_colors
+	move.w	d3,(a0)+		; COLORxx
+	move.w	(a1)+,(a0)+		; RGB4-Farbwert
+	addq.w	#2,d3			; nächstes Farbregister
+	dbf	d7,cop_init_colors
+	rts
+
+
+; Input
+; a0	,,, Farbregister-Adresse
+; a1	,,, Tabelle mit Farbwerten
+; d7.w	... Anzahl der Farben
+; Result
+; d0	... Kein Rückgabewert
+	CNOP 0,4
+cpu_init_high_colors
+	move.w	(a1)+,(a0)+		; COLORxx
+	dbf	d7,cpu_init_high_colors
+	rts
+
+
+	IFD COLOR_GRADIENT_RGB4
+; Input
+; d0.w	... RGB4-Istwert
+; d6.w	... RGB4-Sollwert
+; d7.w	... Anzahl der Farbwerte
+; a0	... Zeiger auf Farbtabelle
+; a1.w	... Additions-/Subtraktionswert für Rot
+; a2.w	... Additions-/Subtraktionswert für Grün
+; a4.w	... Additions-/Subtraktionswert für Blau
+; a5	... Offset
+; Result
+; d0	... Kein Rückgabewert
+		CNOP 0,4
+init_color_gradient_rgb4_loop
+		move.w	d0,(a0)		; RGB4-Wert in Farbtabelle schreiben
+		add.l	a5,a0		; Offset
+		move.w	d0,d1
+		and.w	#NIBBLE_MASK_HIGH,d1 ; Ist-G4
+		moveq	#NIBBLE_MASK_LOW,d2
+		and.w	d0,d2		; Ist-B4
+		clr.b	d0		; Ist-R4
+		move.w	d6,d3		; Soll-RGB4
+		move.w	d3,d4		; Soll-G4
+		moveq	#NIBBLE_MASK_LOW,d5
+		and.w	#NIBBLE_MASK_HIGH,d4 ; Soll-G4
+		and.w	d3,d5		; Soll-B4
+		clr.b	d3		; Soll-R4
+
+		cmp.w	d3,d0
+		bgt.s	decrease_red_rgb4
+		blt.s	increase_red_rgb4
+check_green_rgb4
+		cmp.w	d4,d1
+		bgt.s	decrease_green_rgb4
+		blt.s	increase_green_rgb4
+check_blue_rgb4
+		cmp.b	d5,d2
+		bgt.s	decrease_blue_rgb4
+		blt.s	increase_blue_rgb4
+merge_rgb4
+		move.b	d1,d0		; G4
+		or.b	d2,d0		; B4
+		dbf	d7,init_color_gradient_rgb4_loop
+		rts
+		CNOP 0,4
+decrease_red_rgb4
+		sub.w	a1,d0
+		cmp.w	d3,d0
+		bgt.s	check_green_rgb4
+		move.w	d3,d0
+		bra.s	check_green_rgb4
+		CNOP 0,4
+increase_red_rgb4
+		add.w	a1,d0
+		cmp.w	d3,d0
+		blt.s	check_green_rgb4
+		move.w	d3,d0
+		bra.s	check_green_rgb4
+		CNOP 0,4
+decrease_green_rgb4
+		sub.w	a2,d1
+		cmp.w	d4,d1
+		bgt.s	check_blue_rgb4
+		move.w	d4,d1
+		bra.s	check_blue_rgb4
+		CNOP 0,4
+increase_green_rgb4
+		add.w	a2,d1
+		cmp.w	d4,d1
+		blt.s	check_blue_rgb4
+		move.w	d4,d1
+		bra.s	check_blue_rgb4
+		CNOP 0,4
+decrease_blue_rgb4
+		sub.w	a4,d2
+		cmp.b	d5,d2
+		bgt.s	merge_rgb4
+		move.b	d5,d2
+		bra.s	merge_rgb4
+		CNOP 0,4
+increase_blue_rgb4
+		add.w	a4,d2
+		cmp.b	d5,d2
+		blt.s	merge_rgb4
+		move.b	d5,d2
+		bra.s	merge_rgb4
+	ENDC
