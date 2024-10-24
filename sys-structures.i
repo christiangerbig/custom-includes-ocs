@@ -49,6 +49,7 @@ pal_extended_newscreen
 		DS.B ens_SIZEOF
 
 		IFNE screen_fader_enabled
+			CNOP 0,2
 pal_screen_rgb4_colors
 			DS.W pal_screen_colors_number
 		ENDC

@@ -2,12 +2,6 @@
 ; Version:	1.0
 
 	IFND SYS_TAKEN_OVER
-error_text_config
-		DC.B "No PAL machine detected!",ASCII_LINE_FEED,ASCII_LINE_FEED
-		DC.B "Press any key.",ASCII_LINE_FEED
-error_text_config_end
-		EVEN
-
 		IFEQ requires_030_cpu
 error_text_cpu_2
 	 		DC.B "This programm needs a 68030 cpu or better !",ASCII_LINE_FEED,ASCII_LINE_FEED
@@ -248,13 +242,14 @@ error_text_screen1
 error_text_screen1_end
 			EVEN
 		ENDC
+
 error_text_screen2
-		DC.B "Couldn't open downgrade screen !",ASCII_LINE_FEED,ASCII_LINE_FEED
+		DC.B "Couldn't open downgrade pal screen !",ASCII_LINE_FEED,ASCII_LINE_FEED
 		DC.B "Press any key.",ASCII_LINE_FEED
 error_text_screen2_end
 		EVEN
 error_text_screen3
-		DC.B "Requested display mode for downgrade screen not available !",ASCII_LINE_FEED,ASCII_LINE_FEED
+		DC.B "Requested display mode for downgrade pal screen not available !",ASCII_LINE_FEED,ASCII_LINE_FEED
 		DC.B "Press any key.",ASCII_LINE_FEED
 error_text_screen3_end
 		EVEN

@@ -14,6 +14,7 @@ sctl_SA_DisplayID		RS.L 2
 sctl_SA_DetailPen		RS.L 2
 sctl_SA_BlockPen		RS.L 2
 sctl_SA_Title			RS.L 2
+sctl_SA_Colors32		RS.L 2
 sctl_SA_VideoControl		RS.L 2
 sctl_SA_Font			RS.L 2
 sctl_SA_SysFont			RS.L 2
