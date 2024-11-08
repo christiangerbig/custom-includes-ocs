@@ -832,7 +832,7 @@ init_pal_screen_tags
 		lea	pal_screen_name(pc),a1
 		move.l	a1,(a0)+
 		move.l	#SA_Colors32,(a0)+
-		move.l	d0,(a0)+	; Wird später initialisiert
+		move.l	d0,(a0)+
 		move.l	#SA_VideoControl,(a0)+
 		lea	video_control_tags(pc),a1
 		move.l	#VTAG_SPRITERESN_SET,+vctl_VTAG_SPRITERESN+ti_tag(a1)
