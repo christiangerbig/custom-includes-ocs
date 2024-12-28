@@ -1,4 +1,3 @@
-; ** Temporary audio channel structure **
 	RSRESET
 
 n_audchantemp			RS.B 0

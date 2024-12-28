@@ -1,4 +1,3 @@
-; **** PT2-Replay ****
 pt_maxsongpos			EQU 128
 pt_maxpattpos			EQU 64
 pt_pattsize			EQU 1024
