@@ -1,6 +1,3 @@
-; Datum:	04.10.2024
-; Version:      1.0
-
 	IFNE pf_extra_number
 		RSRESET
 

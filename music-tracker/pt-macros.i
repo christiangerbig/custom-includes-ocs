@@ -1,51 +1,66 @@
 PT_FADE_OUT_VOLUME		MACRO
 ; Input
-; \1 STRING:	pointer additional variable that is set to TRUE if volume fading out is finished
+; \1 STRING:	Label of additional variable set to TRUE if fader is finished (optional)
+; \2 STRING:	"GLOBALVAR" if variables are pc relative (optional)
 ; Result
 	CNOP 0,4
 pt_music_fader
-	tst.w	pt_music_fader_active(a3)
+	IFC "GLOBALVAR","\2"
+		move.w	pt_global_music_fader_active(pc),d0
+	ELSE
+		tst.w	pt_music_fader_active(a3)
+	ENDC
 	bne.s	pt_music_fader_quit
 	lea	pt_audchan1temp(pc),a0
 	lea	AUD0VOL-DMACONR(a6),a1
-	bsr.s	pt_fade_out_chan_volume
+	bsr.s	pt_decrease_channel_volume
 	lea	pt_audchan2temp(pc),a0
-	bsr.s	pt_fade_out_chan_volume
+	bsr.s	pt_decrease_channel_volume
 	lea	pt_audchan3temp(pc),a0
-	bsr.s	pt_fade_out_chan_volume
+	bsr.s	pt_decrease_channel_volume
 	lea	pt_audchan4temp(pc),a0
-	bsr.s	pt_fade_out_chan_volume
+	bsr.s	pt_decrease_channel_volume
 	move.w	pt_fade_out_delay_counter(a3),d0
 	subq.w	#1,d0
-	bne.s	pt_music_fader_skip
+	bne.s	pt_music_fader_skip1
 	move.w	pt_master_volume(a3),d1
-	beq.s	pt_music_fader_end
+	beq.s	pt_music_fader_skip2
 	subq.w	#1,d1
 	move.w	d1,pt_master_volume(a3)
 	moveq	#pt_fade_out_delay,d0
-pt_music_fader_skip
+pt_music_fader_skip1
 	move.w	d0,pt_fade_out_delay_counter(a3)
 pt_music_fader_quit
 	rts
 	CNOP 0,4
-pt_music_fader_end
-	move.w	#FALSE,pt_music_fader_active(a3)
+pt_music_fader_skip2
+	IFC "GLOBALVAR","\2"
+		lea	pt_global_music_fader_active(pc),a0
+		move.w	#FALSE,(a0)
+	ELSE
+		move.w	#FALSE,pt_music_fader_active(a3)
+	ENDC
 	IFNC "","\1"
-		clr.w	\1(a3)		; set additional variable
+		IFC "GLOBALVAR","\2"
+			lea	\1(pc),a0
+			clr.w	(a0)	; set additional global variable
+		ELSE
+			clr.w	\1(a3)	; set additional variable
+		ENDC
 	ENDC
 	bra.s	pt_music_fader_quit
 
 ; Input
-; a0	... Pointer temporary audio data
+; a0.l	Pointer temporary audio data
 ; Result
 	CNOP 0,4
-pt_fade_out_chan_volume
+pt_decrease_channel_volume
 	moveq	#0,d0
 	move.b	n_volume(a0),d0
 	mulu.w	pt_master_volume(a3),d0
 	lsr.w	#6,d0
-	move.w	d0,(a1)			; AUDxVOL
-	ADDF.W	16,a1			; next audio channel		 		 		;nächstes Volume-Register
+	move.w	d0,(a1)			; AUDVOL
+	ADDF.W	16,a1			; next audio channel
 	rts
 	ENDM
 
@@ -104,7 +119,7 @@ pt_InitRegisters
 	move.w	d0,AUD2VOL-DMACONR(a6)
 	move.w	d0,AUD3VOL-DMACONR(a6)
 	IFD SYS_TAKEN_OVER
-		move.w	#DMAF_AUD0+DMAF_AUD1+DMAF_AUD2+DMAF_AUD3,DMACON-DMACONR(a6) ; channel DMA off
+		move.w	#DMAF_AUD0+DMAF_AUD1+DMAF_AUD2+DMAF_AUD3,DMACON-DMACONR(a6) ; disable channel DMA
 	ENDC
 	rts
 	ENDM
@@ -117,33 +132,33 @@ PT_INIT_AUDIO_TEMP_STRUCTURES	MACRO
 pt_InitAudTempStrucs
 	moveq	#FALSE,d1
 	lea	pt_audchan1temp(pc),a0
-	move.w	#DMAF_AUD0,n_dmabit(a0)	; set channel DMA bit
-	IFEQ pt_track_volumes_enabled
-		move.b	d1,n_note_trigger(a0) ; disable note trigger flag
+	move.w	#DMAF_AUD0,n_dmabit(a0)
+	IFEQ pt_track_notes_played_enabled
+		move.b	d1,n_notetrigger(a0)
 	ENDC
-	move.b	d1,n_rtnsetchandma(a0)	; deactivate set & init routine
+	move.b	d1,n_rtnsetchandma(a0)	; deactivate routines
 	move.b	d1,n_rtninitchanloop(a0)
 
 	lea	pt_audchan2temp(pc),a0
 	move.w	#DMAF_AUD1,n_dmabit(a0)
-	IFEQ pt_track_volumes_enabled
-		move.b	d1,n_note_trigger(a0)
+	IFEQ pt_track_notes_played_enabled
+		move.b	d1,n_notetrigger(a0)
 	ENDC
 	move.b	d1,n_rtnsetchandma(a0)
 	move.b	d1,n_rtninitchanloop(a0)
 
 	lea	pt_audchan3temp(pc),a0
 	move.w	#DMAF_AUD2,n_dmabit(a0)
-	IFEQ pt_track_volumes_enabled
-		move.b	d1,n_note_trigger(a0)
+	IFEQ pt_track_notes_played_enabled
+		move.b	d1,n_notetrigger(a0)
 	ENDC
 	move.b	d1,n_rtnsetchandma(a0)
 	move.b	d1,n_rtninitchanloop(a0)
 
 	lea	pt_audchan4temp(pc),a0
 	move.w	#DMAF_AUD3,n_dmabit(a0)
-	IFEQ pt_track_volumes_enabled
-		move.b	d1,n_note_trigger(a0)
+	IFEQ pt_track_notes_played_enabled
+		move.b	d1,n_notetrigger(a0)
 	ENDC
 	move.b	d1,n_rtnsetchandma(a0)
 	move.b	d1,n_rtninitchanloop(a0)
@@ -163,7 +178,7 @@ pt_ExamineSongStruc
 	lea	pt_sd_pattpos(a0),a1	; pointer table with pattern positions in song
 	MOVEF.W pt_maxsongpos-1,d7
 pt_InitLoop
-	move.b	(a1)+,d0		; get patter number from song position table
+	move.b	(a1)+,d0		; patter number from song position table
 	cmp.b	d1,d0
 	ble.s	pt_InitSkip
 	move.l	d0,d1		 	; save higher pattern number
@@ -174,30 +189,29 @@ pt_InitSkip
 	ENDC
 	ADDF.W	pt_sd_sampleinfo,a0
 	IFNE pt_split_module_enabled
-		MULUF.W	pt_pattsize/8,d1 ; offset points to end of last pattern
+		MULUF.L	pt_pattsize,d1,d2 ; end of last pattern
 	ENDC
-	moveq	#TRUE,d2
-	moveq	#1,d3		 	; length in words for oneshot sample
+	moveq	#0,d2
+	moveq	#pt_oneshotlen,d3 	; length in words
 	IFNE pt_split_module_enabled
-		MULUF.W	8,d1
-		lea	pt_sd_patterndata-pt_sd_id(a1,d1),a2 ; pointer to first sample data in module
+		lea	pt_sd_patterndata-pt_sd_id(a1,d1.l),a2 ; pointer first sample data in module
 	ELSE
-		move.l	pt_SamplesDataPointer(a3),a2
+		move.l	pt_SamplesDataPointer(a3),a2 ; pointer first sample data in module
 	ENDC
 	lea	pt_SampleStarts(pc),a1
 	moveq	#pt_sampleinfo_size,d1
 	moveq	#pt_samplesnum-1,d7
 pt_InitLoop2
-	move.l	a2,(a1)+		; save pointer to sample data
+	move.l	a2,(a1)+		; pointer sample data
 	move.w	pt_si_samplelength(a0),d0
-	beq.s	pt_NoSample
-	MULUF.W	2,d0			; sample length in bytes
+	beq.s	pt_InitSkip2
+	MULUF.W	WORD_SIZE,d0,d4		; sample length in bytes
 	move.w	d2,(a2)		 	; clear first word in sample data
 	add.l	d0,a2		 	; next sample data
 	move.w	pt_si_repeatlength(a0),d0 ; Fasttracker module with repeat length 0 ?
-	bne.s	pt_NoSample
-	move.w	d3,pt_si_repeatlength-pt_si_samplelength(a0) ; set repeat length 1 for Protracker compability
-pt_NoSample
+	bne.s	pt_InitSkip2
+	move.w	d3,pt_si_repeatlength(a0) ; adjust repeat length for Protracker compability
+pt_InitSkip2
 	add.l	d1,a0		 	; next sample info structure
 	dbf	d7,pt_InitLoop2
 	rts
@@ -214,8 +228,8 @@ pt_InitFtuPeriodTableStarts
 	lea	pt_FtuPeriodTableStarts(pc),a1
 	moveq	#pt_finetunenum-1,d7
 pt_InitFtuPeriodTableStartsLoop
-	move.l	a0,(a1)+		 		 		 		;Save pointer
-	add.l	d0,a0		 		 		 		 		;Pointer to next period table, finetune + n
+	move.l	a0,(a1)+		; period table pointer
+	add.l	d0,a0		 	; next period table pointer	 		 		 		 		;Pointer to next period table, finetune + n
 	dbf	d7,pt_InitFtuPeriodTableStartsLoop
 	rts
 	ENDM
@@ -225,7 +239,7 @@ PT_TIMER_INTERRUPT_SERVER	MACRO
 ; Input
 ; Result
 
-; E9 "Retrig Note" or ED "Note Delay"used
+; E9 "Retrig Note" or ED "Note Delay"
 	IFNE pt_usedefx&(pt_ecmdbitretrignote+pt_ecmdbitnotedelay)
 		tst.w	pt_RtnDMACONtemp(a3) ; any retrig/delay fx for a channel ?
 		beq.s	pt_RtnChannelsSkip
@@ -268,8 +282,8 @@ pt_RtnInitChan1Loop
 		ADDF.W	n_period,a0
 		move.w	(a0)+,AUD0PER-DMACONR(a6)
 		move.l	(a0)+,AUD0LCH-DMACONR(a6)
-		move.w	(a0),AUD0LEN-DMACONR(a6)
 		moveq	#~DMAF_AUD0,d0
+		move.w	(a0),AUD0LEN-DMACONR(a6)
 		bra	pt_RtnChkNextChan
 
 
@@ -286,8 +300,8 @@ pt_RtnInitChan2Loop
 		ADDF.W	n_period,a0
 		move.w	(a0)+,AUD1PER-DMACONR(a6)
 		move.l	(a0)+,AUD1LCH-DMACONR(a6)
-		move.w	(a0),AUD1LEN-DMACONR(a6)
 		moveq	#~DMAF_AUD1,d0
+		move.w	(a0),AUD1LEN-DMACONR(a6)
 		bra	pt_RtnChkNextChan
 
 
@@ -304,8 +318,8 @@ pt_RtnInitChan3Loop
 		ADDF.W	n_period,a0
 		move.w	(a0)+,AUD2PER-DMACONR(a6)
 		move.l	(a0)+,AUD2LCH-DMACONR(a6)
-		move.w	(a0),AUD2LEN-DMACONR(a6)
 		moveq	#~DMAF_AUD2,d0
+		move.w	(a0),AUD2LEN-DMACONR(a6)
 		bra.s	pt_RtnChkNextChan
 
 
@@ -322,30 +336,30 @@ pt_RtnInitChan4Loop
 		ADDF.W	n_period,a0
 		move.w	(a0)+,AUD3PER-DMACONR(a6)
 		move.l	(a0)+,AUD3LCH-DMACONR(a6)
-		move.w	(a0),AUD3LEN-DMACONR(a6)
 		moveq	#~DMAF_AUD3,d0
+		move.w	(a0),AUD3LEN-DMACONR(a6)
 		bra.s	pt_RtnChkNextChan
 
 
 ; Input
-; a0	... Pointer temporary audio data
-; d0.w	... DMA bit audio channel [0,2,4,8]
+; a0	Pointer temporary audio data
+; d0.w	DMA bit audio channel [0,2,4,8]
 ; Result
 		CNOP 0,4
 pt_RtnSetChanDMA
 		move.b	#FALSE,n_rtnsetchandma(a0) ; deactivate routine
 		or.w	#DMAF_SETCLR,d0
 		move.w	d0,DMACON-DMACONR(a6)
-		addq.b	#CIACRBF_START,CIACRB(a5) ; start DMA delay counter
 		clr.b	n_rtninitchanloop(a0) ; activate follow up routine
+		addq.b	#CIACRBF_START,CIACRB(a5) ; start DMA delay counter
 		rts
 
 ; Input
-; d0.w	... Mask for retrig DMACONtemp
+; d0.w	Mask for retrig DMACONtemp
 ; Result
 		CNOP 0,4
 pt_RtnChkNextChan
-		and.w	d0,pt_RtnDMACONtemp(a3) ; other channel DMA bits set ("Retrig Note" or "Note Delay" command) ?
+		and.w	d0,pt_RtnDMACONtemp(a3) ; other channel DMA bits set ("Retrig Note" or "Note Delay") ?
 		bne.s	pt_RtnChkNextChanSkip
 		tst.b	pt_SetAllChanDMAFlag(a3)
 		bne.s	pt_RtnChkNextChanQuit
@@ -357,7 +371,6 @@ pt_RtnChkNextChanQuit
 
 	CNOP 0,4
 pt_InitAllChanLoop
-	move.b	#FALSE,pt_InitAllChanLoopFlag(a3) ; deactivate routine
 	move.l	pt_audchan1temp+n_loopstart(pc),AUD0LCH-DMACONR(a6)
 	move.w	pt_audchan1temp+n_replen(pc),AUD0LEN-DMACONR(a6)
 	move.l	pt_audchan2temp+n_loopstart(pc),AUD1LCH-DMACONR(a6)
@@ -366,6 +379,7 @@ pt_InitAllChanLoop
 	move.w	pt_audchan3temp+n_replen(pc),AUD2LEN-DMACONR(a6)
 	move.l	pt_audchan4temp+n_loopstart(pc),AUD3LCH-DMACONR(a6)
 	move.w	pt_audchan4temp+n_replen(pc),AUD3LEN-DMACONR(a6)
+	move.b	#FALSE,pt_InitAllChanLoopFlag(a3) ; deactivate routine
 	rts
 
 	CNOP 0,4
@@ -374,7 +388,7 @@ pt_SetAllChanDMA
 	move.w	pt_DMACONtemp(a3),d0
 	or.w	#DMAF_SETCLR,d0
 	move.w	d0,DMACON-DMACONR(a6)
-	addq.b	#CIACRBF_START,CIACRB(a5) ; start DMA delay counter
 	clr.b	pt_InitAllChanLoopFlag(a3) ; activate follow up routine
+	addq.b	#CIACRBF_START,CIACRB(a5) ; start DMA delay counter
 	rts
 	ENDM

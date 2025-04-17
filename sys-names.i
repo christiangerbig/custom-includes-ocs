@@ -1,6 +1,3 @@
-; Datum:	26.09.2024
-; Version:	1.0
-
 	IFND SYS_TAKEN_OVER
 dos_name			DC.B "dos.library",0
 		EVEN
@@ -33,7 +30,7 @@ tcp_stack_request_string_neg	DC.B "Quit",0
 			EVEN
 		ENDC
 
-pal_screen_name		DC.B "Degrade screen",0
+pal_screen_name			DC.B "Degrade screen",0
 		EVEN
 
 invisible_window_name		DC.B "Invisible window",0

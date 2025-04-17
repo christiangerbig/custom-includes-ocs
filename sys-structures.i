@@ -1,6 +1,3 @@
-; Datum:	28.09.2023
-; Version:	1.1
-
 	IFND SYS_TAKEN_OVER
 		CNOP 0,4
 custom_error_table

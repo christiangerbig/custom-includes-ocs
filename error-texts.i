@@ -1,6 +1,3 @@
-; Datum:	04.09.2024
-; Version:	1.0
-
 	IFND SYS_TAKEN_OVER
 		IFEQ requires_030_cpu
 error_text_cpu_2
@@ -86,30 +83,15 @@ error_text_pf1_constr1_1
 		DC.B "Press any key.",ASCII_LINE_FEED
 error_text_pf1_constr1_1_end
 		EVEN
-error_text_pf1_constr1_2
-		DC.B "Check of first playfieled1-buffer failed !",ASCII_LINE_FEED,ASCII_LINE_FEED
-		DC.B "Press any key.",ASCII_LINE_FEED
-error_text_pf1_constr1_2_end
-		EVEN
 error_text_pf1_constr2_1
 		DC.B "Couldn't allocate memory for second playfield1-buffer !",ASCII_LINE_FEED,ASCII_LINE_FEED
 		DC.B "Press any key.",ASCII_LINE_FEED
 error_text_pf1_constr2_1_end
 		EVEN
-error_text_pf1_constr2_2
-		DC.B "Check of second playfieled1-buffer failed !",ASCII_LINE_FEED,ASCII_LINE_FEED
-		DC.B "Press any key.",ASCII_LINE_FEED
-error_text_pf1_constr2_2_end
-		EVEN
 error_text_pf1_display_1
 		DC.B "Couldn't allocate memory for third playfield1-buffer !",ASCII_LINE_FEED,ASCII_LINE_FEED
 		DC.B "Press any key.",ASCII_LINE_FEED
 error_text_pf1_display_1_end
-		EVEN
-error_text_pf1_display_2
-		DC.B "Check of third playfield1-buffer failed !",ASCII_LINE_FEED,ASCII_LINE_FEED
-		DC.B "Press any key.",ASCII_LINE_FEED
-error_text_pf1_display_2_end
 		EVEN
 
 error_text_pf2_constr1_1
@@ -117,30 +99,15 @@ error_text_pf2_constr1_1
 		DC.B "Press any key.",ASCII_LINE_FEED
 error_text_pf2_constr1_1_end
 		EVEN
-error_text_pf2_constr1_2
-		DC.B "Check of first playfield2-buffer failed !",ASCII_LINE_FEED,ASCII_LINE_FEED
-		DC.B "Press any key.",ASCII_LINE_FEED
-error_text_pf2_constr1_2_end
-		EVEN
 error_text_pf2_constr2_1
 		DC.B "Couldn't allocate memory for second playfield2-buffer !",ASCII_LINE_FEED,ASCII_LINE_FEED
 		DC.B "Press any key.",ASCII_LINE_FEED
 error_text_pf2_constr2_1_end
 		EVEN
-error_text_pf2_constr2_2
-		DC.B "Check of second playfield2-buffer failed !",ASCII_LINE_FEED,ASCII_LINE_FEED
-		DC.B "Press any key.",ASCII_LINE_FEED
-error_text_pf2_constr2_2_end
-		EVEN
 error_text_pf2_display_1
 		DC.B "Couldn't allocate memory for third playfield2-buffer !",ASCII_LINE_FEED,ASCII_LINE_FEED
 		DC.B "Press any key.",ASCII_LINE_FEED
 error_text_pf2_display_1_end
-		EVEN
-error_text_pf2_display_2
-		DC.B "Check of third playfield2-buffer failed !",ASCII_LINE_FEED,ASCII_LINE_FEED
-		DC.B "Press any key.",ASCII_LINE_FEED
-error_text_pf2_display_2_end
 		EVEN
 
 error_text_pf_extra_1
@@ -148,31 +115,16 @@ error_text_pf_extra_1
 		DC.B "Press any key.",ASCII_LINE_FEED
 error_text_pf_extra_1_end
 		EVEN
-error_text_pf_extra_2
-		DC.B "Check of extra playfield-buffer failed !",ASCII_LINE_FEED,ASCII_LINE_FEED
-		DC.B "Press any key.",ASCII_LINE_FEED
-error_text_pf_extra_2_end
-		EVEN
 
 error_text_spr_constr_1
 		DC.B "Couldn't allocate memory for first sprites-buffer !",ASCII_LINE_FEED,ASCII_LINE_FEED
 		DC.B "Press any key.",ASCII_LINE_FEED
 error_text_spr_constr_1_end
 		EVEN
-error_text_spr_constr_2
-		DC.B "Check of first sprites-buffer failed !",ASCII_LINE_FEED,ASCII_LINE_FEED
-		DC.B "Press any key.",ASCII_LINE_FEED
-error_text_spr_constr_2_end
-		EVEN
 error_text_spr_display_1
 		DC.B "Couldn't allocate memory for second sprites-buffer !",ASCII_LINE_FEED,ASCII_LINE_FEED
 		DC.B "Press any key.",ASCII_LINE_FEED
 error_text_spr_display_1_end
-		EVEN
-error_text_spr_display_2
-		DC.B "Check of second sprites-buffer failed !",ASCII_LINE_FEED,ASCII_LINE_FEED
-		DC.B "Press any key.",ASCII_LINE_FEED
-error_text_spr_display_2_end
 		EVEN
 
 error_text_audio

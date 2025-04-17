@@ -1,17 +1,12 @@
-; Datum:	04.10.2024
-; Version:      1.0
-
-; ** Globale Labels **
-
-; SYS_TAKEN_OVER
-
-; COLOR_GRADIENT_RGB4
+; Global labels
+; 	SYS_TAKEN_OVER
+; 	COLOR_GRADIENT_RGB4
 
 
 ; Input
-; d0.l	... Größe des Speicherbereichs
+; d0.l	Memory size
 ; Result
-; d0.l	... Rückgabewert: Zeiger auf Speicherbereich wenn erfolgreich
+; d0.l	Pointer to memory block if successful or 0
 	CNOP 0,4
 do_alloc_memory
 	move.l	#MEMF_CLEAR|MEMF_PUBLIC,d1
@@ -19,9 +14,9 @@ do_alloc_memory
 
 
 ; Input
-; d0.l	... Größe des Speicherbereichs
+; d0.l	Memory size
 ; Result
-; d0.l	... Rückgabewert: Zeiger auf Speicherbereich wenn erfolgreich
+; d0.l	Pointer to memory block if successful or 0
 	CNOP 0,4
 do_alloc_chip_memory
 	move.l	#MEMF_CLEAR|MEMF_CHIP|MEMF_PUBLIC,d1
@@ -29,9 +24,9 @@ do_alloc_chip_memory
 
 
 ; Input
-; d0.l	... Größe des Speicherbereichs
+; d0.l	Memory size
 ; Result
-; d0.l	... Rückgabewert: Zeiger auf Speicherbereich wenn erfolgreich
+; d0.l	Pointer to memory block if successful, otherwise 0
 	CNOP 0,4
 do_alloc_fast_memory
 	move.l	#MEMF_CLEAR|MEMF_FAST|MEMF_PUBLIC,d1
@@ -39,10 +34,10 @@ do_alloc_fast_memory
 
 
 ; Input
-; d0.l	... Breite des Playfiels in Pixeln
-; d1.l	... Höhe des Playfiels in Zeilen * Tiefe
+; d0.l	Playfield width
+; d1.l	Playfield height * playfield depth
 ; Result
-; d0.l	... Rückgabewert: Zeiger auf Speicherbereich wenn erfolgreich
+; d0.l	Pointer to memory block if successful or 0
 	CNOP 0,4
 do_alloc_bitmap_memory
 	CALLGRAFQ AllocRaster
@@ -50,26 +45,26 @@ do_alloc_bitmap_memory
 
 	IFD SYS_TAKEN_OVER
 		IFNE intena_bits&(~INTF_SETCLR)
+			MC68020
 ; Input
 ; Result
-; d0.l	... Rückgabewert: Inhalt von VBR
-			MC68020
+; d0.l	Content VBR
 			CNOP 0,4
 read_VBR
-			or.w	#SRF_I0|SRF_I1|SRF_I2,SR ; Level-7-Interruptebene
+			or.w	#SRF_I0|SRF_I1|SRF_I2,SR ; highest interrupt level
 			nop
 			movec	VBR,d0
 			nop
 			rte
 		ENDC
 	ELSE
+		MC68020
 ; Input
 ; Result
-; d0 ... Rückgabewert Inhalt von VBR
-		MC68020
+; d0.l	 Content VBR
 		CNOP 0,4
 read_VBR
-		or.w	#SRF_I0|SRF_I1|SRF_I2,SR ; Level-7-Interruptebene
+		or.w	#SRF_I0|SRF_I1|SRF_I2,SR ; highest interrupt level
 		nop
 		movec	VBR,d0
 		nop
@@ -77,13 +72,11 @@ read_VBR
 
 
 ; Input
-; d0.l	... neuer Inhalt von VBR
+; d0.l	Content VBR
 ; Result
-; d0	... Kein Rückgabewert
-		MC68020
 		CNOP 0,4
 write_VBR
-		or.w	#SRF_I0|SRF_I1|SRF_I2,SR ; Level-7-Interruptebene
+		or.w	#SRF_I0|SRF_I1|SRF_I2,SR ; highest interrupt level
 		nop
 		movec	d0,VBR
 		nop
@@ -93,107 +86,103 @@ write_VBR
 
 ; Input
 ; Result
-; d0	... Kein Rückgabewert
 	CNOP 0,4
 wait_beam_position
-	move.l	#$0003ff00,d1		; Maske vertikale Position
-	move.l	#beam_position<<8,d2	; Y-Position
+	move.l	#$0003ff00,d1		; mask vertical beam position V0..V9
+	move.l	#beam_position<<8,d2	; adjust vertical position
 	lea	VPOSR-DMACONR(a6),a0
 	lea	VHPOSR-DMACONR(a6),a1
 wait_beam_position_loop
 	move.w	(a0),d0			; VPOSR
-	swap	d0		 	; Bits in richtige Position bringen
+	swap	d0		 	; adjust bits
 	move.w	(a1),d0			; VHPOSR
-	and.l	d1,d0			; Nur vertikale Position
-	cmp.l	d2,d0			; Auf bestimmte Rasterzeile warten
+	and.l	d1,d0			; only vertical position
+	cmp.l	d2,d0			; wait for beam position
 	blt.s	wait_beam_position_loop
 	rts
 
 
 ; Input
 ; Result
-; d0	... Kein Rückgabewert
 	CNOP 0,4
 wait_vbi
 	lea	INTREQR-DMACONR(a6),a0
 wait_vbi_loop
 	moveq	#INTF_VERTB,d0
-	and.w	(a0),d0			; VERTB-Interrupt ?
-	beq.s	wait_vbi_loop		; Nein -> verzweige
-	move.w	d0,INTREQ-DMACONR(a6)	; VERTB-Interrupt löschen
+	and.w	(a0),d0
+	beq.s	wait_vbi_loop
+	move.w	d0,INTREQ-DMACONR(a6)	; clear interrupt
 	rts
 
 
 ; Input
 ; Result
-; d0	... Kein Rückgabewert
 	CNOP 0,4
 wait_copint
 	lea	INTREQR-DMACONR(a6),a0
 wait_copint_loop
 	moveq	#INTF_COPER,d0
-	and.w	(a0),d0			; COPER-Interrupt ?
-	beq.s	wait_copint_loop	; Nein -> verzweige
-	move.w	d0,INTREQ-DMACONR(a6)	; COPER-Interrupt löschen
+	and.w	(a0),d0
+	beq.s	wait_copint_loop
+	move.w	d0,INTREQ-DMACONR(a6)	; clear interrupt
 	rts
 
 
 ; Input
-; a0	... Copperliste
-; a1	... Tabelle mit Farbwerten
-; d3.w	... erstes Farbregister
-; d7.w	... Anzahl der Farben
+; a0	Pointer copperlist
+; a1	Pointer color table
+; d3.w	Offset first color register
+; d7.w	Number of colors
 ; Result
 ; d0	... Kein Rückgabewert
 	CNOP 0,4
 cop_init_colors
 	move.w	d3,(a0)+		; COLORxx
-	move.w	(a1)+,(a0)+		; RGB4-Farbwert
-	addq.w	#2,d3			; nächstes Farbregister
+	move.w	(a1)+,(a0)+		; RGB4 value
+	addq.w	#2,d3			; next color register
 	dbf	d7,cop_init_colors
 	rts
 
 
 ; Input
-; a0	,,, Farbregister-Adresse
-; a1	,,, Tabelle mit Farbwerten
-; d7.w	... Anzahl der Farben
+; a0	Offset first color register
+; a1	Pointer color table
+; d7.w	Number of colors
 ; Result
 ; d0	... Kein Rückgabewert
 	CNOP 0,4
-cpu_init_high_colors
+cpu_init_colors
 	move.w	(a1)+,(a0)+		; COLORxx
-	dbf	d7,cpu_init_high_colors
+	dbf	d7,cpu_init_colors
 	rts
 
 
 	IFD COLOR_GRADIENT_RGB4
 ; Input
-; d0.w	... RGB4-Istwert
-; d6.w	... RGB4-Sollwert
-; d7.w	... Anzahl der Farbwerte
-; a0	... Zeiger auf Farbtabelle
-; a1.w	... Additions-/Subtraktionswert für Rot
-; a2.w	... Additions-/Subtraktionswert für Grün
-; a4.w	... Additions-/Subtraktionswert für Blau
-; a5	... Offset
+; d0.w	RGB4 current value
+; d6.w	RGB4 destination value
+; d7.w	Number of colors
+; a0	Pointer color table
+; a1.w	Increase/decrease red
+; a2.w	Increase/decrease green
+; a4.w	Increase/decrease blue
+; a5	Offset to next entry in color table
 ; Result
-; d0	... Kein Rückgabewert
 		CNOP 0,4
 init_color_gradient_rgb4_loop
-		move.w	d0,(a0)		; RGB4-Wert in Farbtabelle schreiben
-		add.l	a5,a0		; Offset
+		move.w	d0,(a0)		; RGB4 value
+		add.l	a5,a0		; next entry
 		move.w	d0,d1
-		and.w	#NIBBLE_MASK_HIGH,d1 ; Ist-G4
+		and.w	#NIBBLE_MASK_HIGH,d1 ; G4
 		moveq	#NIBBLE_MASK_LOW,d2
-		and.w	d0,d2		; Ist-B4
-		clr.b	d0		; Ist-R4
-		move.w	d6,d3		; Soll-RGB4
-		move.w	d3,d4		; Soll-G4
+		and.w	d0,d2		; B4
+		clr.b	d0		; R4
+		move.w	d6,d3		; RGB4
+		move.w	d3,d4
 		moveq	#NIBBLE_MASK_LOW,d5
-		and.w	#NIBBLE_MASK_HIGH,d4 ; Soll-G4
-		and.w	d3,d5		; Soll-B4
-		clr.b	d3		; Soll-R4
+		and.w	#NIBBLE_MASK_HIGH,d4 ; G4 destination
+		and.w	d3,d5		; B4 destination
+		clr.b	d3		; R4 destination
 
 		cmp.w	d3,d0
 		bgt.s	decrease_red_rgb4
@@ -207,7 +196,7 @@ check_blue_rgb4
 		bgt.s	decrease_blue_rgb4
 		blt.s	increase_blue_rgb4
 merge_rgb4
-		move.b	d1,d0		; G4
+		move.b	d1,d0
 		or.b	d2,d0		; B4
 		dbf	d7,init_color_gradient_rgb4_loop
 		rts

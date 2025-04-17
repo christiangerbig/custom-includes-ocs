@@ -1,9 +1,9 @@
-; **** PT3-Replay ****
 pt_maxsongpos	 	 	EQU 128
 pt_maxpattpos	 	 	EQU 64
 pt_pattsize	 	 	EQU 1024
 pt_chansnum	 	 	EQU 4
 pt_samplesnum	 	 	EQU 31
+pt_oneshotlen			EQU 1
 pt_cmdpermask	 	 	EQU $0fff
 pt_cmdmask	 	 	EQU $0f
 pt_ecmdmask	 	 	EQU $0ff0
@@ -32,9 +32,14 @@ pt_wavenoretrig	 	 	EQU 4
 pt_vibnoretrigbit	 	EQU 2
 pt_trenoretrigbit	 	EQU 6
 pt_maxloopcount	 	 	EQU $7fff
+
 pt_metronote	 	 	EQU 214 ; Note period "C-3"
 pt_metrosamplenum	 	EQU 31
 pt_metronoteinfo	 	EQU ((pt_metrosamplenum&NIBBLE_MASK_HIGH)<<24)+(pt_metronote<<16)+((pt_metrosamplenum&NIBBLE_MASK_LOW)<<8*NIBBLE_SHIFT)
+pt_metrochan1			EQU 1
+pt_metrochan2			EQU 2
+pt_metrochan3			EQU 3
+pt_metrochan4			EQU 4
 
 pt_cmdarpeggio	 	 	EQU 0
 pt_cmdportup	 	 	EQU 1

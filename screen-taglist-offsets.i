@@ -1,6 +1,3 @@
-; Datum:	03.10.2024
-; Version:	1.1
-
 	RSRESET
 
 screen_tag_list			RS.B 0

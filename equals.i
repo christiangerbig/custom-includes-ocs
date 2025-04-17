@@ -1,16 +1,10 @@
-; Datum:        04.10.2024
-; Version:      1.0
-
-
-; **** OS ****
+; Main
 exec_base			EQU $0004
 
 OS2_VERSION			EQU 36
 OS3_VERSION			EQU 39
 ANY_LIBRARY_VERSION		EQU 0
 
-
-; **** Main ****
 TRUE				EQU 0
 FALSE				EQU -1
 FALSE_BYTE			EQU $ff
@@ -64,16 +58,14 @@ ASCII_CTRL_W			EQU 23
 
 drives_motor_delay		EQU PAL_FPS/2 ; 500 ms
 
-
-; **** Auto-Requesters ****
+; Auto Requesters
 monitor_request_x_size		EQU 600
 monitor_request_y_size		EQU 64
 
 tcp_stack_request_x_size	EQU 600
 tcp_stack_request_y_size	EQU 64
 
-
-; **** Display-Degrader ****
+; Display Degrader
 pal_screen_pre_36_top		EQU 0
 pal_screen_pre_36_left		EQU 0
 pal_screen_pre_36_x_size	EQU 32
@@ -103,8 +95,7 @@ sprites_colors_number		EQU 16
 
 monitor_switch_delay		EQU PAL_FPS*3 ; 3 s
 
-
-; **** Screen-Fader ****
+; Screen Fader
 sf_screen_depth_max		EQU 4
 sf_rgb4_colors_number		EQU 32
 
@@ -112,8 +103,7 @@ sfi_fader_speed			EQU 1
 
 sfo_fader_speed			EQU 1
 
-
-; **** Custom_Errors ****
+; Custom Errors
 NO_CUSTOM_ERROR			EQU 0
 
 CPU_030_REQUIRED		EQU 1
@@ -174,8 +164,7 @@ WINDOW_COULD_NOT_OPEN		EQU 33
 
 custom_errors_number		EQU 33
 
-
-; **** Chipset ****
+; Chipset
 _CUSTOM				EQU $dff000
 
 DSKPTH				EQU DSKPT
@@ -661,11 +650,11 @@ SPRCTLB_SV8			EQU 2
 SPRCTLB_EV8			EQU 1
 SPRCTLB_SH0			EQU 0
 
-; **** CIA ****
+; CIA
 _CIAA				EQU $bfe001
 _CIAB				EQU $bfd000
 
-; **** CPU ****
+; CPU
 SRF_T1				EQU $8000
 SRF_T0				EQU $4000
 SRF_S				EQU $2000
@@ -715,7 +704,7 @@ CACR060B_EIC			EQU 15
 CACR060B_NAI			EQU 14
 CACR060B_FIC			EQU 13
 
-; **** Tastatur ****
+; Keyboard
 KEYBOARD_KEYCODE_I		EQU $17
 KEYBOARD_KEYCODE_A		EQU $20
 KEYBOARD_KEYCODE_G		EQU $24
@@ -738,7 +727,7 @@ KEYBOARD_KEYCODE_F8		EQU $57
 KEYBOARD_KEYCODE_F9		EQU $58
 KEYBOARD_KEYCODE_F10		EQU $59
 
-; **** Display ****
+; Display
 COLOR_CLOCK_SPEED		EQU 280
 LORES_PIXEL_SPEED		EQU 140
 HIRES_PIXEL_SPEED		EQU 70
@@ -879,7 +868,7 @@ DDFSTOP_OVERSCAN_32_PIXEL_MIN	EQU $30
 DDFSTOP_OVERSCAN_48_PIXEL_MIN	EQU $28
 DDFSTOP_OVERSCAN_64_PIXEL_MIN	EQU $20
 
-; **** Special-Registers ****
+; Yulquen74 accelerator board
 CFG0				EQU $bff000
 
 CFG0F_RSTPEN			EQU $8000
@@ -891,3 +880,11 @@ CFG0B_RSTPEN			EQU 15
 CFG0B_WRPEN			EQU 14
 CFG0B_CLKSEL1			EQU 13
 CFG0B_CLKSEL0			EQU 12
+
+; Protracker
+	IFD PROTRACKER_VERSION_2 
+		INCLUDE "music-tracker/pt2-equals.i"
+	ENDC
+	IFD PROTRACKER_VERSION_3
+		INCLUDE "music-tracker/pt3-equals.i"
+	ENDC

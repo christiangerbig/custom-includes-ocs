@@ -1,6 +1,3 @@
-; Datum:	27.09.2024
-; Version:	1.0
-
 RS_ALIGN_LONGWORD		MACRO
 ; Input
 ; Result
@@ -30,7 +27,7 @@ wait_right_button_loop\@
 
 RASTER_TIME			MACRO
 ; Input
-; \1 HEXNUMBER:	RGB4-Wert (optional)
+; \1 HEXNUMBER:	RGB4 value (optional)
 ; Result
 	move.l	d0,-(a7)
 	move.w	VPOSR-DMACONR(a6),d0
@@ -51,7 +48,7 @@ rt_no_update_y_pos_max\@
 
 SHOW_BEAM_POSITION		MACRO
 ; Input
-; \1 WORD:	Farbwert
+; \1 WORD:	RGB4 color value
 ; Result
 	move.w	#\1,COLOR00-DMACONR(a6)
 	ENDM
@@ -60,81 +57,81 @@ SHOW_BEAM_POSITION		MACRO
 AUDIO_TEST			MACRO
 ; Input
 ; Result
-	lea	$20000,a0		; Zeiger auf Chip-Memory
-	move.l	a0,AUD0LCH-DMACONR(a6)	; Zeiger auf Audio-Daten
+	lea	$20000,a0		; pointer chip memory
+	move.l	a0,AUD0LCH-DMACONR(a6)
 	move.l	a0,AUD1LCH-DMACONR(a6)
 	move.l	a0,AUD2LCH-DMACONR(a6)
 	move.l	a0,AUD3LCH-DMACONR(a6)
-	moveq	#1,d0			; Länge = 1 Wort
+	moveq	#1,d0			; length = 1 word
 	move.w	d0,AUD0LEN-DMACONR(a6)	
 	move.w	d0,AUD1LEN-DMACONR(a6)
 	move.w	d0,AUD2LEN-DMACONR(a6)
 	move.w	d0,AUD3LEN-DMACONR(a6)
-	moveq	#64,d0			; maximale Lautstärke
+	moveq	#0,d0			; clear volume
 	move.w	d0,AUD0VOL-DMACONR(a6)	
 	move.w	d0,AUD1VOL-DMACONR(a6)
 	move.w	d0,AUD2VOL-DMACONR(a6)
 	move.w	d0,AUD3VOL-DMACONR(a6)
-	move.w	#DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3|DMAF_SETCLR,DMACON-DMACONR(a6) ; Audio-DMA starten
+	move.w	#DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3|DMAF_SETCLR,DMACON-DMACONR(a6) ; enable audio DMA
 	ENDM
 
 
 MOVEF				MACRO
 ; Input
-; \0 STRING:	Größenangabe B/W/L
-; \1 NUMBER:	Quellwert
-; \2 STRING:	Ziel
+; \0 STRING:	Size [B/W/L]
+; \1 NUMBER:	Source value
+; \2 STRING:	Target
 ; Result
 	IFC "","\0"
-	 FAIL Makro MOVEF: Größenangabe B/W/L fehlt
+		FAIL Macro MOVEF: Size missing
 	ENDC
 	IFC "","\1"
-	 FAIL Makro MOVEF: Quellwert fehlt
+		FAIL Macro MOVEF: Source value missing
 	ENDC
 	IFC "","\2"
-	 FAIL Makro MOVEF: Ziel fehlt
+		FAIL Macro MOVEF: Target missing
 	ENDC
 	IFC "B","\0"
-		IFLE $80-(\1)		; Wenn Zahl >= $80, dann
-			IFGE $ff-(\1)	; Wenn Zahl <= $ff, dann
-				moveq #-((-(\1)&$ff)),\2 ; erste Variante
+		IFLE $80-(\1)
+			IFGE $ff-(\1)
+				moveq #-((-(\1)&$ff)),\2
 			ENDC
-		ELSE			; ansonsten
-			moveq #\1,\2	; zweite Variante
+		ELSE
+			moveq #\1,\2
 		ENDC
 	ENDC
 	IFC "W","\0"
-		IFEQ (\1)&$ff00		; Wenn Zahl <= $00ff, dann
-			IFEQ (\1)&$80	; Wenn Zahl <= $007f, dann
-				moveq	#\1,\2 ; erste Variante
+		IFEQ (\1)&$ff00
+			IFEQ (\1)&$80
+				moveq	#\1,\2
 			ENDC
-			IFEQ (\1)-$80	; Wenn Zahl = $0080, dann
-				moveq	#$7f,\2	; zweite Variante
+			IFEQ (\1)-$80
+				moveq	#$7f,\2
 				not.b	\2
 			ENDC
-			IFGT (\1)-$80	; Wenn Zahl > $0080, dann
-				moveq	#256-(\1),\2 ; dritte Variante
+			IFGT (\1)-$80
+				moveq	#256-(\1),\2
 				neg.b	\2
 			ENDC
-		ELSE			; Wenn Zahl > $00ff, dann
-			move.w	#\1,\2	; vierte Variante
+		ELSE
+			move.w	#\1,\2
 		ENDC
 	ENDC
 	IFC "L","\0"
-		IFEQ (\1)&$ffffff00	; Wenn Zahl <= $000000ff, dann
-			IFEQ (\1)&$80	; Wenn Zahl <= $0000007f, dann
-				moveq	#\1,\2 ; erste Variante
+		IFEQ (\1)&$ffffff00
+			IFEQ (\1)&$80
+				moveq	#\1,\2
 			ENDC
-			IFEQ (\1)-$80	; Wenn Zahl = $00000080, dann
-				moveq	#$7f,\2 ; zweite Variante
+			IFEQ (\1)-$80
+				moveq	#$7f,\2
 				not.b	\2
 			ENDC
-			IFGT (\1)-$80	; Wenn Zahl > $00000080, dann
-				moveq	#256-(\1),\2	; dritte Variante
+			IFGT (\1)-$80
+				moveq	#256-(\1),\2
 				neg.b	\2
 			ENDC
-		ELSE			; Wenn Zahl > $000000ff, dann
-			move.l	#\1,\2	; vierte Variante
+		ELSE
+			move.l	#\1,\2
 		ENDC
 	ENDC
 	ENDM
@@ -142,69 +139,69 @@ MOVEF				MACRO
 
 ADDF				MACRO
 ; Input
-; \0 STRING:	Größenangabe B/W/L
-; \1 NUMBER:	8/16-Bit Quellwert
-; \2 STRING:	Ziel
+; \0 STRING:	Size [B/W/L]
+; \1 NUMBER:	8/16 bit source
+; \2 STRING:	Target
 ; Result
 	IFC "","\0"
-	 FAIL Makro ADDF: Größenangabe B/W/L fehlt
+	 FAIL Macro ADDF: Size missing
 	ENDC
 	IFC "","\1"
-	 FAIL Makro ADDF: 8/16-Bit Quellwert fehlt
+	 FAIL Macro ADDF: 8/16 bit source missing
 	ENDC
 	IFC "","\2"
-	 FAIL Makro ADDF: Ziel fehlt
+	 FAIL Macro ADDF: target missing
 	ENDC
 	IFEQ \1
 		MEXIT
 	ENDC
 	IFC "B","\0"
-		IFGE (\1)-$8000		; Wenn Zahl > $7fff, dann
+		IFGE (\1)-$8000
 			add.b	#\1,\2
 		ELSE
-			IFLE (\1)-8	; Wenn Zahl <= $0008, dann
+			IFLE (\1)-8
 				addq.b	#(\1),\2
-			ELSE		; Wenn > $0008, dann
-				IFLE (\1)-16	; Wenn Zahl <= $0010, dann
+			ELSE
+				IFLE (\1)-16
 					addq.b	#8,\2
 					addq.b	#\1-8,\2
-				ELSE	; Wenn Zahl > $0010, dann
+				ELSE
 					add.b	#\1,\2
 				ENDC
 			ENDC
 		ENDC
 	ENDC
 	IFC "W","\0"
-		IFGE (\1)-$8000		; Wenn Zahl > $7fff, dann
+		IFGE (\1)-$8000
 			add.w	#\1,\2
 		ELSE
-			IFLE (\1)-8	; Wenn Zahl <= $0008, dann
+			IFLE (\1)-8
 				addq.w	#(\1),\2
-			ELSE		; Wenn > $0008, dann
-				IFLE (\1)-16 ; Wenn Zahl <= $0010, dann
+			ELSE
+				IFLE (\1)-16
 					addq.w	#8,\2
 					addq.w	#\1-8,\2
-				ELSE	; Wenn Zahl > $0010, dann
+				ELSE
 					add.w	#\1,\2
 				ENDC
 			ENDC
 		ENDC
 	ENDC
 	IFC "L","\0"
-		IFGE (\1)-$8000		; Wenn Zahl > $7fff, dann
+		IFGE (\1)-$8000
 		add.l	#\1,\2
 		ELSE
-			IFLE (\1)-8	; Wenn Zahl <= $0008, dann
+			IFLE (\1)-8
 				addq.l	#(\1),\2
-			ELSE		; Wenn > $0008, dann
-				IFLE (\1)-16 ; Wenn Zahl <= $0010, dann
+			ELSE
+				IFLE (\1)-16
 					addq.l	#8,\2
 					addq.l	#\1-8,\2
 				ELSE						;Wenn Zahl > $0010, dann
 					add.l	#\1,\2
 				ENDC
 			ENDC
-			IFGE (\1)-$8000	; Wenn Zahl > $7fff, dann
+			IFGE (\1)-$8000
 				add.l	#\1,\2
 			ENDC
 		ENDC
@@ -214,54 +211,54 @@ ADDF				MACRO
 
 SUBF				MACRO
 ; Input
-; \0 STRING:	Größenangabe B/W/L
-; \1 NUMBER:	8/16-Bit Quellwert
-; \2 STRING:	Ziel
+; \0 STRING:	Size [B/W/L]
+; \1 NUMBER:	8/16 bit source value
+; \2 STRING:	Target
 ; Result
 	IFC "","\0"
-		FAIL Makro SUBF: Größenangabe B/W/L fehlt
+		FAIL Macro SUBF: Size missing
 	ENDC
 	IFC "","\1"
-		FAIL Makro SUBF: 8/16-Bit Quellwert fehlt
+		FAIL Macro SUBF: 8/16 bit value missing
 	ENDC
 	IFC "","\2"
-		FAIL Makro SUBF: Ziel fehlt
+		FAIL Macro SUBF: Target missing
 	ENDC
 	IFEQ \1
 		MEXIT
 	ENDC
 	IFC "B","\0"
-		IFLE (\1)-8		; Wenn Zahl <= $0008, dann
+		IFLE (\1)-8
 			subq.b	#(\1),\2
-		ELSE			; Wenn > $0008, dann
-			IFLE (\1)-16	; Wenn Zahl <= $0010, dann
+		ELSE
+			IFLE (\1)-16
 				subq.b	#8,\2
 				subq.b	#\1-8,\2
-			ELSE		; Wenn Zahl > $0010, dann
+			ELSE
 				sub.b	#\1,\2
 			ENDC
 		ENDC
 	ENDC
 	IFC "W","\0"
-		IFLE (\1)-8		; Wenn Zahl <= $0008, dann
+		IFLE (\1)-8
 			subq.w	#(\1),\2
-		ELSE			; Wenn > $0008, dann
-			IFLE (\1)-16	; Wenn Zahl <= $0010, dann
+		ELSE
+			IFLE (\1)-16
 				subq.w	#8,\2
 				subq.w	#\1-8,\2
-			ELSE		; Wenn Zahl > $0010, dann
+			ELSE
 				sub.w	#\1,\2
 			ENDC
 		ENDC
 	ENDC
 	IFC "L","\0"
-		IFLE (\1)-8		; Wenn Zahl <= $0008, dann
+		IFLE (\1)-8
 			subq.l	#(\1),\2
-		ELSE			; Wenn > $0008, dann
-			IFLE (\1)-16	; Wenn Zahl <= $0010, dann
+		ELSE
+			IFLE (\1)-16
 				subq.l	#8,\2
 				subq.l	#\1-8,\2
-			ELSE		; Wenn Zahl > $0010, dann
+			ELSE
 				sub.l	#\1,\2
 			ENDC
 		ENDC
@@ -271,26 +268,26 @@ SUBF				MACRO
 
 MULUF				MACRO
 ; Input
-; \0 STRING:	Größenangabe B/W/L
-; \1 NUMBER:	16/32-Bit Faktor
-; \2 NUMBER:	Produkt
-; \3 STRING:	Scratch-Register
+; \0 STRING:	Size [B/W/L]
+; \1 NUMBER:	16/32 bit factor
+; \2 NUMBER:	Product
+; \3 STRING:	Scratch register
 ; Result
 	IFC "","\0"
-		FAIL Makro MULUF: Größenangabe B/W/L fehlt
+		FAIL Macro MULUF: Size missing
 	ENDC
 	IFC "","\1"
-		FAIL Makro MULUF: 16/32-Bit Faktor fehlt
+		FAIL Macro MULUF: 16/32 bit factor missing
 	ENDC
 	IFC "","\2"
-		FAIL Makro MULUF: Produkt fehlt
+		FAIL Macro MULUF: Product missing
 	ENDC
 	IFEQ \1
-		FAIL Makro MULUF: Faktor ist 0
+		FAIL Macro MULUF: Factor is 0
 	ENDC
 	IFC "B","\0"
 		IFGT \1-128
-			FAIL Makro MULUF.B: Faktor ist größer als 128
+			FAIL Macro MULUF.B: Factor > 128
 		ENDC
 	ENDC
 	IFEQ (\1)-2		 	; *2
@@ -1172,62 +1169,63 @@ MULUF				MACRO
 
 MULSF				MACRO
 ; Input
-; \1 NUMBER:	16-Bit vorzeichenbehafteter Faktor
-; \2 NUMBER:	Produkt
-; \3 STRING:	Scratch-Register
+; \1 NUMBER:	16 bit signed factor
+; \2 NUMBER:	Product
+; \3 STRING:	Scratch register
 ; Result
 	IFC "","\1"
-		FAIL Makro MULSF: 16-Bit vorzeichenbehafteter Faktor fehlt
+		FAIL Macro MULSF: Signed factor missing
 	ENDC
 	IFC "","\2"
-		FAIL Makro MULSF: 16-Bit Produkt fehlt
+		FAIL Macro MULSF: Product missing
 	ENDC
 	IFEQ \1
-		FAIL Makro MULSF: Faktor ist 0
+		FAIL Macro MULSF: Factor is 0
 	ENDC
-	ext.l	\2			; Auf 32 Bit erweitern
+	ext.l	\2
 	MULUF.L \1,\2,\3
 	ENDM
 
 
 DIVUF				MACRO
 ; Input
-; \0 STRING:	Größenangabe W
+; \0 STRING:	Size [W]
 ; \1 NUMBER:	Divisor
 ; \2 NUMBER:	Divident
-; \3 STRING:	Scratch-Register, Ergebnis
+; \3 STRING:	Scratch register
 ; Result
+; \3 NUMBER	Result
 	IFC "","\0"
-		FAIL Makro DIVUF: Größenangabe W fehlt
+		FAIL Macro DIVUF: Size missing
 	ENDC
 	IFC "","\1"
-		FAIL Makro DIVUF: Divsor fehlt
+		FAIL Macro DIVUF: Divsor missing
 	ENDC
 	IFC "","\2"
-		FAIL Makro DIVUF: Divident fehlt
+		FAIL Macro DIVUF: Divident missing
 	ENDC
-	moveq	#-1,\3			; Zähler für Ergebnis
+	moveq	#-1,\3			; counter for result
 divison_loop\@
-	addq.w	#1,\3			; Zähler erhöhen
-	sub.w	\1,\2			; Divisor solange von Divident abziehen
-	bge.s	divison_loop\@		; bis Dividend < Divisor
+	addq.w	#1,\3
+	sub.w	\1,\2			; substract divisor from divident
+	bge.s	divison_loop\@		; until dividend < divisor
 	ENDM
 
 
 CMPF MACRO
 ; Input
-; \0 STRING:	Größenangabe B/W/L
-; \1 NUMBER:	Quelle 8/16/32-Bit
-; \2 STRING:	Ziel
+; \0 STRING:	Size [B/W/L]
+; \1 NUMBER:	8/16/32 bit source
+; \2 STRING:	target
 ; Result
 	IFC "","\0"
-		FAIL Makro CMPF: Größenangabe B/W/L fehlt
+		FAIL Macro CMPF: Size missing
 	ENDC
 	IFC "","\1"
-		FAIL Makro CMPF: Quelle 8/16/32-Bit fehlt
+		FAIL Macro CMPF: Source missing
 	ENDC
 	IFC "","\2"
-		FAIL Makro CMPF: Ziel fehlt
+		FAIL Macro CMPF: Target missing
 	ENDC
 	IFEQ \1
 		tst.\0	\2
@@ -1239,74 +1237,74 @@ CMPF MACRO
 
 CPU_INIT_COLOR			MACRO
 ; Input
-; \1 WORD:		Erstes Farbregister-Offset
-; \2 BYTE_SIGNED:	Anzahl der Farbwerte
-; \3 POINTER:		Farbtabelle (optional)
+; \1 WORD:		First color register offset
+; \2 BYTE_SIGNED:	Number of colors
+; \3 POINTER:		Color table (optional)
 ; Result
 	IFC "","\1"
-		FAIL Makro CPU_INIT_COLOR: Erstes Farbregister-Offset fehlt
+		FAIL Macro CPU_INIT_COLOR: First color register offset missing
 	ENDC
 	IFC "","\2"
-		FAIL Makro CPU_INIT_COLOR: Anzahl der Farbwerte fehlt
+		FAIL Macro CPU_INIT_COLOR: Number of color values missing
 	ENDC
-	lea		(\1)-DMACONR(a6),a0 ;erstes Farbregister
-	moveq	#\2-1,d7		; Anzahl der Farbwerte
+	lea	(\1)-DMACONR(a6),a0	; first color register
+	moveq	#\2-1,d7		; number of color values
 	IFNC "","\3"
-		lea	\3(pc),a1	; Farbtabelle
+		lea	\3(pc),a1	; pointer color table
 	ENDC
-	bsr	cpu_init_high_colors
+	bsr	cpu_init_colors
 	ENDM
 
 
 INIT_CHARACTERS_OFFSETS MACRO
 ; Input
-; \0 STRING:	Größenangabe W/L
-; \1 STRING:	Labels-Prefix der Routine
+; \0 STRING:	Size [W/L]
+; \1 STRING:	Labels prefix
 ; Result
 	CNOP 0,4
 \1_init_characters_offsets
 	IFC "","\0"
-		FAIL Makro INIT_CHARACTERS_OFFSETS: Größenangabe W/L fehlt
+		FAIL Macro INIT_CHARACTERS_OFFSETS: Size missing
 	ENDC
 	IFC "","\1"
-		FAIL Makro INIT_CHARACTERS_OFFSETS: Labels-Prefix der Routine fehlt
+		FAIL Macro INIT_CHARACTERS_OFFSETS: Labels prefix missing
 	ENDC
 	IFC "W","\0"
-		moveq	#0,d0		; X-Offset erstes Zeichen in Zeichen-Playfieldvorlage
-		moveq	#\1_image_plane_width,d1 ; X-Offset letztes Zeichen in Zeichen-Playfieldvorlage
-		move.w	d1,d2		; X-Offset Resetwert
-		MOVEF.W \1_image_plane_width*\1_image_depth*(\1_origin_character_y_size+1),d3 ; Y-Offset für nächste Reihe der Zeichen in Zeichen-Playfieldvorlage
-		lea	\1_characters_offsets(pc),a0 ; Offsets der Zeichen in Zeichen-Playfieldvorlage
-		moveq	#\1_ascii_end-\1_ascii-1,d7 ; Anzahl der Zeichen des Fonts
+		moveq	#0,d0		; x offset first character
+		moveq	#\1_image_plane_width,d1 ; X offset last character
+		move.w	d1,d2		; x offset reset
+		MOVEF.W \1_image_plane_width*\1_image_depth*(\1_origin_character_y_size+1),d3 ; y offset next character line
+		lea	\1_characters_offsets(pc),a0
+		moveq	#\1_ascii_end-\1_ascii-1,d7 ; number of font characters
 \1_init_characters_offsets_loop
-		move.w	d0,(a0)+	; X+Y-Offset des Zeichens eintragen
-		addq.w	#\1_origin_character_x_size/8,d0 ; X-Offset des nächsten Zeichens
-		cmp.w	d1,d0		; Letztes Zeichen der Zeile in Zeichen-Playfieldvorlage?
-		bne.s	\1_no_x_offset_reset ; Nein -> verzweige
+		move.w	d0,(a0)+	; xy character offset
+		addq.w	#\1_origin_character_x_size/8,d0 ; X offset next character
+		cmp.w	d1,d0		; last character in line ?
+		bne.s	\1_no_x_offset_reset
 \1_x_offset_reset
-		sub.w	d2,d0		; X-Offset zurücksetzen (Erstes Zeichen in Zeile)
-		add.w	d3,d1		; + Y-Offset
-		add.w	d3,d0		; Y-Offset = Beginn nächste Reihe in Zeichen-Playfieldvorlage
+		sub.w	d2,d0		; reset x offset
+		add.w	d3,d1		; y offset
+		add.w	d3,d0		; y offset
 \1_no_x_offset_reset
 		dbf	d7,\1_init_characters_offsets_loop
 		rts
 	ENDC
 	IFC "L","\0"
-		lea	\1_characters_offsets(pc),a0 ; Offsets der Zeichen in Zeichen-Playfieldvorlage
-		moveq	#0,d0		; X-Offset erstes Zeichen in Zeichen-Playfieldvorlage
-		moveq	#\1_image_plane_width,d1 ; X-Offset letztes Zeichen in Zeichen-Playfieldvorlage
-		move.l	d1,d2		; X-Offset Resetwert
+		lea	\1_characters_offsets(pc),a0
+		moveq	#0,d0		; x offset first character
+		moveq	#\1_image_plane_width,d1 ; x offset last character
+		move.l	d1,d2		; x offset reset
 		move.l	#\1_image_plane_width*\1_image_depth*(\1_origin_character_y_size),d3			Y-Offset für nächste Reihe der Zeichen in Zeichen-Playfieldvorlage
-		moveq	#\1_ascii_end-\1_ascii-1,d7 ; Anzahl der Zeichen des Fonts
+		moveq	#\1_ascii_end-\1_ascii-1,d7 ; number of font characters
 \1_init_characters_offsets_loop
-		move.l	d0,(a0)+	; X+Y-Offset des Zeichens eintragen
-		add.l	#\1_origin_character_x_size/8,d0 ; X-Offset des nächsten Zeichens
-		cmp.l	d1,d0		; Letztes Zeichen der Zeile in Zeichen-Playfieldvorlage?
-		bne.s	\1_no_x_offset_reset ;Nein -> verzweige
+		move.l	d0,(a0)+	; xy offset character
+		add.l	#\1_origin_character_x_size/8,d0 ; x offset next character
+		cmp.l	d1,d0		; last character ?
+		bne.s	\1_no_x_offset_reset
 \1_x_offset_reset
-		sub.l	d2,d0		; X-Offset zurücksetzen (Erstes Zeichen in Zeile)
-		add.l	d3,d1		; + Y-Offset
-		add.l	d3,d0		; Y-Offset = Beginn nächste Reihe in Zeichen-Playfieldvorlage
+		sub.l	d2,d0		; reset x offset
+		add.l	d3,d1		; y offset
+		add.l	d3,d0		; y offset
 \1_no_x_offset_reset
 		dbf	d7,\1_init_characters_offsets_loop
 		rts
@@ -1316,50 +1314,50 @@ INIT_CHARACTERS_OFFSETS MACRO
 
 INIT_CHARACTERS_X_POSITIONS	MACRO
 ; Input
-; \1 STRING:	Labels-Prefix der Routine
-; \2 STRING:	Pixel-Auflösung "LORES", "HIRES", "SHIRES"
-; \3 STRING:	Tabellenzugriff "BACKWARDS" (optional)
-; \4 NUMBER:	Anzahl der Buchstaben (optional)
+; \1 STRING:	Labels prefix
+; \2 STRING:	Pixel resolution ["LORES", "HIRES", "SHIRES"]
+; \3 STRING:	Read "BACKWARDS" (optional)
+; \4 NUMBER:	Number of characters (optional)
 ; Result
 	CNOP 0,4
 \1_init_characters_x_positions
 	IFC "","\1"
-		FAIL Makro INIT_CHARACTERS_X_POSITIONS: Labels-Prefix fehlt
+		FAIL Macro INIT_CHARACTERS_X_POSITIONS: Labels prefix missing
 	ENDC
 	IFC "","\2"
-		FAIL Makro INIT_CHARACTERS_X_POSITIONS: Pixel-Auflösung "LORES", "HIRES", "SHIRES" fehlt
+		FAIL Macro INIT_CHARACTERS_X_POSITIONS: Pixel resolution missing
 	ENDC
-	moveq	#0,d0			; 1. X-Position
+	moveq	#0,d0			; first x position
 	IFC "LORES","\2"
-		moveq	#\1_text_character_x_size,d1 ; Additionswert
+		moveq	#\1_text_character_x_size,d1 ; next character image
 	ENDC
 	IFC "HIRES","\2"
-		moveq	#\1_text_character_x_size*2,d1 ; Additionswert
+		moveq	#\1_text_character_x_size*2,d1 ; next character image
 	ENDC
 	IFC "SHIRES","\2"
-		MOVEF.W	\1_text_character_x_size*4,d1 ; Additionswert
+		MOVEF.W	\1_text_character_x_size*4,d1 ; next character image
 	ENDC
 	IFNC "BACKWARDS","\3"
-		lea	\1_characters_x_positions(pc),a0 ; Zeiger auf Tabelle mit X-Koords.
+		lea	\1_characters_x_positions(pc),a0
 	ELSE
 		IFC "","\4"
-			lea	\1_characters_x_positions+(\1_text_characters_number*WORD_SIZE)(pc),a0 ; Tabelle mit X-Koords.-Ende
+			lea	\1_characters_x_positions+(\1_text_characters_number*WORD_SIZE)(pc),a0 ; table end
 		ELSE
-			lea	\1_characters_x_positions+((\1_\4)*WORD_SIZE)(pc),a0 ; Tabelle mit X-Koords.-Ende
+			lea	\1_characters_x_positions+((\1_\4)*WORD_SIZE)(pc),a0 ; table end
 		ENDC
 	ENDC
 	IFC "","\4"
-		moveq	#(\1_text_characters_number)-1,d7 ;Anzahl der Buchstaben
+		moveq	#(\1_text_characters_number)-1,d7
 	ELSE
-		moveq	#(\1_\4)-1,d7	; Anzahl der Buchstaben
+		moveq	#(\1_\4)-1,d7	; number of characters
 	ENDC
 \1_init_characters_x_positions_loop
 	IFNC "BACKWARDS","\3"
-		move.w	d0,(a0)+	; X eintragen
+		move.w	d0,(a0)+	; x position
 	ELSE
-		move.w	d0,-(a0)	; X eintragen
+		move.w	d0,-(a0)	; x position
 	ENDC
-	add.w	d1,d0			; X erhöhen
+	add.w	d1,d0			; next x position
 	dbf	d7,\1_init_characters_x_positions_loop
 	rts
 	ENDM
@@ -1367,25 +1365,25 @@ INIT_CHARACTERS_X_POSITIONS	MACRO
 
 INIT_CHARACTERS_Y_POSITIONS		MACRO
 ; Input
-; \1 STRING:	Labels-Prefix der Routine
-; \2 NUMBER:	Anzahl der Buchstaben (optional)
+; \1 STRING:	Labels prefix
+; \2 NUMBER:	Number of characters (optional)
 ; Result
 	CNOP 0,4
 \1_init_characters_y_positions
 	IFC "","\1"
-		FAIL Makro INIT_CHARACTERS_Y_POSITIONS: Labels-Prefix fehlt
+		FAIL Macro INIT_CHARACTERS_Y_POSITIONS: Labels prefix missing
 	ENDC
-	moveq	#0,d0			; 1. Y-Position
-	moveq	#\1_text_character_y_size,d1 ; Additionswert
-	lea	\1_characters_y_positions(pc),a0 ; Zeiger auf Tabelle mit X-Koords.
+	moveq	#0,d0			; first y position
+	moveq	#\1_text_character_y_size,d1 ; next y position
+	lea	\1_characters_y_positions(pc),a0
 	IFC "","\2"
-		moveq	#(\1_text_characters_number)-1,d7 ; Anzahl der Buchstaben
+		moveq	#(\1_text_characters_number)-1,d7
 	ELSE
-		moveq	#(\1_\2)-1,d7	; Anzahl der Buchstaben
+		moveq	#(\1_\2)-1,d7	; number of characters
 	ENDC
 \1_init_characters_y_positions_loop
-	move.w	d0,(a0)+		; X eintragen
-	add.w	d1,d0			; X erhöhen
+	move.w	d0,(a0)+		; x position
+	add.w	d1,d0			; next x position
 	dbf	d7,\1_init_characters_y_positions_loop
 	rts
 	ENDM
@@ -1393,18 +1391,18 @@ INIT_CHARACTERS_Y_POSITIONS		MACRO
 
 INIT_CHARACTERS_IMAGES		MACRO
 ; Input
-; \1 STRING:	Labels-Prefix der Routine
+; \1 STRING:	Labels prefix
 ; Result
 	CNOP 0,4
 \1_init_characters_images
 	IFC "","\1"
-		FAIL Makro INIT_CHARACTERS_IMAGES: Labels-Prefix fehlt
+		FAIL Macro INIT_CHARACTERS_IMAGES: Labels prefix missing
 	ENDC
-	lea	\1_characters_image_pointers(pc),a2 ;Z eiger auf Tabelle mit Chars-Adressen
-	MOVEF.W	(\1_text_characters_number)-1,d7 ; Anzahl der Buchstaben
+	lea	\1_characters_image_pointers(pc),a2
+	MOVEF.W	(\1_text_characters_number)-1,d7
 \1_init_characters_images_loop
 	bsr	\1_get_new_character_image
-	move.l	d0,(a2)+		; Char-Adresse eintragen
+	move.l	d0,(a2)+		; character image
 	dbf	d7,\1_init_characters_images_loop
 	rts
 	ENDM
@@ -1412,103 +1410,103 @@ INIT_CHARACTERS_IMAGES		MACRO
 
 GET_NEW_CHARACTER_IMAGE		MACRO
 ; Input
-; \0 STRING:	Größenangabe W/L
-; \1 STRING:	Labels-Prefix der Routine
-; \2 LABEL:	Sub-Routine zusätzliche Checks für Steuerungs-Codes (optional)
-; \3 STRING:	"NORESTART" für Schriften, die nicht endlos sind (optional)
+; \0 STRING:	Size [W/L]
+; \1 STRING:	Labels prefix
+; \2 LABEL:	Additional codes check sub routine (optional)
+; \3 STRING:	"NORESTART" (optional)
 ; \4 STRING:	"BACKWARDS" (optional)
 ; Result
-; d0.l		Rückgabewert: Zeiger auf Zeichen-Playfield
+; d0.l		Pointer character image
 	IFC "","\0"
-		FAIL Makro GET_NEW_CHARACTER_IMAGE: Größenangabe W/L fehlt
+		FAIL Macro GET_NEW_CHARACTER_IMAGE: Size missing
 	ENDC
 	IFC "","\1"
-		FAIL Makro GET_NEW_CHARACTER_IMAGE: Labels-Prefix fehlt
+		FAIL Macro GET_NEW_CHARACTER_IMAGE: Labels prefix missing
 	ENDC
 	CNOP 0,4
 \1_get_new_character_image
-	move.w	\1_text_table_start(a3),d1 ; Offset für bestimmtes Zeichen im Text
+	move.w	\1_text_table_start(a3),d1
 	IFC "BACKWARDS","\4"
-		bpl.s	\1_no_restart_text ; Wenn positiv -> verzweige
-		move.w	#\1_text_end-\1_text-1,d1 ; Neustart
+		bpl.s	\1_no_restart_text
+		move.w	#\1_text_end-\1_text-1,d1 ; restart y posistion
 \1_no_restart_text
 	ENDC
-	lea	\1_text(pc),a0		; Zeiger auf Text
+	lea	\1_text(pc),a0
 \1_read_character
-	move.b	(a0,d1.w),d0		; ASCII-Code
+	move.b	(a0,d1.w),d0		; ASCII code
 	IFNC "","\2"
 		bsr.s	\2
-		tst.w	d0		; Rückgabewert = TRUE ?
-		beq.s	\1_skip_control_code ; Ja -> verzweige, Steuerzeichen gefunden
+		tst.w	d0		; return value TRUE ?
+		beq.s	\1_skip_control_code
 	ENDC
 	IFNC "BACKWARDS","\4"
 		IFNC "NORESTART","\3"
-			cmp.b	#FALSE,d0 ; Wenn Ende des Textes erreicht,
-			beq.s	\1_restart_text ; dann Neustart
+			cmp.b	#FALSE,d0 ; end of scrolltext ?
+			beq.s	\1_restart_text
 		ENDC
 	ENDC
-	lea	\1_ascii(pc),a0		; Zeiger auf Tabelle mit ASCII-Codes der Zeichen
-	moveq	#\1_ascii_end-\1_ascii-1,d6 ; Anzahl der zu suchenden Zeichen
+	lea	\1_ascii(pc),a0
+	moveq	#\1_ascii_end-\1_ascii-1,d6 ; number of characters
 \1_get_new_character_image_loop
-	cmp.b	(a0)+,d0		; Zeichen gefunden ?
-	dbeq	d6,\1_get_new_character_image_loop ; Nein -> Schleife
+	cmp.b	(a0)+,d0		; code found ?
+	dbeq	d6,\1_get_new_character_image_loop
 	IFC "BACKWARDS","\4"
-		subq.w	#1,d1		; nächster Buchstabe
+		subq.w	#BYTE_SIZE,d1	; next character
 	ELSE
 		IFLT \1_origin_character_x_size-32
-			addq.w	#1,d1	; nächstes Zeichen
+			addq.w	#BYTE_SIZE,d1 ; next character
 		ELSE
 		IFNE \1_text_character_x_size-16
-			addq.w	#1,d1	; nächstes Zeichen
+			addq.w	#BYTE_SIZE,d1 ; next character
 		ENDC
 		ENDC
 	ENDC
 
-	moveq	#\1_ascii_end-\1_ascii-1,d0 ; Anzahl der zu suchenden Zeichen
+	moveq	#\1_ascii_end-\1_ascii-1,d0 ; number of characters
 	IFLT \1_origin_character_x_size-32
-		move.w	d1,\1_text_table_start(a3) ; Offset auf das Zeichen retten
+		move.w	d1,\1_text_table_start(a3)
 	ELSE
 		IFNE \1_text_character_x_size-16
-			move.w	d1,\1_text_table_start(a3) ; Offset auf das Zeichen retten
+			move.w	d1,\1_text_table_start(a3)
 		ENDC
 	ENDC
-	sub.w	d6,d0			; Anzahl der Zeichen - Schleifenzähler
-	lea	\1_characters_offsets(pc),a0 ; Zeiger auf Tabelle mit Offsets der Zeichen-Playfields
+	sub.w	d6,d0			; number of characters
+	lea	\1_characters_offsets(pc),a0
 	IFC "W","\0"
 		MULUFW	2,d0
-		move.w	(a0,d0.w),d0	; Offset des Zeichen-Playfieldes
+		move.w	(a0,d0.w),d0	; character offset
 	ENDC
 	IFC "L","\0"
 		MULUFW	4,d0
-		move.l	(a0,d0.w),d0	; Offset des Zeichen-Playfieldes
+		move.l	(a0,d0.w),d0	; character offset
 	ENDC
-	add.l	\1_image(a3),d0		; Adresse der Zeichen-Playfieldvorlage ergänzen
+	add.l	\1_image(a3),d0
 	IFNC "BACKWARDS","\4"
 		IFEQ \1_origin_character_x_size-32
 			IFEQ \1_text_character_x_size-16
-				not.w	\1_character_toggle_image(a3) ; Neues Image für Char ?
-				bne.s	\1_no_second_image_part ; FALSE -> verzweige
+				not.w	\1_character_toggle_image(a3) ; new character image ?
+				bne.s	\1_no_second_image_part
 \1_second_image_part
-				addq.w	#1,d1	; nächstes Zeichen
-				addq.l	#2,d0	; 2. Teil des Character-Images
+				addq.w	#BYTE_SIZE,d1 ; next character
+				addq.l	#WORD_SIZE,d0 ; 2nd part character image
 				move.w	d1,\1_text_table_start(a3)
 \1_no_second_image_part
 			ENDC
 		ENDC
 		IFGT \1_origin_character_x_size-32
 			IFEQ \1_text_character_x_size-16
-				moveq	#TRUE,d3
-				move.w	\1_character_words_counter(a3),d3 ; Zähler für Worte
+				moveq	#0,d3
+				move.w	\1_character_words_counter(a3),d3
 				move.l	d3,d4
-				MULUF.W	2,d4 ; Wort-Offset des Images
-				addq.w	#1,d3 ; Nächstes Wort in Image
-				add.l	d4,d0 ;+ Offset in Char-Image
-				cmp.w	#\1_origin_character_x_size/16,d3 ; Neues Image für Char ?
-				bne.s	\1_keep_character_image ; Nein -> verzweige
+				MULUF.W	2,d4 ; character image word offset
+				addq.w	#BYTESIZE,d3 ; next part of character image
+				add.l	d4,d0 ; character image address
+				cmp.w	#\1_origin_character_x_size/16,d3 ; new character image ?
+				bne.s	\1_keep_character_image
 \1_next_character
 				addq.w	#1,d1 ; nächster Buchstabe
 				move.w	d1,\1_text_table_start(a3)
-				moveq	#TRUE,d3 ; Zähler zurücksetzen
+				moveq	#0,d3 ; reset words counter
 \1_keep_character_image
 				move.w	d3,\1_character_words_counter(a3)
 			ENDC
@@ -1518,13 +1516,13 @@ GET_NEW_CHARACTER_IMAGE		MACRO
 	IFNC "BACKWARDS","\4"
 		IFNC "","\2"
 \1_skip_control_code
-			addq.w	#1,d1	; nächstes Zeichen
+			addq.w	#BYTE_SIZE,d1 ; next character
 			bra.s	\1_read_character
 		ENDC
 		IFNC "NORESTART","\3"
 			CNOP 0,4
 \1_restart_text
-			moveq	#TRUE,d1
+			moveq	#0,d1
 			bra.s	\1_read_character
 		ENDC
 	ENDC
@@ -1533,13 +1531,13 @@ GET_NEW_CHARACTER_IMAGE		MACRO
 
 COPY_IMAGE_TO_BITPLANE		MACRO
 ; Input
-; \1 STRING:	Labels-Prefix der Routine
-; \2 WORD:	X-Offset in Pixeln optional (optional)
-; \3 WORD:	Y-Offset in Zeilen optional (optional)
-; \4 POINTER:	Zielbild (optional)
+; \1 STRING:	Labels prefix
+; \2 WORD:	X offset (optional)
+; \3 WORD:	Y offset (optional)
+; \4 POINTER:	Target image (optional)
 ; Result
 	IFC "","\1"
-		FAIL Makro COPY_IMAGE_TO_BITPLANE: Labels-Prefix fehlt
+		FAIL Macro COPY_IMAGE_TO_BITPLANE: Labels prefix missing
 	ENDC
 	CNOP 0,4
 \1_copy_image_to_bitplane
@@ -1551,11 +1549,11 @@ COPY_IMAGE_TO_BITPLANE		MACRO
 			MOVEF.L (\2/8)+(\3*\4_plane_width*\4_depth),d4
 		ENDC
 	ENDC
-	lea	\1_image_data,a1	; Quellbild
+	lea	\1_image_data,a1	; source
 	IFC "","\4"
-		move.l	pf1_display(a3),a4 ; Zielbild
+		move.l	pf1_display(a3),a4 ; target
 	ELSE
-		move.l	\4(a3),a4	; Zielbild
+		move.l	\4(a3),a4	; target
 	ENDC
 	move.w	#(\1_image_plane_width*\1_image_depth)-\1_image_plane_width,a5
 	IFC "","\4"
@@ -1570,25 +1568,25 @@ COPY_IMAGE_TO_BITPLANE		MACRO
 	ENDC
 \1_copy_image_to_bitplane_loop1
 	bsr.s	\1_copy_image_data
-	add.l	#\1_image_plane_width,a1 ; nächte Bitplane
+	add.l	#\1_image_plane_width,a1 ; next bitplane
 	dbf	d7,\1_copy_image_to_bitplane_loop1
 	movem.l (a7)+,a4-a6
 	rts
 	CNOP 0,4
 \1_copy_image_data
-	move.l	a1,a0			; Quellbild
-	move.l	(a4)+,a2		; Zielbild
+	move.l	a1,a0			; source
+	move.l	(a4)+,a2		; target
 	IFNC "","\2"
-		add.l	d4,a2		; + XY-Offset
+		add.l	d4,a2		; xy offset
 	ENDC
-	MOVEF.W	\1_image_y_size-1,d6	; Anzahl der Zeilen
+	MOVEF.W	\1_image_y_size-1,d6
 \1_copy_image_data_loop1
 	moveq	#(\1_image_x_size/16)-1,d5
 \1_copy_image_data_loop2
 	move.w	(a0)+,(a2)+
 	dbf	d5,\1_copy_image_data_loop2
-	add.l	a5,a0			; nächste Zeile in Quellbild
-	add.l	a6,a2			; nächste Zeile in Zielbild
+	add.l	a5,a0			; next line in source
+	add.l	a6,a2			; next line in target
 	dbf	d6,\1_copy_image_data_loop1
 	rts
 	ENDM
@@ -1596,61 +1594,61 @@ COPY_IMAGE_TO_BITPLANE		MACRO
 
 INIT_DISPLAY_PATTERN		MACRO
 ; Input
-; \1 STRING: Labels-Prefix der Routine
-; \2 NUMBER: Breite einer Spalte
+; \1 STRING: Labels prefix
+; \2 NUMBER: Column width
 ; Result
 	IFC "","\1"
-		FAIL Makro INIT_DISPLAY_PATTERN: Labels-Prefix fehlt
+		FAIL Macro INIT_DISPLAY_PATTERN: Labels prefix missing
 	ENDC
 	IFC "","\2"
-		FAIL Makro INIT_DISPLAY_PATTERN: Breite einer Spalte fehlt
+		FAIL Macro INIT_DISPLAY_PATTERN: Column width missing
 	ENDC
 	CNOP 0,4
 \1_init_display_pattern
-	moveq	#0,d0			; Spaltenzähler-Startwert
-	moveq	#TRUE,d1		; Langwortzugriff
-	moveq	#1,d3			; Farbnummer
-	move.l	pf1_display(a3),a0	; Playfield
-	move.l	(a0),a0			; Bitplane0
-	moveq	#(cl2_display_width)-1,d7 ; Anzahl der Spalten
+	moveq	#0,d0			; columns counter
+	moveq	#0,d1
+	moveq	#1,d3			; first color number
+	move.l	pf1_display(a3),a0
+	move.l	(a0),a0
+	moveq	#(cl2_display_width)-1,d7 ; number of columns
 \1_init_display_pattern_loop1
-	moveq	#\2-1,d6		; Breite einer Spalte
+	moveq	#\2-1,d6		; column width
 \1_init_display_pattern_loop2
-	move.w	d0,d1			; Spaltenzähler retten
-	move.w	d0,d2			; Spaltenzähler retten
-	lsr.w	#3,d1			; /8 = X-Offset
-	not.b	d2			; Bitnr.
-	btst	#0,d3			; Bit0 gesetzt?
-	beq.s	\1_no_set_pixel_bitplane0 ; Nein -> verzweige
-	bset	d2,(a0,d1.l)		; Bit in Bitplane0 setzen
+	move.w	d0,d1			; save columns counter
+	move.w	d0,d2
+	lsr.w	#3,d1			; x offset
+	not.b	d2			; bit number
+	btst	#0,d3
+	beq.s	\1_no_set_pixel_bitplane0
+	bset	d2,(a0,d1.l)
 \1_no_set_pixel_bitplane0
-	btst	#1,d3			; Bit1 gesetzt?
-	beq.s	\1_no_set_pixel_bitplane1 ; Nein -> verzweige
-	bset	d2,pf1_plane_width*1(a0,d1.l) ; Bit in Bitplane1 setzen
+	btst	#1,d3
+	beq.s	\1_no_set_pixel_bitplane1
+	bset	d2,pf1_plane_width*1(a0,d1.l)
 \1_no_set_pixel_bitplane1
-	btst	#2,d3			; Bit2 gesetzt?
-	beq.s	\1_no_set_pixel_bitplane2 ; Nein -> verzweige
-	bset	d2,pf1_plane_width*2(a0,d1.l) ; Bit in Bitplane2 setzen
+	btst	#2,d3
+	beq.s	\1_no_set_pixel_bitplane2
+	bset	d2,pf1_plane_width*2(a0,d1.l)
 \1_no_set_pixel_bitplane2
-	btst	#3,d3			; Bit3 gesetzt?
-	beq.s	\1_no_set_pixel_bitplane3 ; Nein -> verzweige
-	bset	d2,pf1_plane_width*3(a0,d1.l) ; Bit in Bitplane3 setzen
+	btst	#3,d3
+	beq.s	\1_no_set_pixel_bitplane3
+	bset	d2,pf1_plane_width*3(a0,d1.l)
 \1_no_set_pixel_bitplane3
-	btst	#4,d3			; Bit4 gesetzt?
-	beq.s	\1_no_set_pixel_bitplane4 ; Nein -> verzweige
-	bset	d2,(pf1_plane_width*4,a0,d1.l) ; Bit in Bitplane4 setzen
+	btst	#4,d3
+	beq.s	\1_no_set_pixel_bitplane4
+	bset	d2,(pf1_plane_width*4,a0,d1.l)
 \1_no_set_pixel_bitplane4
-	btst	#5,d3			; Bit5 gesetzt?
-	beq.s	\1_no_set_pixel_bitplane5 ; Nein -> verzweige
-	bset	d2,(pf1_plane_width*5,a0,d1.l) ; Bit in Bitplane5 setzen
+	btst	#5,d3
+	beq.s	\1_no_set_pixel_bitplane5
+	bset	d2,(pf1_plane_width*5,a0,d1.l)
 \1_no_set_pixel_bitplane5
-	btst	#6,d3			; Bit6 gesetzt?
-	beq.s	\1_no_set_pixel_bitplane6 ; Nein -> verzweige
-	bset	d2,(pf1_plane_width*6,a0,d1.l) ; Bit in Bitplane6 setzen
+	btst	#6,d3
+	beq.s	\1_no_set_pixel_bitplane6
+	bset	d2,(pf1_plane_width*6,a0,d1.l)
 \1_no_set_pixel_bitplane6
-	addq.w	#1,d0			; Spaltenzähler erhöhen
+	addq.w	#1,d0			; next column
 	dbf	d6,\1_init_display_pattern_loop2
-	addq.w	#1,d3			; Farbnummer erhöhen
+	addq.w	#1,d3			; next color number
 	dbf	d7,\1_init_display_pattern_loop1
 	rts
 	ENDM
@@ -1658,128 +1656,119 @@ INIT_DISPLAY_PATTERN		MACRO
 
 GET_SINE_BARS_YZ_COORDINATES MACRO
 ; Input
-; \1 STRING:	Labels-Prefix der Routine
-; \2 NUMBER:	Länge der Sinustabelle [256, 360, 512]
-; \3 WORD:	Multiplikator Y-Offset in CL
+; \1 STRING:	Labels prefix
+; \2 NUMBER:	Sine table length [256, 360, 512]
+; \3 WORD:	Multiplicator y offset in copperlist
 ; Result
 	IFC "","\1"
-		FAIL Makro GET_SINE_BARS_YZ_COORDINATES: Labels-Prefix fehlt
+		FAIL Macro GET_SINE_BARS_YZ_COORDINATES: Labels-Prefix missing
 	ENDC
 	IFC "","\2"
-		FAIL Makro GET_SINE_BARS_YZ_COORDINATES: Länge der Sinustabelle [256, 360, 512] fehlt
+		FAIL Macro GET_SINE_BARS_YZ_COORDINATES: Sine table length missing
 	ENDC
 	IFC "","\3"
-		FAIL Makro GET_SINE_BARS_YZ_COORDINATES: Multiplikator Y-Offset in CL fehlt
+		FAIL Macro GET_SINE_BARS_YZ_COORDINATES: Multiplicator y offset in copperlist missing
 	ENDC
 	CNOP 0,4
 \1_get_yz_coordinates
-	IFC "","\1"
-		FAIL Makro GET_TWISTED_BARS_YZ_COORDINATES: Labels-Prefix fehlt
-	ENDC
-	IFC "","\2"
-		FAIL Makro GET_TWISTED_BARS_YZ_COORDINATES: Länge der Sinustabelle [256, a260, 512] fehlt
-	ENDC
-	IFC "","\3"
-		FAIL Makro GET_TWISTED_BARS_YZ_COORDINATES: Multiplikator Y-Offset in CL fehlt
-	ENDC
 	IFEQ \2-256
-		move.w	\1_y_angle(a3),d2 ; 1. Y-Winkel
+		move.w	\1_y_angle(a3),d2
 		move.w	d2,d0				
 		addq.b	#\1_y_angle_speed,d0
 		move.w	d0,\1_y_angle(a3) 
 		MOVEF.W \1_y_distance,d3
 		lea	sine_table(pc),a0
-		lea	\1_yz_coordinates(pc),a1 ; Zeiger auf Y+Z-Koords-Tabelle
+		lea	\1_yz_coordinates(pc),a1
 		move.w	#\1_y_center,a2
-		moveq	#\1_bars_number-1,d7 ; Anzahl der Stangen
+		moveq	#\1_bars_number-1,d7
 \1_get_yz_coordinates_loop
-		moveq	#-(sine_table_length/4),d1 ; - 90 Grad
+		moveq	#-(sine_table_length/4),d1 ; - 90°
 		move.w	d2,d0
 		MULUF.W	4,d0
 		move.l	(a0,d0.w),d0	; sin(w)
-		add.w	d2,d1		; Y-Winkel - 90 Grad
-		ext.w	d1		; Vorzeichenrichtig auf ein Wort erweitern
-		move.w	d1,(a1)+	; Z-Vektor retten
+		add.w	d2,d1		; - 90°
+		ext.w	d1
+		move.w	d1,(a1)+	; z vector
 		MULUF.L \1_y_radius*2,d0,d1 ; y'=(yr*sin(w))/2^15
 		swap	d0
-		add.w	a2,d0		; y' + Y-Mittelpunkt
-		MULUF.W (\3)/4,d0,d1	; Y-Offset in CL
-		move.w	d0,(a1)+	; Y retten
-		add.b	d3,d2		; Y-Abstand zur nächsten Bar
+		add.w	a2,d0		; y' + y ventre
+		MULUF.W (\3)/4,d0,d1	; y offset in cl
+		move.w	d0,(a1)+	; y position
+		add.b	d3,d2		; y distance next bar
 		dbf	d7,\1_get_yz_coordinates_loop
 		rts
 	ENDC
 	IFEQ \2-360
-		move.w	\1_y_angle(a3),d2 ; 1. Y-Winkel
+		move.w	\1_y_angle(a3),d2
 		move.w	d2,d0				
-		MOVEF.W sine_table_length,d3 ; Überlauf
+		MOVEF.W sine_table_length,d3 ; overflow
 		addq.w	#\1_y_angle_speed,d0
-		cmp.w	d3,d0		; Y-Winkel < 360 Grad ?
-		blt.s	\1_no_restart_y_angle1 ; Ja -> verzweige
-		sub.w	d3,d0		; Y-Winkel zurücksetzen
-\1_no_restart_y_angle1
+		cmp.w	d3,d0		; 360° ?
+		blt.s	\1_get_yz_coordinates_skip1
+		sub.w	d3,d0		; reset y angle
+\1_get_yz_coordinates_skip1
 		move.w	d0,\1_y_angle(a3) 
-		MOVEF.W sine_table_length/2,d4 ; 180 Grad
+		MOVEF.W sine_table_length/2,d4 ; 180°
 		MOVEF.W \1_y_distance,d5
 		lea	sine_table(pc),a0
-		lea	\1_yz_coordinates(pc),a1 ; Zeiger auf Y+Z-Koords-Tabelle
+		lea	\1_yz_coordinates(pc),a1
 		move.w	#\1_y_center,a2
-		moveq	#\1_bars_number-1,d7 ; Anzahl der Stangen
+		moveq	#\1_bars_number-1,d7
 \1_get_yz_coordinates_loop
-		moveq	#-(sine_table_length/4),d1 ; - 90 Grad
+		moveq	#-(sine_table_length/4),d1 ; - 90°
 		move.w	d2,d0
 		MULUFW	4,d0
 		move.l	(a0,d0.w),d0	; sin(w)
-		add.w	d2,d1		; - 90 Grad + Y-Winkel
-		bmi.s	\1_set_z_vector	; Wenn negativ -> verzweige
-		sub.w	d4,d1		; Y-Winkel - 180 Grad
-		neg.w	d1		; Vorzeichen umdrehen
-\1_set_z_vector
-		move.w	d1,(a1)+	; Z-Vektor retten
+		add.w	d2,d1		; - 90°
+		bmi.s	\1_get_yz_coordinates_skip2
+		sub.w	d4,d1		; - 180°
+		neg.w	d1
+\1_get_yz_coordinates_skip2
+		move.w	d1,(a1)+	; z vector
 		MULUF.L \1_y_radius*2,d0,d1 ; y'=(yr*sin(w))/2^15
 		swap	d0
-		add.w	a2,d0		; y' + Y-Mittelpunkt
-		MULUF.W (\3)/4,d0,d1	; Y-Offset in CL
-		move.w	d0,(a1)+	; Y retten
-		add.w	d5,d2		; Y-Abstand zur nächsten Bar
-		cmp.w	d3,d2		; Y-Winkel < 360 Grad ?
-		blt.s	\1_no_restart_y_angle2 ; Ja -> verzweige
-		sub.w	d3,d2		; Y-Winkel zurücksetzen
-\1_no_restart_y_angle2
+		add.w	a2,d0		; y' + y center
+		MULUF.W (\3)/4,d0,d1	; y offset in cl
+		move.w	d0,(a1)+	; Y position
+		add.w	d5,d2		; y distance next bar
+		cmp.w	d3,d2		; 360° ?
+		blt.s	\1_get_yz_coordinates_skip3
+		sub.w	d3,d2		; reset y angle
+\1_get_yz_coordinates_skip3
 		dbf	d7,\1_get_yz_coordinates_loop
 		rts
 	ENDC
 	IFEQ \2-512
-		move.w	\1_y_angle(a3),d2 ; 1. Y-Winkel
+		move.w	\1_y_angle(a3),d2
 		move.w	d2,d0				
-		MOVEF.W sine_table_length-1,d5 ; Überlauf
-		addq.w	#\1_y_angle_speed,d0 ; nächster Y-Winkel
-		and.w	d5,d0		; Überlauf entfernen
+		MOVEF.W sine_table_length-1,d5 ; overflow
+		addq.w	#\1_y_angle_speed,d0 ; next y angle
+		and.w	d5,d0		; remove overflow
 		move.w	d0,\1_y_angle(a3) 
 		MOVEF.W \1_y_distance,d3
-		MOVEF.W sine_table_length/2,d4 ; 180 Grad
+		MOVEF.W sine_table_length/2,d4 ; 180°
 		lea	sine_table(pc),a0
-		lea	\1_yz_coordinates(pc),a1 ; Zeiger auf Y+Z-Koords-Tabelle
+		lea	\1_yz_coordinates(pc),a1
 		move.w	#\1_y_center,a2
-		moveq	#\1_bars_number-1,d7 ; Anzahl der Stangen
+		moveq	#\1_bars_number-1,d7
 \1_get_yz_coordinates_loop
-		moveq	#-(sine_table_length/4),d1 ; - 90 Grad
+		moveq	#-(sine_table_length/4),d1 ; - 90°
 		move.w	d2,d0
 		MULUF.W	4,d0
 		move.l	(a0,d0.w),d0	; sin(w)
-		add.w	d2,d1		; - 90 Grad + Y-Winkel
-		bmi.s	\1_set_z_vector	; Wenn negativ -> verzweige
-		sub.w	d4,d1		; Y-Winkel + 180 Grad
-		neg.w	d1		; Vorzeichen umdrehen
-\1_set_z_vector
-		move.w	d1,(a1)+	; Z-Vektor retten
+		add.w	d2,d1		; - 90°
+		bmi.s	\1_get_yz_coordinates_skip
+		sub.w	d4,d1		; - 180°
+		neg.w	d1
+\1_get_yz_coordinates_skip
+		move.w	d1,(a1)+	; z vector
 		MULUF.L \1_y_radius*2,d0,d1 ; y'=(yr*sin(w))/2^15
 		swap	d0
-		add.w	a2,d0		; y' + Y-Mittelpunkt
-		MULUF.W (\3)/4,d0,d1	; Y-Offset in CL
-		move.w	d0,(a1)+	; Y retten
-		add.w	d3,d2		; Y-Abstand zur nächsten Bar
-		and.w	d5,d2		; Überlauf entfernen
+		add.w	a2,d0		; y' + y center
+		MULUF.W (\3)/4,d0,d1	; y offset in
+		move.w	d0,(a1)+	; y position
+		add.w	d3,d2		; next y angle
+		and.w	d5,d2		; remove overflow
 		dbf	d7,\1_get_yz_coordinates_loop
 		rts
 	ENDC
@@ -1788,110 +1777,101 @@ GET_SINE_BARS_YZ_COORDINATES MACRO
 
 GET_TWISTED_BARS_YZ_COORDINATES MACRO
 ; Input
-; \1 STRING:	Labels-Prefix der Routine
-; \2 NUMBER:	Länge der Sinustabelle [256, 360, 512]
-; \3 WORD:	Multiplikator Y-Offset in CL
+; \1 STRING:	Labels prefix
+; \2 NUMBER:	Sine table length [256, 360, 512]
+; \3 WORD:	Multiplicator y offset in cl
 ; Result
 	IFC "","\1"
-		FAIL Makro GET_TWISTED_BARS_YZ_COORDINATES: Labels-Prefix fehlt
+		FAIL Macro GET_TWISTED_BARS_YZ_COORDINATES: Labels prefix missing
 	ENDC
 	IFC "","\2"
-		FAIL Makro GET_TWISTED_BARS_YZ_COORDINATES: Länge der Sinustabelle [256, 360, 512] fehlt
+		FAIL Macro GET_TWISTED_BARS_YZ_COORDINATES: Sine table length missing
 	ENDC
 	IFC "","\3"
-		FAIL Makro GET_TWISTED_BARS_YZ_COORDINATES: Multiplikator Y-Offset in CL fehlt
+		FAIL Macro GET_TWISTED_BARS_YZ_COORDINATES: Multiplicator y offset in copperlist missing
 	ENDC
 	CNOP 0,4
 \1_get_yz_coordinates
-	IFC "","\1"
-		FAIL Makro GET_TWISTED_BARS_YZ_COORDINATES: Labels-Prefix fehlt
-	ENDC
-	IFC "","\2"
-		FAIL Makro GET_TWISTED_BARS_YZ_COORDINATES: Länge der Sinustabelle [256, a260, 512] fehlt
-	ENDC
-	IFC "","\3"
-		FAIL Makro GET_TWISTED_BARS_YZ_COORDINATES: Multiplikator Y-Offset in CL fehlt
-	ENDC
 	IFEQ \2-256
-		move.w	\1_y_angle(a3),d2 ; 1. Y-Winkel
+		move.w	\1_y_angle(a3),d2
 		move.w	d2,d0				
 		addq.b	#\1_y_angle_speed,d0
 		move.w	d0,\1_y_angle(a3) 
 		MOVEF.W \1_y_distance,d3
 		lea	sine_table(pc),a0
-		lea	\1_yz_coordinates(pc),a1 ; Zeiger auf Y+Z-Koords-Tabelle
+		lea	\1_yz_coordinates(pc),a1
 		move.w	#\1_y_center,a2
-		moveq	#\*LEFT(\3,3)_display_width-1,d7 ; Anzahl der Spalten
+		moveq	#\*LEFT(\3,3)_display_width-1,d7 ; number of columns
 \1_get_yz_coordinates_loop1
-		moveq	#\1_bars_number-1,d6 ; Anzahl der Stangen
+		moveq	#\1_bars_number-1,d6
 \1_get_yz_coordinates_loop2
-		moveq	#-(sine_table_length/4),d1 ; - 90 Grad
+		moveq	#-(sine_table_length/4),d1 ; - 90°
 		move.w	d2,d0
 		MULUF.W	4,d0
 		move.l	(a0,d0.w),d0	; sin(w)
-		add.w	d2,d1		; Y-Winkel - 90 Grad
-		ext.w	d1		; Vorzeichenrichtig auf ein Wort erweitern
-		move.w	d1,(a1)+	; Z-Vektor retten
+		add.w	d2,d1		; - 90°
+		ext.w	d1
+		move.w	d1,(a1)+	; z vectors
 		MULUF.L \1_y_radius*2,d0,d1 ; y'=(yr*sin(w))/2^15
 		swap	d0
-		add.w	a2,d0		; y' + Y-Mittelpunkt
-		MULUF.W	(\3)/4,d0,d1	; Y-Offset in CL
-		move.w	d0,(a1)+	; Y retten
-		add.b	d3,d2		; Y-Abstand zur nächsten Bar
+		add.w	a2,d0		; y' + y center
+		MULUF.W	(\3)/4,d0,d1	; y offset in cl
+		move.w	d0,(a1)+	; Y position
+		add.b	d3,d2		; y distance next bar
 		dbf	d6,\1_get_yz_coordinates_loop2
 		IFGE \1_y_angle_step
-			addq.b	#\1_y_angle_step,d2 ; nächster Y-Winkel
+			addq.b	#\1_y_angle_step,d2 ; next y angle
 		ELSE
-			subq.b	#-\1_y_angle_step,d2 ; nächster Y-Winkel
+			subq.b	#-\1_y_angle_step,d2 ; next y angle
 		ENDC
 		dbf	d7,\1_get_yz_coordinates_loop1
 		rts
 	ENDC
 	IFEQ \2-360
-		move.w	\1_y_angle(a3),d2 ; 1. Y-Winkel
+		move.w	\1_y_angle(a3),d2
 		move.w	d2,d0				
-		MOVEF.W sine_table_length,d3 ; Überlauf
+		MOVEF.W sine_table_length,d3 ; overflow
 		addq.w	#\1_y_angle_speed,d0
-		cmp.w	d3,d0		; Y-Winkel < 360 Grad ?
-		blt.s	\1_no_restart_y_angle1 ; Ja -> verzweige
-		sub.w	d3,d0		; Y-Winkel zurücksetzen
-\1_no_restart_y_angle1
+		cmp.w	d3,d0		; 360° ?
+		blt.s	\1_get_yz_coordinates_skip1
+		sub.w	d3,d0		; reset y angle
+\1_get_yz_coordinates_skip1
 		move.w	d0,\1_y_angle(a3) 
-		MOVEF.W sine_table_length/2,d4 ; 180 Grad
+		MOVEF.W sine_table_length/2,d4 ; 180°
 		MOVEF.W \1_y_distance,d5
 		lea	sine_table(pc),a0
-		lea	\1_yz_coordinates(pc),a1 ; Zeiger auf Y+Z-Koords-Tabelle
+		lea	\1_yz_coordinates(pc),a1
 		move.w	#\1_y_center,a2
-		moveq	#\*LEFT(\3,3)_display_width-1,d7 ; Anzahl der Spalten
+		moveq	#\*LEFT(\3,3)_display_width-1,d7 ; number of colums
 \1_get_yz_coordinates_loop1
-		moveq	#\1_bars_number-1,d6 ; Anzahl der Stangen
+		moveq	#\1_bars_number-1,d6
 \1_get_yz_coordinates_loop2
-		moveq	#-(sine_table_length/4),d1 ; - 90 Grad
+		moveq	#-(sine_table_length/4),d1 ; - 90°
 		move.w	d2,d0
 		MULUF.W	4,d0
 		move.l	(a0,d0.w),d0	; sin(w)
-		add.w	d2,d1		; - 90 Grad + Y-Winkel
-		bmi.s	\1_set_z_vector	; Wenn negativ -> verzweige
-		sub.w	d4,d1		; Y-Winkel + 180 Grad
-		neg.w	d1		; Vorzeichen umdrehen
-\1_set_z_vector
-		move.w	d1,(a1)+	; Z-Vektor retten
+		add.w	d2,d1		; - 90°
+		bmi.s	\1_get_yz_coordinates_skip2
+		sub.w	d4,d1		; -180°
+		neg.w	d1
+\1_get_yz_coordinates_skip2
+		move.w	d1,(a1)+	; z vector
 		MULUF.L \1_y_radius*2,d0,d1 ; y'=(yr*sin(w))/2^15
 		swap	d0
-		add.w	a2,d0		; y' + Y-Mittelpunkt
-		MULUF.W	(\3)/4,d0,d1	; Y-Offset in CL
-		move.w	d0,(a1)+	; Y retten
-		add.w	d5,d2		; Y-Abstand zur nächsten Bar
-		cmp.w	d3,d2		; Y-Winkel < 360 Grad ?
-		blt.s	\1_no_restart_y_angle2 ; Ja -> verzweige
-		sub.w	d3,d2		; Y-Winkel zurücksetzen
-\1_no_restart_y_angle2
+		add.w	a2,d0		; y' + y center
+		MULUF.W	(\3)/4,d0,d1	; y offset in cl
+		move.w	d0,(a1)+	; y position
+		add.w	d5,d2		; y distance next bar
+		cmp.w	d3,d2		; 360° ?
+		blt.s	\1_get_yz_coordinates_skip3
+		sub.w	d3,d2		; reset y angle
+\1_get_yz_coordinates_skip3
 		dbf	d6,\1_get_yz_coordinates_loop2
 		addq.w	#\1_y_angle_step,d2
-		cmp.w	d3,d2		; Y-Winkel < 360 Grad ?
-		blt.s	\1_no_restart_y_angle3 ; Ja -> verzweige
-		sub.w	d3,d2		; Y-Winkel zurücksetzen
-\1_no_restart_y_angle3
+		cmp.w	d3,d2		; 360° ?
+		blt.s	\1_get_yz_coordinates_skip4
+		sub.w	d3,d2		; reset y angle
+\1_get_yz_coordinates_skip4
 		dbf	d7,\1_get_yz_coordinates_loop1
 		rts
 	ENDC
@@ -1899,110 +1879,116 @@ GET_TWISTED_BARS_YZ_COORDINATES MACRO
 
 
 COLOR_FADER			MACRO
-; \1 STRING: Labels-Prefix der Routine
+; \1 STRING: Labels prefix
 	IFC "","\1"
-		FAIL Makro COLOR_FADER: Labels-Prefix fehlt
+		FAIL Macro COLOR_FADER: Labels prefix missing
 	ENDC
 	CNOP 0,4
 \1_fader_loop
-	move.l	(a0),d0			; RGB8-Istwert
-	moveq	#0,d1
-	move.w	d0,d1			; $00GgBb
-	moveq	#0,d2
-	clr.b	d1			; $00Gg00
-	move.b	d0,d2			; $0000Bb
-	clr.w	d0			; $Rr0000
-	move.l	(a1)+,d3		; RGB8-Sollwert
-	moveq	#0,d4
-	move.w	d3,d4			; $00GgBb
-	moveq	#0,d5
-	move.b	d3,d5			; $0000Bb
-	clr.w	d3			; $Rr0000
-	clr.b	d4			; $00Gg00
+	move.w	(a0),d0			; RGB4 current
+	MOVEF.B	NIBBLE_MASK_HIGH,d1
+	and.w	d0,d1			; G4 current
+	moveq	#NIBBLE_MASK_LOW,d2
+	and.w	d0,d2
+	clr.b	d0			; R4 current
+
+	move.w	(a1)+,d3		; RGB4 target
+	MOVEF.B	NIBBLE_MASK_HIGH,d4	; G4 target
+	and.w	d3,d4
+	moveq	#NIBBLE_MASK_LOW,d5
+	and.b	d3,d5			; B4 target
+	clr.b	d3			; R4 target
+
 
 ; ** Rotwert **
 \1_check_red_nibble
-	cmp.l	d3,d0
+	cmp.w	d3,d0
 	bgt.s	\1_decrease_red
 	blt.s	\1_increase_red
 \1_matched_red
-	subq.w	#1,d6			; Zähler verringern
+	subq.w	#1,d6			; target value reached
 
 ; ** Grünwert **
 \1_check_green_nibble
-	cmp.l	d4,d1
+	cmp.w	d4,d1
 	bgt.s	\1_decrease_green
 	blt.s	\1_increase_green
 \1_matched_green
-	subq.w	#1,d6			; Zähler verringern
+	subq.w	#1,d6			; target value reached
 
 ; ** Blauwert **
 \1_check_blue_nibble
-	cmp.w	d5,d2
+	cmp.b	d5,d2
 	bgt.s	\1_decrease_blue
 	blt.s	\1_increase_blue
 \1_matched_blue
-	subq.w	#1,d6			; Zähler verringern
+	subq.w	#1,d6			; target value reached
 
 \1_merge_rgb_nibbles
-	move.l	d0,d3			; neuer Rotwert	$Rr0000
-	move.w	d1,d3			; neuer Grünwert $RrGg00
-	move.b	d2,d3			; neuer Blauwert $RrGgBb
+	move.w	d0,d3                   ; R00
+	or.w	d1,d3			; RG0
+	or.b	d2,d3			; RGB
 
 ; ** Farbwerte in Copperliste eintragen **
-	move.l	d3,(a0)+		; neuen RGB-Wert in Cache schreiben
+	move.l	d3,(a0)+		; RGB4
 	dbf	d7,\1_fader_loop
 	rts
 	CNOP 0,4
 \1_decrease_red
-	sub.l	a2,d0			; Rotanteil verringern
-	cmp.l	d3,d0			; Ist-Rotwert > Soll-Rotwert ?
-	bgt.s	\1_check_green_nibble	; Ja -> verzweige
-	move.l	d3,d0			; Rotanteil Zielwert
+	sub.w	a2,d0
+	cmp.w	d3,d0
+	bgt.s	\1_check_green_nibble
+	move.w	d3,d0
 	bra.s	\1_matched_red
 	CNOP 0,4
 \1_increase_red
-	add.l	a2,d0			; Rotanteil erhöhen
-	cmp.l	d3,d0
+	add.w	a2,d0
+	cmp.w	d3,d0
 	blt.s	\1_check_green_nibble
-	move.l	d3,d0			; Rotanteil Zielwert
+	move.w	d3,d0
 	bra.s	\1_matched_red
 	CNOP 0,4
 \1_decrease_green
-	sub.l	a4,d1			; Grünanteil verringern
-	cmp.l	d4,d1
+	sub.w	a4,d1
+	cmp.w	d4,d1
 	bgt.s	\1_check_blue_nibble
-	move.l	d4,d1			; Grünanteil Zielwert
+	movewl	d4,d1
 	bra.s	\1_matched_green
 	CNOP 0,4
 \1_increase_green
-	add.l	a4,d1			; Grünanteil erhöhen
-	cmp.l	d4,d1
+	add.w	a4,d1
+	cmp.w	d4,d1
 	blt.s	\1_check_blue_nibble
-	move.l	d4,d1			; Grünanteil Zielwert
+	move.w	d4,d1
 	bra.s	\1_matched_green
 	CNOP 0,4
 \1_decrease_blue
-	sub.w	a5,d2			; Blauanteil verringern
-	cmp.w	d5,d2
+	sub.b	a5,d2
+	cmp.b	d5,d2
 	bgt.s	\1_merge_rgb_nibbles
-	move.w	d5,d2			; Blauanteil Zielwert
+	move.b	d5,d2
 	bra.s	\1_matched_blue
 	CNOP 0,4
 \1_increase_blue
-	add.w	a5,d2			; Blauanteil erhöhen
-	cmp.w	d5,d2
+	add.b	a5,d2
+	cmp.b	d5,d2
 	blt.s	\1_merge_rgb_nibbles
-	move.w	d5,d2			; Blauanteil Zielwert
+	move.b	d5,d2
 	bra.s	\1_matched_blue
 	ENDM
 
 
 ROTATE_X_AXIS			MACRO
-	move.w	d1,d3			; Y -> d3
+; Input
+; d1.w	... y
+; d2.w	... z
+; Result
+; d1.w	... y position
+; d2.w	... z position
+	move.w	d1,d3			; save y
 	muls.w	d4,d1			; y*cos(a)
 	swap	d4			; sin(w)
-	move.w	d2,d7			; Z -> d7
+	move.w	d2,d7			; save z
 	muls.w	d4,d3			; y*sin(a)
 	muls.w	d4,d7			; z*sin(a)
 	swap	d4			; cos(a)
@@ -2010,17 +1996,23 @@ ROTATE_X_AXIS			MACRO
 	muls.w	d4,d2			; z*cos(a)
 	MULUF.L 2,d1			; y'=(y*cos(a)-z*sin(a))/2^15
 	add.l	d3,d2			; y*sin(a)+z*cos(a)
-	swap	d1			; neue Y-Pos.
+	swap	d1			; y position
 	MULUF.L 2,d2			; z'=(y*sin(a)+z*cos(a))/2^15
-	swap	d2			; neue Z-Pos.
+	swap	d2			; z position
 	ENDM
 
 
 ROTATE_Y_AXIS			MACRO
-	move.w	d0,d3			; X -> d3
+; Input
+; d0.w	x
+; d2.w	z
+; Result
+; d0.w	x position
+; d2.w	z position
+	move.w	d0,d3			; save x
 	muls.w	d5,d0			; x*cos(b)
 	swap	d5			; sin(b)
-	move.w	d2,d7			; Z -> d7
+	move.w	d2,d7			; save z
 	muls.w	d5,d3			; x*sin(b)
 	muls.w	d5,d7			; z*sin(b)
 	swap	d5			; cos(b)
@@ -2028,17 +2020,23 @@ ROTATE_Y_AXIS			MACRO
 	muls.w	d5,d2			; z*cos(b)
 	MULUF.L 2,d0			; x'=(x*cos(b)+z*sin(b))/2^15
 	sub.l	d3,d2			; z*cos(b)-x*sin(b)
-	swap	d0			; neue X-Pos.
+	swap	d0			; x position
 	MULUF.L 2,d2			; z'=(z*cos(b)-x*sin(b))/2^15
-	swap	d2			; neue Z-Pos.
+	swap	d2			; z position
 	ENDM
 
 
 ROTATE_Z_AXIS			MACRO
-	move.w	d0,d3			; X -> d3
+; Input
+; d0.w	x
+; d1.w	y
+; Result
+; d0.w	x position
+; d1.w	y position
+	move.w	d0,d3			; save x
 	muls.w	d6,d0			; x*cos(c)
 	swap	d6			; sin(c)
-	move.w	d1,d7			; Y -> d7
+	move.w	d1,d7			; save y
 	muls.w	d6,d3			; x*sin(c)
 	muls.w	d6,d7			; y*sin(c)
 	swap	d6			; cos(c)
@@ -2046,65 +2044,74 @@ ROTATE_Z_AXIS			MACRO
 	muls.w	d6,d1			; y*cos(c)
 	MULUF.L 2,d0			; x'=(x*cos(c)-y*sin(c))/2^15
 	add.l	d3,d1			; x*sin(c)+y*cos(c)
-	swap	d0			; X-Pos.
+	swap	d0			; x position
 	MULUF.L 2,d1			; y'=(x)*sin(c)+y*cos(c))/2^15
-	swap	d1			; Y-Pos.
+	swap	d1			; y position
 	ENDM
 
 
 
 INIT_COLOR_GRADIENT_RGB4	MACRO
 ; Input
-; \1 HEXNUMBER:		RGB4 Startwert/Istwert
-; \2 HEXNUMBER:		RGB4 Endwert/Sollwert
-; \3 BYTE SIGNED:	Anzahl der Farbwerte
-; \4 NUMBER:		Color-Step-Wert für RGB (optional)
-; \5 POINTER:		Zeiger auf Farbtabelle(optional)
-; \6 STRING:		Pointer-Base [pc, a3] (optional)
-; \7 LONGWORD:		Offset zum nächsten Wert in Farbtabelle (optional)
-; \8 LONGWORD:		Offset Anfang Farbtabelle (optional)
+; \1 HEXNUMBER:		RGB4 current
+; \2 HEXNUMBER:		RGB4 target
+; \3 BYTE SIGNED:	Number of color values
+; \4 NUMBER:		Color step for RGB (optional)
+; \5 POINTER:		Color table (optional)
+; \6 STRING:		Pointer base [pc,a3] (optional)
+; \7 LONGWORD:		Offset next entry (optional)
+; \8 LONGWORD:		Offset table start (optional)
 ; Result
 	IFC "","\1"
-		FAIL Makro COLOR_GRADIENT_RGB4: RGB4 Startwert/Istwert fehlt
+		FAIL Macro COLOR_GRADIENT_RGB4: RGB4 current missing
 	ENDC
 	IFC "","\2"
-		FAIL Makro COLOR_GRADIENT_RGB4: RGB4 Endwert/Sollwert fehlt
+		FAIL Macro COLOR_GRADIENT_RGB4: RGB4 target missing
 	ENDC					
 	IFC "","\3"
-		FAIL Makro COLOR_GRADIENT_RGB4: Anzahl der Farbwerte fehlt
+		FAIL Macro COLOR_GRADIENT_RGB4: Number of color values missing
 	ENDC
-	move.l	#\1,d0			; RGB4-Istwert
-	move.l	#\2,d6			; RGB4-Sollwert
+	move.l	#\1,d0			; RGB4 current
+	move.l	#\2,d6			; RGB4 target
 	IFNC "","\5"
 		IFC "pc","\6"
-			lea	\5(\6),a0 ; Zeiger auf Farbtabelle
+			lea	\5(\6),a0 ; pointer color table
 		ENDC
 		IFC "a3","\6"
-			move.l	\5(\6),a0 ; Zeiger auf Farbtabelle
+			move.l	\5(\6),a0 ; pointer color table
 		ENDC
 	ENDC
 	IFNC "","\8"
-		add.l	#(\8)*WORD_SIZE,a0 ; Offset Anfang Farbtabelle
+		add.l	#(\8)*WORD_SIZE,a0 ; offset table start
 	ENDC
 	IFNC "","\4"
-		move.w	#(\4)<<8,a1	; Additions-/Subtraktionswert für Rot
-		move.w	#(\4)<<4,a2	; Additions-/Subtraktionswert für Grün
-		move.w	#\4,a4		; Additions-/Subtraktionswert für Blau
+		move.w	#(\4)<<8,a1	; increase/decrease red
+		move.w	#(\4)<<4,a2	; increase/decrease green
+		move.w	#\4,a4		; increase/decrease blue
 	ENDC
 	IFNC "","\7"
-		move.w	#(\7)*WORD_SIZE,a5 ; Offset zum nächsten Farbwert
+		move.w	#(\7)*WORD_SIZE,a5 ; offset next entry
 	ENDC
-	MOVEF.W	\3-1,d7			; Anzahl der Farbwerte
+	MOVEF.W	\3-1,d7			; number of color values
 	bsr	init_color_gradient_RGB4_loop
 	ENDM
 
 
 INIT_CUSTOM_ERROR_ENTRY		MACRO
 ; Input
-; \1 BYTE_SIGNED:	Fehlernummer
-; \2 POINTER:		Zeiger auf Fehlertext
-; \3 BYTE_SIGNED:	Länge des Fehrlertexts
+; \1 BYTE_SIGNED:	Error number
+; \2 POINTER:		Error text
+; \3 BYTE_SIGNED:	Error text length
 ; Result
+	IFC "","\1"
+		FAIL Macro INIT_CUSTOM_ERROR_ENTRY: Error number missing
+	ENDC
+	IFC "","\2"
+		FAIL Macro INIT_CUSTOM_ERROR_ENTRY: Error text missing
+	ENDC
+	IFC "","\3"
+		FAIL Macro INIT_CUSTOM_ERROR_ENTRY: Error text length missing
+	ENDC
 	moveq	#\1-1,d0
 	MULUF.W	8,d0,d1
 	lea	\2(pc),a1
@@ -2117,13 +2124,31 @@ INIT_CUSTOM_ERROR_ENTRY		MACRO
 
 INIT_INTUI_TEXT			MACRO
 ; Input
-; \1 POINTER:	Zeiger auf IntuiText-Struktur (pc-relativ)
+; \1 POINTER:	Intuition text structure
 ; \2 BYTE:	FrontPen
 ; \3 BYTE:	BackPen
 ; \4 WORD:	LeftEdge
 ; \5 WORD:	TopEdge
-; \6 POINTER:	Zeiger auf Text (pc-relativ)
+; \6 POINTER:	Text
 ; Result
+	IFC "","\1"
+		FAIL Macro INIT_INTUI_TEXT: Intuition text structure missing
+	ENDC
+	IFC "","\2"
+		FAIL Macro INIT_INTUI_TEXT: FrontPen missing
+	ENDC
+	IFC "","\3"
+		FAIL Macro INIT_INTUI_TEXT: BackPen missing
+	ENDC
+	IFC "","\4"
+		FAIL Macro INIT_INTUI_TEXT: LeftEdge missing
+	ENDC
+	IFC "","\5"
+		FAIL Macro INIT_INTUI_TEXT: TopEdge missing
+	ENDC
+	IFC "","\6"
+		FAIL Macro INIT_INTUI_TEXT: Text missing
+	ENDC
 	lea	\1(pc),a0
         move.b	#\2,it_FrontPen(a0)
 	move.b	#\3,it_BackPen(a0)
