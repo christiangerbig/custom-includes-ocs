@@ -33,13 +33,16 @@ pt_vibnoretrigbit	 	EQU 2
 pt_trenoretrigbit	 	EQU 6
 pt_maxloopcount	 	 	EQU $7fff
 
-pt_metronote	 	 	EQU 214 ; Note period "C-3"
-pt_metrosamplenum	 	EQU 31
-pt_metronoteinfo	 	EQU ((pt_metrosamplenum&NIBBLE_MASK_HIGH)<<24)+(pt_metronote<<16)+((pt_metrosamplenum&NIBBLE_MASK_LOW)<<8*NIBBLE_SHIFT)
+pt_metronote			EQU 214 ; note period "C-3"
+pt_metrosamplenum		EQU 31
+pt_metronoteinfo		EQU ((pt_metrosamplenum&NIBBLE_MASK_HIGH)<<24)+(pt_metronote<<16)+((pt_metrosamplenum&NIBBLE_MASK_LOW)<<8*NIBBLE_SHIFT)
 pt_metrochan1			EQU 1
 pt_metrochan2			EQU 2
 pt_metrochan3			EQU 3
 pt_metrochan4			EQU 4
+pt_metrospeed16th		EQU 1
+pt_metrospeed8th		EQU 2
+pt_metrospeed4th		EQU 4
 
 pt_cmdarpeggio	 	 	EQU 0
 pt_cmdportup	 	 	EQU 1

@@ -76,6 +76,8 @@ wm
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_graphics_library
 
+		bsr	get_active_screen
+		move.l	d0,active_screen(a3)
 		bsr	check_system_properties
 
 		IFEQ requires_030_cpu
@@ -290,27 +292,24 @@ wm
 	IFND SYS_TAKEN_OVER
 		bsr	wait_drives_motor
 
-		bsr	get_active_screen
-		move.l	d0,active_screen(a3)
-		bsr	get_active_screen_depth
 		bsr	get_sprite_resolution
 		bsr	get_first_window
-		bsr	get_active_screen_mode
+		bsr	get_screen_mode
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
 		IFEQ screen_fader_enabled
-			bsr	sf_get_active_screen_colors
+			bsr	sf_get_screen_colors
 			bsr	sf_copy_screen_color_table
 			bsr	sf_fade_out_screen
 		ENDC
 
 		bsr	open_pal_screen
 		move.l	d0,dos_return_code(a3)
-		bne	cleanup_active_screen
+		bne	cleanup_original_screen
 		bsr	load_pal_screen_colors
 		bsr	check_pal_screen_mode
 		move.l	d0,dos_return_code(a3)
-		bne	cleanup_active_screen
+		bne	cleanup_original_screen
 		bsr	open_invisible_window
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_pal_screen
@@ -408,14 +407,14 @@ wm
 		bsr	close_invisible_window
 cleanup_pal_screen
 		bsr	close_pal_screen
-cleanup_active_screen
-		bsr	active_screen_to_front
+
+cleanup_original_screen
 		bsr	activate_first_window
 
 		IFEQ screen_fader_enabled
 			bsr	sf_fade_in_screen
 		ENDC
-
+	
 		IFEQ text_output_enabled
 			bsr	print_formatted_text
 		ENDC
@@ -1221,6 +1220,20 @@ open_intuition_library_ok
 
 ; Input
 ; Result
+; d0.l	... pointer screen structure active screen
+		CNOP 0,4
+get_active_screen
+		moveq	#0,d0		; all locks
+		CALLINT LockIBase
+		move.l	d0,a0
+		move.l	ib_ActiveScreen(a6),a2
+		CALLLIBS UnlockIBase
+		move.l	a2,d0
+		rts
+
+
+; Input
+; Result
 		CNOP 0,4
 check_system_properties
 		move.l	_SysBase(pc),a6
@@ -1959,25 +1972,11 @@ wait_drives_motor
 
 ; Input
 ; Result
-; d0.l active screen structure
 	CNOP 0,4
-get_active_screen
-		moveq	#0,d0		; all locks
-		CALLINT LockIBase
-		move.l	d0,a0
-		move.l	ib_ActiveScreen(a6),a2
-		CALLLIBS UnlockIBase
-		move.l	a2,d0
-		rts
-
-
-; Input
-; Result
-	CNOP 0,4
-get_active_screen_depth
+get_screen_depth
 		move.l	active_screen(a3),a0
 		ADDF.W	sc_BitMap,a0
-		move.b	bm_depth(a0),active_screen_depth(a3)
+		move.b	bm_depth(a0),screen_depth(a3)
 		rts
 
 
@@ -2017,23 +2016,23 @@ get_first_window_quit
 ; Result
 ; d0.l	return code
 		CNOP 0,4
-get_active_screen_mode
+get_screen_mode
 		cmp.w	#OS2_VERSION,os_version(a3)
-		blt.s   get_active_screen_mode_ok
+		blt.s   get_screen_mode_ok
 		move.l	active_screen(a3),d0
-		beq.s	get_active_screen_mode_ok
+		beq.s	get_screen_mode_ok
 		move.l	d0,a0
 		ADDF.W	sc_ViewPort,a0
 		CALLGRAF GetVPModeID
 		cmp.l	#INVALID_ID,d0
-		bne.s	get_active_screen_mode_skip
+		bne.s	get_screen_mode_skip
 		move.w	#VIEWPORT_MONITOR_ID_NOT_FOUND,custom_error_code(a3)
 		moveq	#RETURN_FAIL,d0
 		CNOP 0,4
-get_active_screen_mode_skip
+get_screen_mode_skip
 		and.l	#MONITOR_ID_MASK,d0	; without resolution
-		move.l	d0,active_screen_mode(a3)
-get_active_screen_mode_ok
+		move.l	d0,screen_mode(a3)
+get_screen_mode_ok
 		moveq	#RETURN_OK,d0
 		rts
 
@@ -2042,13 +2041,13 @@ get_active_screen_mode_ok
 ; Input
 ; Result
 			CNOP 0,4
-sf_get_active_screen_colors
+sf_get_screen_colors
 			move.l	active_screen(a3),d0
-			bne.s	sf_get_active_screen_colors_skip1
-sf_get_active_screen_colors_quit
+			bne.s	sf_get_screen_colors_skip1
+sf_get_screen_colors_quit
 			rts
 			CNOP 0,4
-sf_get_active_screen_colors_skip1
+sf_get_screen_colors_skip1
 			move.l	d0,a0
 			move.l	sc_ViewPort+vp_ColorMap(a0),a0
 			moveq	#0,d2	; index in color table
@@ -2056,16 +2055,16 @@ sf_get_active_screen_colors_skip1
 			move.l	sf_screen_color_table(a3),a4
 			move.l	_GfxBase(pc),a6
 			moveq	#sf_rgb4_colors_number-1,d7
-sf_get_active_screen_colors_loop
+sf_get_screen_colors_loop
 			move.l	d2,d0	; index in color table
 			move.l	a2,a0	; color map
 			CALLLIBS GetRGB4
 			cmp.w	#-1,d0
-			beq.s	sf_get_active_screen_colors_quit
+			beq.s	sf_get_screen_colors_quit
 			move.w	d0,(a4)+ ; RGB4 value
-			addq.w	#1,d2	;next color
-			dbf	d7,sf_get_active_screen_colors_loop
-			bra.s	sf_get_active_screen_colors_quit
+			addq.w	#1,d2	; next color
+			dbf	d7,sf_get_screen_colors_loop
+			bra.s	sf_get_screen_colors_quit
 
 
 ; Input
@@ -2085,7 +2084,7 @@ sf_copy_screen_color_table_loop
 ; Result
 	CNOP 0,4
 sf_fade_out_screen
-			cmp.b	#sf_screen_depth_max,active_screen_depth(a3)
+			cmp.b	#sf_screen_depth_max,screen_depth(a3)
 			ble.s	sf_fade_out_screen_loop
 sf_fade_out_screen_quit
 			rts
@@ -2354,7 +2353,7 @@ blank_display_loop
 ; Result
 		CNOP 0,4
 wait_monitor_switch
-		move.l	active_screen_mode(a3),d0
+		move.l	screen_mode(a3),d0
 		beq.s	wait_monitor_switch_quit
 		cmp.l	#DEFAULT_MONITOR_ID,d0
 		beq.s	wait_monitor_switch_quit
@@ -2990,21 +2989,6 @@ close_pal_screen
 ; Input
 ; Result
 	CNOP 0,4
-active_screen_to_front
-		tst.l	active_screen(a3)
-		beq.s	active_screen_to_front_quit
-		bsr	get_active_screen
-		move.l	active_screen(a3),a0
-		cmp.l	d0,a0
-		beq.s	active_screen_to_front_quit
-		CALLINT ScreenToFront
-active_screen_to_front_quit
-		rts
-
-
-; Input
-; Result
-	CNOP 0,4
 activate_first_window
 		move.l	first_window(a3),d0
 		beq.s	activate_first_window_quit
@@ -3019,7 +3003,7 @@ activate_first_window_quit
 ; Result
 			CNOP 0,4
 sf_fade_in_screen
-			cmp.b	#sf_screen_depth_max,active_screen_depth(a3)
+			cmp.b	#sf_screen_depth_max,screen_depth(a3)
 			ble.s	sf_fade_in_screen_loop
 sf_fade_in_screen_quit
 			rts
@@ -3603,8 +3587,6 @@ close_graphics_library
 print_error_message
 		move.w	custom_error_code(a3),d4
 		beq.s	print_error_message_ok
-		bsr	get_active_screen
-		move.l	d0,active_screen(a3)
 		CALLINT WBenchToFront
 		lea	raw_name(pc),a0
 		move.l	a0,d1
@@ -3630,10 +3612,39 @@ print_error_message_skip
 		CALLLIBS Read
 		move.l	raw_handle(a3),d1
 		CALLLIBS Close
-		bsr	active_screen_to_front
+		bsr	original_screen_to_front
 print_error_message_ok
 		moveq	#RETURN_OK,d0
 		rts
+
+
+; Input
+; Result
+		CNOP 0,4
+original_screen_to_front
+		tst.l	active_screen(a3)
+		beq.s	original_screen_to_front_quit
+		bsr.s	get_first_screen
+		move.l	active_screen(a3),a0
+		cmp.l	d0,a0
+		beq.s	original_screen_to_front_quit
+		CALLINT ScreenToFront
+original_screen_to_front_quit
+		rts
+
+
+; Input
+; Result
+; d0.l	... pointer screen structure first screen
+		CNOP 0,4
+get_first_screen
+		moveq	#0,d0		; all locks
+		CALLINT LockIBase
+		move.l	d0,a0
+		move.l	ib_FirstScreen(a6),a2
+		CALLLIBS UnlockIBase
+		move.l	a2,d0
+		rts		
 
 
 ; Input
