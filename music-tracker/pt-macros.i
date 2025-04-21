@@ -384,8 +384,8 @@ pt_InitAllChanLoop
 
 	CNOP 0,4
 pt_SetAllChanDMA
-	move.b	#FALSE,pt_SetAllChanDMAFlag(a3) ; deactivate routine
 	move.w	pt_DMACONtemp(a3),d0
+	move.b	#FALSE,pt_SetAllChanDMAFlag(a3) ; deactivate routine
 	or.w	#DMAF_SETCLR,d0
 	move.w	d0,DMACON-DMACONR(a6)
 	clr.b	pt_InitAllChanLoopFlag(a3) ; activate follow up routine
