@@ -60,9 +60,13 @@ pt_music_fader_skip2
 pt_decrease_channel_volume
 		moveq	#0,d0
 		move.b	n_volume(a0),d0
-		mulu.w	pt_master_volume(a3),d0
+		move.w	pt_master_volume(a3),d1
+		cmp.w	#pt_maxvol,d1
+		beq.s	pt_decrease_channel_volume_skip
+		mulu.w	d1,d0
 		lsr.w	#6,d0
-		move.w	d0,(a1)		; AUDVOL
+pt_decrease_channel_volume_skip
+		move.w	d0,(a1)		; AUDxVOL
 		ADDF.W	16,a1		; next audio channel
 		rts
 	ENDC

@@ -124,8 +124,12 @@ pt_CheckEffects
 	moveq	#0,d0
 	move.b	n_volume(a2),d0
 	IFEQ pt_music_fader_enabled
-		mulu.w	pt_master_volume(a3),d0
-		lsr.w	 #6,d0
+		move.w	pt_master_volume(a3),d2
+		cmp.w	#pt_maxvol,d2
+		beq.s	pt_DecVolSkip1
+		mulu.w	d2,d0
+		lsr.w	#6,d0
+pt_DecVolSkip1
 	ENDC
 	IFEQ pt_track_volumes_enabled
 		move.w	d0,n_currentvolume(a2)
@@ -386,12 +390,16 @@ pt_ChkMetroEnd
 	CNOP 0,4
 pt_Plv2
 	bsr.s	pt_PlayVoice
-; Update volume
+; Update volume at tick #1
 	moveq	#0,d0
 	move.b	n_volume(a2),d0
 	IFEQ pt_music_fader_enabled
-		mulu.w	pt_master_volume(a3),d0
+		move.w	pt_master_volume(a3),d2
+		cmp.w	#pt_maxvol,d2
+		beq.s	pt_DecVolSkip2
+		mulu.w	d2,d0
 		lsr.w	#6,d0
+pt_DecVolSkip2
 	ENDC
 	IFEQ pt_mute_enabled
 		move.w	d5,8(a6)	; AUDxVOL muted
@@ -1300,8 +1308,12 @@ pt_TremoloSkip
 	moveq	#pt_maxvol,d0
 pt_TremoloOk
 	IFEQ pt_music_fader_enabled
-		mulu.w	pt_master_volume(a3),d0
+		move.w	pt_master_volume(a3),d2
+		cmp.w	#pt_maxvol,d2
+		beq.s	pt_DecVolSkip3
+		mulu.w	d2,d0
 		lsr.w	#6,d0
+pt_DecVolSkip3
 	ENDC
 	IFEQ pt_mute_enabled
 		move.w	d5,8(a6)	; AUDxVOL muted
