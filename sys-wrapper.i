@@ -5,16 +5,16 @@
 
 
 ; Global labels
-; 	SYS_TAKEN_OVER
-; 	PASS_RETURN_CODE
-; 	PASS_GLOBAL_REFERENCES
-; 	WRAPPER
-; 	CUSTOM_MEMORY_USED
-; 	TRAP0
-; 	TRAP1
-; 	TRAP2
-; 	SET_SECOND_COPPERLIST
-; 	MEASURE_RASTERTIME
+;	SYS_TAKEN_OVER
+;	PASS_RETURN_CODE
+;	PASS_GLOBAL_REFERENCES
+;	WRAPPER
+;	CUSTOM_MEMORY_USED
+;	TRAP0
+;	TRAP1
+;	TRAP2
+;	SET_SECOND_COPPERLIST
+;	MEASURE_RASTERTIME
 
 
 	IFND SYS_TAKEN_OVER
@@ -68,7 +68,7 @@ wm
 			bsr	get_output
 			move.l	d0,dos_return_code(a3)
 			bne	cleanup_dos_library
-     		ENDC
+    		ENDC
 		bsr	open_graphics_library
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_dos_library
@@ -613,7 +613,7 @@ init_structures
 		bsr	init_pal_extended_newscreen
 		IFNE screen_fader_enabled
 			bsr	init_pal_screen_rgb4_colors
-        	ENDC
+       	ENDC
 		bsr	init_video_control_tags
 		bsr	init_pal_screen_tags
 		bsr	init_invisible_extended_newwindow
@@ -691,7 +691,7 @@ init_custom_error_table
 
 		IFEQ screen_fader_enabled
 			INIT_CUSTOM_ERROR_ENTRY SCREEN_FADER_NO_MEMORY,error_text_screen_fader,error_text_screen_fader_end-error_text_screen_fader
-        	ELSE
+       	ELSE
 			INIT_CUSTOM_ERROR_ENTRY SCREEN_NO_MEMORY,error_text_screen1,error_text_screen1_end-error_text_screen1
 		ENDC
 
@@ -766,7 +766,7 @@ init_pal_screen_rgb4_colors
 			MOVEF.W	pal_screen_colors_number-1,d7
 init_pal_screen_rgb4_colors_loop
 			move.w	d0,(a0)+ ; COLORxx RGB4 value
-	               	dbf	d7,init_pal_screen_rgb4_colors_loop
+	              	dbf	d7,init_pal_screen_rgb4_colors_loop
 			rts
 		ENDC
 
@@ -787,10 +787,10 @@ init_video_control_tags
 init_pal_screen_tags
 		lea	pal_screen_tags(pc),a0
 		move.l	#SA_Left,(a0)+
-	     	moveq	#pal_screen_left,d2
+	    	moveq	#pal_screen_left,d2
 		move.l	d2,(a0)+
 		move.l	#SA_Top,(a0)+
-     		moveq	#pal_screen_top,d2
+    		moveq	#pal_screen_top,d2
 		move.l	d2,(a0)+
 		move.l	#SA_Width,(a0)+
 		moveq	#pal_screen_x_size,d2

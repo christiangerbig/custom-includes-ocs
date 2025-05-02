@@ -1,6 +1,6 @@
 ; Global labels
-; 	SYS_TAKEN_OVER
-; 	COLOR_GRADIENT_RGB4
+;	SYS_TAKEN_OVER
+;	COLOR_GRADIENT_RGB4
 
 
 ; Input
@@ -94,7 +94,7 @@ wait_beam_position
 	lea	VHPOSR-DMACONR(a6),a1
 wait_beam_position_loop
 	move.w	(a0),d0			; VPOSR
-	swap	d0		 	; adjust bits
+	swap	d0			; adjust bits
 	move.w	(a1),d0			; VHPOSR
 	and.l	d1,d0			; only vertical position
 	cmp.l	d2,d0			; wait for beam position

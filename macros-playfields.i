@@ -54,7 +54,7 @@ PF_SOFTSCROLL_8PIXEL_LORES	MACRO
 		FAIL Macro PF_SOFTSCROLL_8PIXEL_LORES: Scratch register missing
 	ENDC
 	IFC "","\3"
-		and.w	#$001f,\1 	; -- -- -- -- -- -- -- -- -- -- -- H4 H3 H2 H1 H0
+		and.w	#$001f,\1	; -- -- -- -- -- -- -- -- -- -- -- H4 H3 H2 H1 H0
 	ELSE
 		and.w	\3,\1		; -- -- -- -- -- -- -- -- -- -- -- H4 H3 H2 H1 H0
 	ENDC
@@ -109,7 +109,7 @@ PF_SOFTSCROLL_8PIXEL_HIRES	MACRO
 		FAIL Macro PF_SOFTSCROLL_8PIXEL_HIRES: Scratch register missing
 	ENDC
 	IFC "","\3"
-		and.w	#$000f,\1 	; -- -- -- -- -- -- -- -- -- -- -- -- H3 H2 H1 H0
+		and.w	#$000f,\1	; -- -- -- -- -- -- -- -- -- -- -- -- H3 H2 H1 H0
 	ELSE
 		and.w	\3,\1		; -- -- -- -- -- -- -- -- -- -- -- -- H3 H2 H1 H0
 	ENDC

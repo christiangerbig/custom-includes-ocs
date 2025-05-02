@@ -35,7 +35,7 @@ pt_ni_note			RS.W 1	; bits 0-11 note period, bits 12-15 upper nibble of sample n
 pt_ni_cmd			RS.B 1	; bits 0-3 effect command number, bits 4-7 lower nibble of sample number
 pt_ni_cmdlo			RS.B 1	; bits 0-3 effect e-command data, bits 4-7 effect e-command number
 
-pt_noteinfo_size 		RS.B 0
+pt_noteinfo_size		RS.B 0
 
 
 	RSRESET

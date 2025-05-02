@@ -442,7 +442,7 @@ pt_PlvSkip
 	addq.w	#pt_noteinfo_size,d1	; next channel data
 	or.b	d0,d2			; sample number
 	beq.s	pt_SetRegisters
-	subq.w	#1,d2		 	; count starts at 0
+	subq.w	#1,d2			; count starts at 0
 	move.w	d2,d3
 	MULUF.W	LONGWORD_SIZE,d2,d0
 	lea	pt_SampleStarts(pc),a1
@@ -454,10 +454,10 @@ pt_PlvSkip
 	move.w	d2,n_finetune(a2)	; finetune and volume
 	cmp.w	#pt_oneshotlen,d4
 	beq.s	pt_NoLoopSample
-	move.w	d3,d0		 	; repeat point
-	MULUF.W	WORD_SIZE,d3,d2	 	; in bytes
-	add.w	d4,d0		 	; repeat length
-	add.l	d3,a1		 	; repeat point
+	move.w	d3,d0			; repeat point
+	MULUF.W	WORD_SIZE,d3,d2		; in bytes
+	add.w	d4,d0			; repeat length
+	add.l	d3,a1			; repeat point
 pt_NoLoopSample
 	move.w	d0,n_length(a2)
 	move.w	d4,n_replen(a2)
@@ -549,7 +549,7 @@ pt_TreNoC
 	move.w	d3,n_replen(a2)
 pt_sdmaskp
 	IFEQ pt_track_notes_played_enabled
- 		move.b	d5,n_notetrigger(a2)
+		move.b	d5,n_notetrigger(a2)
 	ENDC
 	move.l	d2,(a6)			; AUDxLCH
 	IFEQ pt_track_periods_enabled
@@ -589,7 +589,7 @@ pt_SetTonePorta
 		move.l	a1,d2
 		moveq	#((pt_PeriodTableEnd-pt_PeriodTable)/WORD_SIZE)-1,d7 ; number of periods
 pt_StpLoop
-		cmp.w	(a1)+,d3 	; wanted note period ?
+		cmp.w	(a1)+,d3	; wanted note period ?
 		dbhs	d7,pt_StpLoop
 		bpl.s	pt_StpFound
 		moveq	#1,d7		; penultimate note period in table
@@ -1172,13 +1172,13 @@ pt_Vibrato2
 	subq.b	#1,d2			; vibrato waveform 1-ramp down ?
 	beq.s	pt_VibRampdown
 pt_VibSquare
-	MOVEF.W	255,d2		 	; square amplitude
+	MOVEF.W	255,d2			; square amplitude
 	bra.s	pt_VibSet
 	CNOP 0,4
 pt_VibRampdown
 	tst.b	n_vibratopos(a2)	; vibrato position positive ?
 	bpl.s	pt_VibRampdown2
-	MOVEF.W	255,d2		 	; rampdown amplitude
+	MOVEF.W	255,d2			; rampdown amplitude
 	sub.b	d0,d2			; reduce amplitude
 	bra.s	pt_VibSet
 	CNOP 0,4
@@ -1270,13 +1270,13 @@ pt_Tremolo2
 	subq.b	#1,d2			; tremolo waveform 1-ramp down ?
 	beq.s	pt_TreRampdown
 pt_TreSquare
-	MOVEF.W	255,d2		 	; square amplitude
+	MOVEF.W	255,d2			; square amplitude
 	bra.s	pt_TreSet
 	CNOP 0,4
 pt_TreRampdown
 	tst.b	n_tremolopos(a2)	; tremolo position positive ?
 	bpl.s	pt_TreRampdown2
-	MOVEF.W	255,d2		 	; rampdown amplitude
+	MOVEF.W	255,d2			; rampdown amplitude
 	sub.b	d0,d2			; reduce rampdown amplitude
 	bra.s	pt_TreSet
 	CNOP 0,4
@@ -1357,7 +1357,7 @@ pt_VSUEnd
 	CNOP 0,4
 pt_VolSlideDown
 	moveq	#NIBBLE_MASK_LOW,d0
-	and.b	n_cmdlo(a2),d0	 	; command data: y-downspeed
+	and.b	n_cmdlo(a2),d0		; command data: y-downspeed
 	moveq	#0,d2
 	move.b	n_volume(a2),d2
 	sub.b	d0,d2			; volume - downspeed
@@ -1518,12 +1518,12 @@ pt_SetGlissandoControl
 ; E4x "Set Vibrato Waveform"
 PT3_EFFECT_SET_VIB_WAVEFORM	MACRO
 ; Vibrato waveform types
-; 	0 - sine (default)
-; 	4   (without retrigger)
-; 	1 - ramp down
-; 	5   (without retrigger)
-; 	2 - square
-; 	6   (without retrigger)
+;	0 - sine (default)
+;	4   (without retrigger)
+;	1 - ramp down
+;	5   (without retrigger)
+;	2 - square
+;	6   (without retrigger)
 ; Input
 ; Result
 	CNOP 0,4
@@ -1585,12 +1585,12 @@ pt_SetLoop
 ; E7x "Set Tremolo Waveform"	
 PT3_EFFECT_SET_TRE_WAVEFORM MACRO
 ; Tremolo waveform types
-; 	0 - sine (default)
-; 	4   (without retrigger)
-; 	1 - ramp down
-; 	5   (without retrigger)
-; 	2 - square
-; 	6   (without retrigger)
+;	0 - sine (default)
+;	4   (without retrigger)
+;	1 - ramp down
+;	5   (without retrigger)
+;	2 - square
+;	6   (without retrigger)
 ; Input
 ; Result
 	CNOP 0,4
@@ -1773,10 +1773,10 @@ pt_InvertLoop
 pt_UpdateInvert
 	moveq	#0,d0
 	move.b	n_glissinvert(a2),d0
-	lsr.b	#NIBBLE_SHIFT_BITS,d0 	; speed
+	lsr.b	#NIBBLE_SHIFT_BITS,d0	; speed
 	beq.s	pt_InvertEnd
 	lea	pt_InvertTable(pc),a1
-	move.b	(a1,d0.w),d0 		; invert value
+	move.b	(a1,d0.w),d0		; invert value
 	add.b	d0,n_invertoffset(a2)	; decrease invert offset by invert value
 	bpl.s	pt_InvertEnd
 	move.l	n_wavestart(a2),a1

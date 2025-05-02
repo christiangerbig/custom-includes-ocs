@@ -290,7 +290,7 @@ MULUF				MACRO
 			FAIL Macro MULUF.B: Factor > 128
 		ENDC
 	ENDC
-	IFEQ (\1)-2		 	; *2
+	IFEQ (\1)-2			; *2
 		add.\0	\2,\2
 	ENDC
 	IFEQ (\1)-3			; *3
