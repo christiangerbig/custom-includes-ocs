@@ -350,7 +350,7 @@ pt_RtnInitChan4Loop
 
 
 ; Input
-; a0	Pointer temporary audio data
+; a0.l	Pointer temporary audio data
 ; d0.w	DMA bit audio channel [0,2,4,8]
 ; Result
 		CNOP 0,4
