@@ -134,7 +134,7 @@ wait_copint_loop
 ; d3.w	Offset first color register
 ; d7.w	Number of colors
 ; Result
-; d0	... Kein Rückgabewert
+; d0	Kein Rückgabewert
 	CNOP 0,4
 cop_init_colors
 	move.w	d3,(a0)+		; COLORxx
@@ -149,7 +149,7 @@ cop_init_colors
 ; a1.l	Pointer color table
 ; d7.w	Number of colors
 ; Result
-; d0	... Kein Rückgabewert
+; d0	Kein Rückgabewert
 	CNOP 0,4
 cpu_init_colors
 	move.w	(a1)+,(a0)+		; COLORxx

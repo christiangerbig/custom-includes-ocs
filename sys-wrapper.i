@@ -549,7 +549,7 @@ output_rasterlines_number
 
 ; Input
 ; Result
-; d0.l	... Kein Rückgabewert	
+; d0.l	Kein Rückgabewert	
 	CNOP 0,4
 init_variables
 	IFD SYS_TAKEN_OVER
@@ -1220,7 +1220,7 @@ open_intuition_library_ok
 
 ; Input
 ; Result
-; d0.l	... pointer screen structure active screen
+; d0.l	pointer screen structure active screen
 		CNOP 0,4
 get_active_screen
 		moveq	#0,d0		; all locks
@@ -1963,7 +1963,7 @@ init_global_references_table
 
 ; Input
 ; Result
-; d0.l	... Kein Rückgabewert	
+; d0.l	Kein Rückgabewert	
 		CNOP 0,4
 wait_drives_motor
 		MOVEF.L	drives_motor_delay,d1
@@ -2198,7 +2198,7 @@ sfo_rgb4_increase_blue
 
 ; Input
 ; Result
-; d0 ... keine Rückgabewert
+; d0 keine Rückgabewert
 			CNOP 0,4
 sf_rgb4_set_new_colors
 			move.l	active_screen(a3),d0
@@ -2520,7 +2520,7 @@ save_copperlist_pointers
 
 ; Input
 ; Result
-; d0.l	... Kein Rückgabewert
+; d0.l	Kein Rückgabewert
 		CNOP 0,4
 get_tod_time
 		moveq	#0,d0
@@ -3372,7 +3372,7 @@ free_pf1_memory3_skip
 	IFNE pf1_x_size2
 ; Input
 ; Result
-; d0.l	... Kein Rückgabewert
+; d0.l	Kein Rückgabewert
 		CNOP 0,4
 free_pf1_memory2
 		move.l	pf1_bitmap2(a3),d0
@@ -3635,7 +3635,7 @@ original_screen_to_front_quit
 
 ; Input
 ; Result
-; d0.l	... pointer screen structure first screen
+; d0.l	pointer screen structure first screen
 		CNOP 0,4
 get_first_screen
 		moveq	#0,d0		; all locks
