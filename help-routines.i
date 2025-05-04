@@ -129,8 +129,8 @@ wait_copint_loop
 
 
 ; Input
-; a0	Pointer copperlist
-; a1	Pointer color table
+; a0.l	Pointer copperlist
+; a1.l	Pointer color table
 ; d3.w	Offset first color register
 ; d7.w	Number of colors
 ; Result
@@ -145,8 +145,8 @@ cop_init_colors
 
 
 ; Input
-; a0	Offset first color register
-; a1	Pointer color table
+; a0.l	Offset first color register
+; a1.l	Pointer color table
 ; d7.w	Number of colors
 ; Result
 ; d0	... Kein Rückgabewert
@@ -162,7 +162,7 @@ cpu_init_colors
 ; d0.w	RGB4 current value
 ; d6.w	RGB4 destination value
 ; d7.w	Number of colors
-; a0	Pointer color table
+; a0.l	Pointer color table
 ; a1.w	Increase/decrease red
 ; a2.w	Increase/decrease green
 ; a4.w	Increase/decrease blue
@@ -170,7 +170,7 @@ cpu_init_colors
 ; Result
 		CNOP 0,4
 init_color_gradient_rgb4_loop
-		move.w	d0,(a0)		; RGB4 value
+		move.w	d0,(a0)		; RGB4
 		add.l	a5,a0		; next entry
 		move.w	d0,d1
 		and.w	#NIBBLE_MASK_HIGH,d1 ; G4
