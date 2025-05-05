@@ -390,6 +390,7 @@ pt_ChkMetroEnd
 	CNOP 0,4
 pt_Plv2
 	bsr.s	pt_PlayVoice
+
 ; Update volume at tick #1
 	moveq	#0,d0
 	move.b	n_volume(a2),d0
