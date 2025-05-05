@@ -72,7 +72,7 @@ GET_LINE_PARAMETERS		MACRO
 	MULUF.W 4,d3			; dy*4
 	move.w	d5,d0			; save octant
 	move.w	d3,d4			; save 4*dy
-	swap	d4			; bits 16-31: 4*dy
+	swap	d4			; high word: 4*dy
 	MULUF.W	2,d2			; dx*2
 	move.w	d3,d4			; save 4*dy
 	sub.w	d2,d3			; (4*dy)-(2*dx)
@@ -81,7 +81,7 @@ GET_LINE_PARAMETERS		MACRO
 \1_draw_lines_no_sign_bit
 	IFC "","\3"
 		MULUF.W	2,d2		; 2*(2*dx) = 4*dx
-		sub.w	d2,d4		; bits 0-15: (4*dy)-(4*dx)
+		sub.w	d2,d4		; low word: (4*dy)-(4*dx)
 		addq.w	#1*4,d2		; (4*dx)+(1*4)
 		MULUF.W 16,d2		; length = ((4*dx)+(1*4))*16
 		addq.w	#2,d2		; width = 1 word

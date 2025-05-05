@@ -1224,7 +1224,7 @@ SET_TWISTED_BACKGROUND_BARS	MACRO
 	move.l	a5,a1			; pointer BPLAM table
 	moveq	#\1_bars_number-1,d6
 \1_set_background_bars_loop2
-	move.l	(a0)+,d0		; bits 0-15: y position, bits 16-31: z vector
+	move.l	(a0)+,d0		; low word: y position, high word: z vector
 	IFC "B","\0"
 		bmi	\1_skip_background_bar
 	ENDC
@@ -1313,7 +1313,7 @@ SET_TWISTED_FOREGROUND_BARS	MACRO
 	move.l	a5,a1			; pointer BPLAM table
 	moveq	#\1_bars_number-1,d6
 \1_set_foreground_bars_loop2
-	move.l	(a0)+,d0		; bits 0-15: y position, bits 16-31: z vector
+	move.l	(a0)+,d0		; low word: y position, high word: z vector
 	IFC "B","\0"
 		bpl	\1_skip_foreground_bar
 	ENDC
