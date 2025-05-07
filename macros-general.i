@@ -150,7 +150,7 @@ ADDF				MACRO
 	 FAIL Macro ADDF: 8/16 bit source missing
 	ENDC
 	IFC "","\2"
-	 FAIL Macro ADDF: target missing
+	 FAIL Macro ADDF: destination missing
 	ENDC
 	IFEQ \1
 		MEXIT
@@ -1216,7 +1216,7 @@ CMPF MACRO
 ; Input
 ; \0 STRING:	Size [B/W/L]
 ; \1 NUMBER:	8/16/32 bit source
-; \2 STRING:	target
+; \2 STRING:	destination
 ; Result
 	IFC "","\0"
 		FAIL Macro CMPF: Size missing
@@ -1551,9 +1551,9 @@ COPY_IMAGE_TO_BITPLANE		MACRO
 	ENDC
 	lea	\1_image_data,a1	; source
 	IFC "","\4"
-		move.l	pf1_display(a3),a4 ; target
+		move.l	pf1_display(a3),a4 ; destination
 	ELSE
-		move.l	\4(a3),a4	; target
+		move.l	\4(a3),a4	; destination
 	ENDC
 	move.w	#(\1_image_plane_width*\1_image_depth)-\1_image_plane_width,a5
 	IFC "","\4"
@@ -1575,7 +1575,7 @@ COPY_IMAGE_TO_BITPLANE		MACRO
 	CNOP 0,4
 \1_copy_image_data
 	move.l	a1,a0			; source
-	move.l	(a4)+,a2		; target
+	move.l	(a4)+,a2		; destination
 	IFNC "","\2"
 		add.l	d4,a2		; xy offset
 	ENDC
@@ -1586,7 +1586,7 @@ COPY_IMAGE_TO_BITPLANE		MACRO
 	move.w	(a0)+,(a2)+
 	dbf	d5,\1_copy_image_data_loop2
 	add.l	a5,a0			; next line in source
-	add.l	a6,a2			; next line in target
+	add.l	a6,a2			; next line in destination
 	dbf	d6,\1_copy_image_data_loop1
 	rts
 	ENDM
@@ -1892,12 +1892,12 @@ COLOR_FADER			MACRO
 	and.w	d0,d2
 	clr.b	d0			; R4 current
 
-	move.w	(a1)+,d3		; RGB4 target
-	MOVEF.B	NIBBLE_MASK_HIGH,d4	; G4 target
+	move.w	(a1)+,d3		; RGB4 destination
+	MOVEF.B	NIBBLE_MASK_HIGH,d4	; G4 destination
 	and.w	d3,d4
 	moveq	#NIBBLE_MASK_LOW,d5
-	and.b	d3,d5			; B4 target
-	clr.b	d3			; R4 target
+	and.b	d3,d5			; B4 destination
+	clr.b	d3			; R4 destination
 
 
 ; ** Rotwert **
@@ -1906,7 +1906,7 @@ COLOR_FADER			MACRO
 	bgt.s	\1_decrease_red
 	blt.s	\1_increase_red
 \1_matched_red
-	subq.w	#1,d6			; target value reached
+	subq.w	#1,d6			; destination value reached
 
 ; ** Grünwert **
 \1_check_green_nibble
@@ -1914,7 +1914,7 @@ COLOR_FADER			MACRO
 	bgt.s	\1_decrease_green
 	blt.s	\1_increase_green
 \1_matched_green
-	subq.w	#1,d6			; target value reached
+	subq.w	#1,d6			; destination value reached
 
 ; ** Blauwert **
 \1_check_blue_nibble
@@ -1922,7 +1922,7 @@ COLOR_FADER			MACRO
 	bgt.s	\1_decrease_blue
 	blt.s	\1_increase_blue
 \1_matched_blue
-	subq.w	#1,d6			; target value reached
+	subq.w	#1,d6			; destination value reached
 
 \1_merge_rgb_nibbles
 	move.w	d0,d3                   ; R00
@@ -2054,7 +2054,7 @@ ROTATE_Z_AXIS			MACRO
 INIT_COLOR_GRADIENT_RGB4	MACRO
 ; Input
 ; \1 HEXNUMBER:		RGB4 current
-; \2 HEXNUMBER:		RGB4 target
+; \2 HEXNUMBER:		RGB4 destination
 ; \3 BYTE SIGNED:	Number of color values
 ; \4 NUMBER:		Color step for RGB (optional)
 ; \5 POINTER:		Color table (optional)
@@ -2066,13 +2066,13 @@ INIT_COLOR_GRADIENT_RGB4	MACRO
 		FAIL Macro COLOR_GRADIENT_RGB4: RGB4 current missing
 	ENDC
 	IFC "","\2"
-		FAIL Macro COLOR_GRADIENT_RGB4: RGB4 target missing
+		FAIL Macro COLOR_GRADIENT_RGB4: RGB4 destination missing
 	ENDC					
 	IFC "","\3"
 		FAIL Macro COLOR_GRADIENT_RGB4: Number of color values missing
 	ENDC
 	move.l	#\1,d0			; RGB4 current
-	move.l	#\2,d6			; RGB4 target
+	move.l	#\2,d6			; RGB4 destination
 	IFNC "","\5"
 		IFC "pc","\6"
 			lea	\5(\6),a0 ; pointer color table

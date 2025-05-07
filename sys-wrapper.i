@@ -2072,7 +2072,7 @@ sf_get_screen_colors_loop
 	CNOP 0,4
 sf_copy_screen_color_table
 			move.l	sf_screen_color_table(a3),a0 ; source
-			move.l	sf_screen_color_cache(a3),a1 ; target
+			move.l	sf_screen_color_cache(a3),a1 ; destination
 			MOVEF.W	sf_rgb4_colors_number-1,d7
 sf_copy_screen_color_table_loop
 			move.w	(a0)+,(a1)+ ; RGB4-Wert
@@ -2104,42 +2104,42 @@ sf_fade_out_screen_loop
 rgb4_screen_fader_out
 			MOVEF.W	sf_rgb4_colors_number*3,d6 ; RGB counter
 			move.l	sf_screen_color_cache(a3),a0
-			move.w	pf1_rgb4_color_table(pc),a1 ; target value COLOR00
+			move.w	pf1_rgb4_color_table(pc),a1 ; destination value COLOR00
 			move.w  #sfo_fader_speed,a4 ; decrement/increment RGB values
 			MOVEF.W sf_rgb4_colors_number-1,d7
 rgb4_screen_fader_out_loop
 			move.w  (a0),d0
 			lsr.w	#8,d0	; R4
 			move.w  a1,d3
-			lsr.w	#8,d3	; R4 target
+			lsr.w	#8,d3	; R4 destination
 			moveq	#0,d1
 			move.b  1(a0),d1
 			moveq	#$f,d2
 			and.b	d1,d2	; B4
 			move.w  a1,d5
-			and.w	#$000f,d5 ; B4 target
+			and.w	#$000f,d5 ; B4 destination
 			lsr.b	#4,d1	; G4
 			move.w  a1,d4
 			lsr.b   #4,d4	
-			and.w	#$000f,d4 ; G4 target
+			and.w	#$000f,d4 ; G4 destination
 
 			cmp.w	d3,d0
 			bgt.s	sfo_rgb4_decrease_red
 			blt.s	sfo_rgb4_increase_red
 sfo_rgb4_matched_red
-			subq.w  #1,d6	; target tripple value reached
+			subq.w  #1,d6	; destination tripple value reached
 sfo_rgb4_check_green
 			cmp.w	d4,d1
 			bgt.s	sfo_rgb4_decrease_green
 			blt.s	sfo_rgb4_increase_green
 sfo_rgb4_matched_green
-			subq.w  #1,d6	; target tripple value reached
+			subq.w  #1,d6	; destination tripple value reached
 sfo_rgb4_check_blue
 			cmp.w	d5,d2
 			bgt.s	sfo_rgb4_decrease_blue
 			blt.s	sfo_rgb4_increase_blue
 sfo_rgb4_matched_blue
-			subq.w	#1,d6	; target tripple value reached
+			subq.w	#1,d6	; destination tripple value reached
 sfo_set_rgb4
 			lsl.w	#8,d0	; red
 			move.b	d1,d0
@@ -2397,7 +2397,7 @@ disable_system
 		CNOP 0,4
 save_exception_vectors
 		move.l	old_vbr(a3),a0	; source
-		lea	exception_vecs_save(pc),a1 ; target
+		lea	exception_vecs_save(pc),a1 ; destination
 		MOVEF.W	(exception_vectors_size/LONGWORD_SIZE)-1,d7 ; number of vectors
 copy_exception_vectors_loop
 		move.l	(a0)+,(a1)+
@@ -2491,7 +2491,7 @@ move_exception_vectors_quit
 		rts
 		CNOP 0,4
 move_exception_vectors_skip
-		move.l	d0,a1		; target
+		move.l	d0,a1		; destination
 		move.l	old_vbr(a3),a0	; source
 		MOVEF.W	(exception_vectors_size/LONGWORD_SIZE)-1,d7 ; number of vectors
 move_exception_vectors_loop
@@ -2889,7 +2889,7 @@ get_tod_duration_save
 		CNOP 0,4
 restore_exception_vectors
 		lea	exception_vecs_save(pc),a0 ; source
-		move.l	old_vbr(a3),a1	; target
+		move.l	old_vbr(a3),a1	; destination
 		MOVEF.W	(exception_vectors_size/LONGWORD_SIZE)-1,d7 ; number of vectors
 restore_exception_vectors_loop
 		move.l	(a0)+,(a1)+
@@ -3023,14 +3023,14 @@ sf_fade_in_screen_loop
 rgb4_screen_fader_in
 			MOVEF.W	sf_rgb4_colors_number*3,d6 ; RGB counter
 			move.l	sf_screen_color_cache(a3),a0
-			move.l	sf_screen_color_table(a3),a1 ; RGB4 target values
+			move.l	sf_screen_color_table(a3),a1 ; RGB4 destination values
 			move.w	#sfi_fader_speed,a4 ; increment/decrement for RGB values
 			MOVEF.W	sf_rgb4_colors_number-1,d7
 rgb4_screen_fader_in_loop
 			move.w  (a0),d0
 			lsr.w	#8,d0	; R4
 			move.w  (a1),d3
-			lsr.w	#8,d3	; R4 target
+			lsr.w	#8,d3	; R4 destination
 			moveq	#0,d1
 			move.b  1(a0),d1
 			moveq	#$f,d2
@@ -3038,27 +3038,27 @@ rgb4_screen_fader_in_loop
 			moveq	#0,d4
 			move.b	1(a1),d4
 			moveq	#$f,d5
-			and.b	d4,d5	; B4 target
+			and.b	d4,d5	; B4 destination
 			lsr.b	#4,d1	; G4
-			lsr.b   #4,d4	; G4 target
+			lsr.b   #4,d4	; G4 destination
 
 			cmp.w	d3,d0
 			bgt.s	sfi_rgb4_decrease_red
 			blt.s	sfi_rgb4_increase_red
 sfi_rgb4_matched_red
-			subq.w	#1,d6 ; target value reached
+			subq.w	#1,d6 ; destination value reached
 sfi_rgb4_check_green
 			cmp.w	d4,d1
 			bgt.s	sfi_rgb4_decrease_green
 			blt.s	sfi_rgb4_increase_green
 sfi_rgb4_matched_green
-			subq.w	#1,d6 ; target value reached
+			subq.w	#1,d6 ; destination value reached
 sfi_rgb4_check_blue
 			cmp.w	d5,d2
 			bgt.s	sfi_rgb4_decrease_blue
 			blt.s	sfi_rgb4_increase_blue
 sfi_rgb4_matched_blue
-			subq.w	#1,d6 ; target value reached
+			subq.w	#1,d6 ; destination value reached
 
 sfi_set_rgb4
 			lsl.w	#8,d0	; R4
