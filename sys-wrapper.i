@@ -2528,7 +2528,7 @@ get_tod_time
 		swap	d0		; adjust bits
 		move.b	CIATODMID(a4),d0 ; TOD clock bits 8-15
 		lsl.w	#8,d0		; adjust bits
-		move.b	CIATODLOW(a4),d0 ; TOD clock bits 0-7
+		move.b	CIATODLOW(a4),d0 ; TOD clock bits 0..7
 		move.l	d0,tod_time(a3)
 		rts
 
@@ -2869,7 +2869,7 @@ get_tod_duration
 		swap	d1		; adjust bits
 		move.b	CIATODMID(a4),d1 ; TOD clock bits 8-15
 		lsl.w	#8,d1		; adjust bits
-		move.b	CIATODLOW(a4),d1 ; TOD clock bits 0-7
+		move.b	CIATODLOW(a4),d1 ; TOD clock bits 0..7
 		cmp.l	d0,d1		; TOD overflow ?
 		bge.s	get_tod_duration_skip
 		move.l	#$ffffff,d2	; Maximalwert
