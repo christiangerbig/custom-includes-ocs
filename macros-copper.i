@@ -200,7 +200,7 @@ COP_SET_BITPLANE_POINTERS	MACRO
 			dbf	d7,\1_set_plane_ptrs_loop
 		ELSE
 			move.l	\1_\2(a3),a0
-			ADDF.W	\1_BPL1PTH+2,a0
+			ADDF.W	\1_BPL1PTH+WORD_SIZE,a0
 			move.l	pf1_display(a3),a1
 			MOVEF.L	(\5/8)+(\6*pf1_plane_width*pf1_depth3),d1
 			moveq	#\3-1,d7 ; number of bitplanes
@@ -208,7 +208,7 @@ COP_SET_BITPLANE_POINTERS	MACRO
 			move.l	(a1)+,d0
 			add.l	d1,d0
 			move.w	d0,4(a0) ; BPLxPTL
-			swap	d0	; High
+			swap	d0	
 			move.w	d0,(a0)	; BPLxPTH
 			addq.w	#QUADWORD_SIZE,a0
 			dbf	d7,\1_set_plane_ptrs_loop
@@ -216,7 +216,7 @@ COP_SET_BITPLANE_POINTERS	MACRO
 	ELSE
 		move.l	\1_\2(a3),a0
 		lea	\1_BPL2PTH+2(a0),a1
-		ADDF.W	\1_BPL1PTH+2,a0
+		ADDF.W	\1_BPL1PTH+WORD_SIZE,a0
 		move.l	pf1_display(a3),a2
 ; Odd playfield
 		moveq	#\3-1,d7	; number of bitplanes
@@ -279,10 +279,10 @@ COP_SET_SPRITE_POINTERS		MACRO
 	move.l	\1_\2(a3),a0
 	IFC "","\4"
 		lea	spr_ptrs_display(pc),a1
-		ADDF.W	\1_SPR0PTH+2,a0
+		ADDF.W	\1_SPR0PTH+WORD_SIZE,a0
 	ELSE
 		lea	spr_ptrs_display+(\4*4)(pc),a1 ; with index
-		ADDF.W	\1_SPR\3PTH+2,a0
+		ADDF.W	\1_SPR\3PTH+WORD_SIZE,a0
 	ENDC
 	moveq	#\3-1,d7		; number of sprites
 \1_set_sprite_ptrs_loop

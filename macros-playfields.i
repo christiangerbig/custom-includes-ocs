@@ -193,7 +193,7 @@ swap_playfield\*RIGHT(\1,1)_loop
 			move.l	(a1)+,d0
 			add.l	d1,d0
 			move.w	d0,LONGWORD_SIZE(a0) ; BPLxPTL
-			swap	d0	; High
+			swap	d0	
 			move.w	d0,(a0)	; BPLxPTH
 			addq.w	#QUADWORD_SIZE,a0
 			dbf	d7,SWAP_PLAYFIELD\*RIGHT(\1,1)_loop
