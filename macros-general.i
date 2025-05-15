@@ -1245,10 +1245,10 @@ CPU_INIT_COLOR			MACRO
 		FAIL Macro CPU_INIT_COLOR: First color register offset missing
 	ENDC
 	IFC "","\2"
-		FAIL Macro CPU_INIT_COLOR: Number of color values missing
+		FAIL Macro CPU_INIT_COLOR: Number of color missing
 	ENDC
 	lea	(\1)-DMACONR(a6),a0	; first color register
-	moveq	#\2-1,d7		; number of color values
+	moveq	#\2-1,d7		; number of colors
 	IFNC "","\3"
 		lea	\3(pc),a1	; pointer color table
 	ENDC
@@ -1363,7 +1363,7 @@ INIT_CHARACTERS_X_POSITIONS	MACRO
 	ENDM
 
 
-INIT_CHARACTERS_Y_POSITIONS		MACRO
+INIT_CHARACTERS_Y_POSITIONS	MACRO
 ; Input
 ; \1 STRING:	Labels prefix
 ; \2 NUMBER:	Number of characters (optional)
@@ -1436,7 +1436,7 @@ GET_NEW_CHARACTER_IMAGE		MACRO
 	move.b	(a0,d1.w),d0		; ASCII code
 	IFNC "","\2"
 		bsr.s	\2
-		tst.w	d0		; return value TRUE ?
+		tst.w	d0
 		beq.s	\1_skip_control_code
 	ENDC
 	IFNC "BACKWARDS","\4"
@@ -1705,7 +1705,7 @@ GET_SINE_BARS_YZ_COORDINATES MACRO
 		addq.w	#\1_y_angle_speed,d0
 		cmp.w	d3,d0		; 360° ?
 		blt.s	\1_get_yz_coordinates_skip1
-		sub.w	d3,d0		; reset y angle
+		sub.w	d3,d0		; restart
 \1_get_yz_coordinates_skip1
 		move.w	d0,\1_y_angle(a3) 
 		MOVEF.W sine_table_length/2,d4 ; 180°
@@ -1733,7 +1733,7 @@ GET_SINE_BARS_YZ_COORDINATES MACRO
 		add.w	d5,d2		; y distance next bar
 		cmp.w	d3,d2		; 360° ?
 		blt.s	\1_get_yz_coordinates_skip3
-		sub.w	d3,d2		; reset y angle
+		sub.w	d3,d2		; restart
 \1_get_yz_coordinates_skip3
 		dbf	d7,\1_get_yz_coordinates_loop
 		rts
@@ -1870,7 +1870,7 @@ GET_TWISTED_BARS_YZ_COORDINATES MACRO
 		addq.w	#\1_y_angle_step,d2
 		cmp.w	d3,d2		; 360° ?
 		blt.s	\1_get_yz_coordinates_skip4
-		sub.w	d3,d2		; reset y angle
+		sub.w	d3,d2		; restart
 \1_get_yz_coordinates_skip4
 		dbf	d7,\1_get_yz_coordinates_loop1
 		rts
@@ -1906,7 +1906,7 @@ COLOR_FADER			MACRO
 	bgt.s	\1_decrease_red
 	blt.s	\1_increase_red
 \1_matched_red
-	subq.w	#1,d6			; destination value reached
+	subq.w	#1,d6			; destination red reached
 
 ; ** Grünwert **
 \1_check_green_nibble
@@ -1914,7 +1914,7 @@ COLOR_FADER			MACRO
 	bgt.s	\1_decrease_green
 	blt.s	\1_increase_green
 \1_matched_green
-	subq.w	#1,d6			; destination value reached
+	subq.w	#1,d6			; destination green reached
 
 ; ** Blauwert **
 \1_check_blue_nibble
@@ -1922,7 +1922,7 @@ COLOR_FADER			MACRO
 	bgt.s	\1_decrease_blue
 	blt.s	\1_increase_blue
 \1_matched_blue
-	subq.w	#1,d6			; destination value reached
+	subq.w	#1,d6			; destination blue reached
 
 \1_merge_rgb_nibbles
 	move.w	d0,d3                   ; R00
@@ -2055,7 +2055,7 @@ INIT_COLOR_GRADIENT_RGB4	MACRO
 ; Input
 ; \1 HEXNUMBER:		RGB4 current
 ; \2 HEXNUMBER:		RGB4 destination
-; \3 BYTE SIGNED:	Number of color values
+; \3 BYTE SIGNED:	Number of colors
 ; \4 NUMBER:		Color step for RGB (optional)
 ; \5 POINTER:		Color table (optional)
 ; \6 STRING:		Pointer base [pc,a3] (optional)
@@ -2069,7 +2069,7 @@ INIT_COLOR_GRADIENT_RGB4	MACRO
 		FAIL Macro COLOR_GRADIENT_RGB4: RGB4 destination missing
 	ENDC					
 	IFC "","\3"
-		FAIL Macro COLOR_GRADIENT_RGB4: Number of color values missing
+		FAIL Macro COLOR_GRADIENT_RGB4: Number of colors missing
 	ENDC
 	move.l	#\1,d0			; RGB4 current
 	move.l	#\2,d6			; RGB4 destination
@@ -2092,7 +2092,7 @@ INIT_COLOR_GRADIENT_RGB4	MACRO
 	IFNC "","\7"
 		move.w	#(\7)*WORD_SIZE,a5 ; offset next entry
 	ENDC
-	MOVEF.W	\3-1,d7			; number of color values
+	MOVEF.W	\3-1,d7			; number of colors
 	bsr	init_color_gradient_RGB4_loop
 	ENDM
 

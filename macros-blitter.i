@@ -14,7 +14,7 @@ waitblit_loop\@
 WAITBLITQ			MACRO
 ; Input
 ; \1		DMA blitter busy bit in dx or immediate
-; \2 STRING:	"BUSYBITBUG" for Agnus in Amiga 1000/2000-A to avoid blitter busy bit bug (optional)
+; \2 STRING:	"BUSYBITBUG" for Agnus in Amiga 1000/2000-A to avoid the blitter busy bit bug (optional)
 ; Result
 	IFC "BUSYBITBUG","\2"
 		tst.w	(a6) 
@@ -84,6 +84,6 @@ GET_LINE_PARAMETERS		MACRO
 		sub.w	d2,d4		; low word: (4*dy)-(4*dx)
 		addq.w	#1*4,d2		; (4*dx)+(1*4)
 		MULUF.W 16,d2		; length = ((4*dx)+(1*4))*16
-		addq.w	#2,d2		; width = 1 word
+		addq.w	#WORD_SIZE,d2	; width
 	ENDC
 	ENDM

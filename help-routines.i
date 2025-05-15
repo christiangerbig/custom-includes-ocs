@@ -138,7 +138,7 @@ wait_copint_loop
 	CNOP 0,4
 cop_init_colors
 	move.w	d3,(a0)+		; COLORxx
-	move.w	(a1)+,(a0)+		; RGB4 value
+	move.w	(a1)+,(a0)+		; RGB4
 	addq.w	#2,d3			; next color register
 	dbf	d7,cop_init_colors
 	rts

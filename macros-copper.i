@@ -4,13 +4,13 @@ COP_MOVE			MACRO
 ; \2 WORD :	CUSTOM register offset
 ; Result
 	IFC "","\1"
-		FAIL Macro COPMOVE: 16 bit value missing
+		FAIL Macro COP_MOVE: 16 bit value missing
 	ENDC
 	IFC "","\2"
-		FAIL Macro COPMOVE: CUSTOM register offset missing
+		FAIL Macro COP_MOVE: CUSTOM register offset missing
 	ENDC
 	move.w	#\2,(a0)+		; CUSTOM register offset
-	move.w	\1,(a0)+		; value to write
+	move.w	\1,(a0)+		; register value
 	ENDM
 
 
@@ -215,7 +215,7 @@ COP_SET_BITPLANE_POINTERS	MACRO
 		ENDC
 	ELSE
 		move.l	\1_\2(a3),a0
-		lea	\1_BPL2PTH+2(a0),a1
+		lea	\1_BPL2PTH+WORD_SIZE(a0),a1
 		ADDF.W	\1_BPL1PTH+WORD_SIZE,a0
 		move.l	pf1_display(a3),a2
 ; Odd playfield
@@ -307,7 +307,7 @@ COP_INIT_COLOR			MACRO
 		FAIL Macro COP_INIT_COLOR: Number of color values missing
 	ENDC
 	move.w	#\1,d3			; first color register offset
-	moveq	#\2-1,d7		; number of color values
+	moveq	#\2-1,d7		; number of colors
 	IFNC "","\3"
 		lea	\3(pc),a1	; pointer color table
 	ENDC
@@ -550,7 +550,7 @@ CONVERT_IMAGE_TO_RGB4_CHUNKY	MACRO
 		add.w	d1,d0		; COLOR16
 \1_no_plane4
 	ENDC
-	move.w	(a1,d0.l*2),(a2)+	; RGB4 value
+	move.w	(a1,d0.l*2),(a2)+	; RGB4
 	dbf	d5,\1_convert_image_data_loop3
 	addq.w	#BYTE_SIZE,a0		; next byte
 	dbf	d6,\1_convert_image_data_loop2
@@ -592,7 +592,7 @@ CONVERT_IMAGE_TO_HAM6_CHUNKY	MACRO
 	moveq	#NIBBLE_MASLK_LOW,d4
 	MOVEF.W	\1_image_y_size-1,d7
 \1_convert_image_data_loop1
-	moveq	#0,d2			; RGB4 value (COLOR00)
+	moveq	#0,d2			; RGB4 (COLOR00)
 	moveq	#\1_image_plane_width-1,d6 ; width in bytes
 \1_convert_image_data_loop2
 	moveq	#8-1,d5			; number of bits per byte
@@ -626,7 +626,7 @@ CONVERT_IMAGE_TO_HAM6_CHUNKY	MACRO
 	and.b	d3,d1
 	bne.s	\1_check_blue_nibble
 \1_use_color_register
-	move.w	(a1,d0.l*2),d2		; RGB4 value
+	move.w	(a1,d0.l*2),d2		; RGB4
 	bra.s	\1_set_rgb_nibbles
 	CNOP 0,4
 \1_check_blue_nibble
@@ -654,7 +654,7 @@ CONVERT_IMAGE_TO_HAM6_CHUNKY	MACRO
 	lsl.b	#4,d0			; adjust bits
 	or.b	d0,d2			; new green
 \1_set_rgb_nibbles
-	move.w	d2,(a2)+		; RGB4 value
+	move.w	d2,(a2)+		; RGB4
 	dbf	d5,\1_convert_image_data_loop3
 	addq.w	#BYTE_SIZE,a0		; next byte
 	dbf	d6,\1_convert_image_data_loop2
@@ -1243,7 +1243,7 @@ SET_TWISTED_BACKGROUND_BARS	MACRO
 	IFC "B","\0"
 		CNOP 0,4
 \1_skip_background_bar
-		add.l	d4,a1		; skip switch values
+		add.l	d4,a1		; skip BPLAMs
 		bra.s	\1_no_background_bar
 	ENDC
 	ENDM
@@ -1332,7 +1332,7 @@ SET_TWISTED_FOREGROUND_BARS	MACRO
 	IFC "B","\0"
 		CNOP 0,4
 \1_skip_foreground_bar
-		add.l	d4,a1		; skip BPLAM values
+		add.l	d4,a1		; skip BPLAMs
 		bra.s	\1_no_foreground_bar
 	ENDC
 	ENDM
