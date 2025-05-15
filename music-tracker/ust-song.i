@@ -15,7 +15,7 @@ ust_sampleinfo_size		RS.B 0
 
 ust_songdata			RS.B 0
 
-ust_sd_songname			RS.B 20	; song's name padded with null bytes
+ust_sd_songname			RS.B 20	; song name padded with null bytes
 ust_sd_sampleinfo		RS.B ust_sampleinfo_size*ust_samplesnum ; pointer 1st sampleinfo structure repeated 15 times
 ust_sd_numofpatt		RS.B 1	; number of song positions [1..128]
 ust_sd_songspeed		RS.B 1	; song speed [0..220] BPM, default 120 BPM

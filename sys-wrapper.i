@@ -2863,23 +2863,23 @@ restore_chips_registers_skip4
 ; Result
 		CNOP 0,4
 get_tod_duration	
-		move.l	tod_time(a3),d0 ; time before demo started
+		move.l	tod_time(a3),d0 ; program start time
 		moveq	#0,d1
-		move.b	CIATODHI(a4),d1	; TOD clock bits 16..23
+		move.b	CIATODHI(a4),d1	; TOD bits 16..23
 		swap	d1		; adjust bits
-		move.b	CIATODMID(a4),d1 ; TOD clock bits 8..15
+		move.b	CIATODMID(a4),d1 ; TOD bits 8..15
 		lsl.w	#8,d1		; adjust bits
-		move.b	CIATODLOW(a4),d1 ; TOD clock bits 0..7
+		move.b	CIATODLOW(a4),d1 ; TOD bits 0..7
 		cmp.l	d0,d1		; TOD overflow ?
-		bge.s	get_tod_duration_skip
-		move.l	#$ffffff,d2	; Maximalwert
+		bge.s	get_tod_duration_skip1
+		move.l	#TOD_MAX,d2
 		sub.l	d0,d2
-		add.l	d2,d1
-		bra.s	get_tod_duration_save
+		add.l	d2,d1           ; adjust time
+		bra.s	get_tod_duration_skip2
 		CNOP 0,4
-get_tod_duration_skip
-		sub.l	d0,d1		; no overflow
-get_tod_duration_save
+get_tod_duration_skip1
+		sub.l	d0,d1		; no TOD overflow
+get_tod_duration_skip2
 		move.l	d1,tod_time(a3)
 		rts
 

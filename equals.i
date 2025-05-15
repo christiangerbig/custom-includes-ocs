@@ -1,9 +1,10 @@
 ; Main
 exec_base			EQU $0004
 
+ANY_LIBRARY_VERSION		EQU 0
 OS2_VERSION			EQU 36
 OS3_VERSION			EQU 39
-ANY_LIBRARY_VERSION		EQU 0
+CHIP_MEMORY_MIN			EQU $200000
 
 TRUE				EQU 0
 FALSE				EQU -1
@@ -17,6 +18,11 @@ BYTE_SIZE			EQU 1
 WORD_SIZE			EQU 2
 LONGWORD_SIZE			EQU 4
 QUADWORD_SIZE			EQU 8
+
+BYTE_BITS			EQU 8
+WORD_BITS			EQU 16
+LONGWORD_BITS			EQU 32
+QUADWORD_BITS			EQU 64
 
 NIBBLE_SHIFT_BITS		EQU 4
 NIBBLE_SHIFT			EQU 16
@@ -34,13 +40,15 @@ WORD_MASK			EQU $ffff
 WORD_SIGN_MASK			EQU $8000
 WORD_SIGN_BIT			EQU 15
 
-GB_NIBBLES_MASK			EQU $0f0f
+RB_NIBBLES_MASK			EQU $0f0f
 
 ALIGN_64KB			EQU $ffff
 
 PAL_FPS				EQU 50
 NTSC_FPS			EQU 60
                                       
+TOD_MAX				EQU $ffffff
+
 PAL_CLOCK_CONSTANT		EQU 3524210
 NTSC_CLOCK_CONSTANT		EQU 3492064
 
@@ -51,7 +59,9 @@ ASCII_CTRL_F			EQU 6
 ASCII_LINE_FEED			EQU 10
 ASCII_CTRL_M			EQU 13
 ASCII_CTRL_N			EQU 14
+ASCII_CTRL_O			EQU 15
 ASCII_CTRL_P			EQU 16
+ASCII_CTRL_R			EQU 18
 ASCII_CTRL_S			EQU 19
 ASCII_CTRL_V			EQU 22
 ASCII_CTRL_W			EQU 23
@@ -87,7 +97,7 @@ invisible_window_top		EQU 0
 invisible_window_x_size		EQU pal_screen_x_size
 invisible_window_y_size		EQU pal_screen_y_size
 
-cleared_sprite_x_size		EQU 16	; 1x Bandwidth
+cleared_sprite_x_size		EQU 16	; 1x bandwidth
 cleared_sprite_y_size		EQU 1
 cleared_sprite_x_offset		EQU 0
 cleared_sprite_y_offset		EQU 0

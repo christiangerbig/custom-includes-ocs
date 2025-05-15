@@ -2045,7 +2045,7 @@ ROTATE_Z_AXIS			MACRO
 	MULUF.L 2,d0			; x'=(x*cos(c)-y*sin(c))/2^15
 	add.l	d3,d1			; x*sin(c)+y*cos(c)
 	swap	d0			; x position
-	MULUF.L 2,d1			; y'=(x)*sin(c)+y*cos(c))/2^15
+	MULUF.L 2,d1			; y'=(x*sin(c)+y*cos(c))/2^15
 	swap	d1			; y position
 	ENDM
 
