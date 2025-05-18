@@ -429,21 +429,24 @@ pt_SetRegisters
 	ENDC
  
 pt_SetPeriod
+	moveq	#0,d0
+	move.b	n_finetune(a2),d0
+	beq.s	pt_FtuSkip
 	lea	pt_PeriodTable(pc),a1
 	moveq	#((pt_PeriodTableEnd-pt_PeriodTable)/WORD_SIZE)-1,d7 ; number of periods
 pt_FtuLoop
 	cmp.w	(a1)+,d3		; note period found ?
 	dbhs	d7,pt_FtuLoop
 pt_FtuFound
-	moveq	#0,d0
-	move.b	n_finetune(a2),d0
 	MULUF.W	LONGWORD_SIZE,d0,d2
 	lea	pt_FtuPeriodTableStarts(pc),a1
 	move.l	(a1,d0.w),a1		; period table address
 	moveq	#((pt_PeriodTableEnd-pt_PeriodTable)/WORD_SIZE)-1,d0
 	sub.b	d7,d0			; number of periods - loop counter = offset in periods table
 	MULUF.W	WORD_SIZE,d0,d2
-	move.w	(a1,d0.w),n_period(a2) ; note period from table
+	move.w	(a1,d0.w),d3		; note period from table
+pt_FtuSkip
+	move.w	d3,n_period(a2) 
 
 ; EDx "Note Delay"
 	IFNE pt_usedefx&pt_ecmdbitnotedelay
@@ -878,9 +881,9 @@ pt_ArpDivLoop
 	subq.w	#pt_ArpDiv,d0		; substract divisor from dividend
 	bge.s	pt_ArpDivLoop		; until dividend < divisor
 	addq.w	#pt_ArpDiv,d0		; adjust division remainder
-	subq.w	#1,d0			; remainder = $0001: add first halftone at tick #2 ?
+	subq.w	#1,d0			; remainder = $0001: add 1st halftone at tick #2 ?
 	beq.s	pt_Arpeggio1
-	subq.w	#1,d0			; remainder = $0002: add second halftone at tick #3 ?
+	subq.w	#1,d0			; remainder = $0002: add 2nd halftone at tick #3 ?
 	beq.s	pt_Arpeggio2
 ; 000 "Normal Play" 1st note
 pt_Arpeggio0
