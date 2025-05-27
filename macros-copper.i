@@ -1067,7 +1067,7 @@ restore_first_copperlist_loop
 				move.w	#\2_\4_size-\1_restore_blit_width,BLTDMOD-DMACONR(a6)
 				moveq	#-2,d0 ; 2nd word CWAIT
 				move.w	d0,BLTADAT-DMACONR(a6) ; source
-				move.w	#(\1_restore_blit_y_size<<6)|(\1_restore_blit_x_size/16),BLTSIZE-DMACONR(a6)
+				move.w	#((\1_restore_blit_y_size<<6)|(\1_restore_blit_x_size/16),BLTSIZE-DMACONR(a6)
 				rts
 			ENDC
 		ENDC
@@ -1158,7 +1158,7 @@ restore_second_copperlist_loop
 				move.w	#\2_\4_size-\1_restore_blit_width,BLTDMOD-DMACONR(a6)
 				moveq	#-2,d0 ; 2nd word CWAIT
 				move.w	d0,BLTADAT-DMACONR(a6) ; source
-				move.w	#(\1_restore_blit_y_size<<6)|(\1_restore_blit_x_size/16),BLTSIZE-DMACONR(a6)
+				move.w	#((\1_restore_blit_y_size<<6)|(\1_restore_blit_x_size/16),BLTSIZE-DMACONR(a6)
 				rts
 			ENDC
 		ENDC
