@@ -34,13 +34,13 @@ do_alloc_fast_memory
 
 
 ; Input
-; d0.l	Playfield width
-; d1.l	Playfield height * playfield depth
+; d0.l	total playfield size in bytes
 ; Result
 ; d0.l	Pointer to memory block if successful or 0
 	CNOP 0,4
 do_alloc_bitmap_memory
-	CALLGRAFQ AllocRaster
+	move.l	#MEMF_CLEAR|MEMF_CHIP|MEMF_PUBLIC,d1
+	CALLEXECQ AllocMem
 
 
 	IFD SYS_TAKEN_OVER
@@ -145,8 +145,8 @@ wait_copint_loop
 	CNOP 0,4
 cop_init_colors
 	move.w	d3,(a0)+		; COLORxx
-	move.w	(a1)+,(a0)+		; RGB4
 	addq.w	#2,d3			; next color register
+	move.w	(a1)+,(a0)+		; RGB4
 	dbf	d7,cop_init_colors
 	rts
 

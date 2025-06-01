@@ -163,82 +163,98 @@ COP_INIT_BITPLANE_POINTERS	MACRO
 		FAIL Macro COP_INIT_BITPLANE_POINTERS: Labels prefix missing
 	ENDC
 	CNOP 0,4
-\1_init_plane_ptrs
-	MOVEF.W	BPL1PTH,d0
+\1_init_bitplane_pointers
+	move.w	#BPL1PTH,d0
 	moveq	#(pf_depth*2)-1,d7
-\1_init_plane_ptrs_loop
+\1_init_bitplane_pointers_loop
 	move.w	d0,(a0)			; BPLxPTH/L
 	addq.w	#WORD_SIZE,d0		; next register
-	addq.w	#LONGWOD_SIZE,a0	; next entry in cl
-	dbf	d7,\1_init_plane_ptrs_loop
+	addq.w	#LONGWORD_SIZE,a0	; next entry in cl
+	dbf	d7,\1_init_bitplane_pointers_loop
 	rts
 	ENDM
 
 
 COP_SET_BITPLANE_POINTERS	MACRO
+; Input
 ; \1 STRING:		Labels prefix
-; \2 STRING:		Name of copperlist ["construction1", "display"]
-; \3 BYTE SIGNED:	Number of bitplanes playfield 1
-; \4 BYTE SIGNED:	Number of bitplanes playfield 2 (optional)
+; \2 STRING:		["construction1","construction2","display"]
+; \3 BYTE SIGNED:	Number of bitplanes playfield1
+; \4 BYTE SIGNED:	Number of bisplanes playfield2 (optional)
 ; \5 WORD:		X offset (optional)
 ; \6 WORD:		Y offset (optional)
+; Result
 	IFC "","\1"
 		FAIL Macro COP_SET_BITPLANE_POINTERS: Labels prefix missing
 	ENDC
 	IFC "","\2"
-		FAIL Macro COP_SET_BITPLANE_POINTERS: Name of copperlist missing
+		FAIL Macro COP_SET_BITPLANE_POINTERS: Name of copperlist ["construction1", "display"] missing
 	ENDC
 	IFC "","\3"
 		FAIL Macro COP_SET_BITPLANE_POINTERS: Number of bitplanes playfield1 missing
 	ENDC
 	CNOP 0,4
-\1_set_plane_ptrs
+\1_set_bitplane_pointers
 	IFC "","\4"
 		IFC "","\5"
+			move.l	pf1_display(a3),d0
 			move.l	\1_\2(a3),a0
 			ADDF.W	\1_BPL1PTH+WORD_SIZE,a0
-			move.l	pf1_display(a3),a1
+			move.w	#pf1_plane_width,a1
 			moveq	#\3-1,d7 ; number of bitplanes
-\1_set_plane_ptrs_loop
-			move.w	(a1)+,(a0) ; high
+\1_set_bitplane_pointers_loop
+			swap	d0
+			move.w	d0,(a0) ; BPLxPTH
+			swap	d0
 			addq.w	#QUADWORD_SIZE,a0
-			move.w	(a1)+,4-8(a0) ; low
-			dbf	d7,\1_set_plane_ptrs_loop
+			move.w	d0,LONGWORD_SIZE-QUADWORD_SIZE(a0) ; BPLxPTL
+			add.l	a1,d0	; next bitplane
+			dbf	d7,\1_set_bitplane_pointers_loop
 		ELSE
+			MOVEF.L	(\5/8)+(\6*pf1_plane_width*pf1_depth3),d1
+			move.l	pf1_display(a3),d2
 			move.l	\1_\2(a3),a0
 			ADDF.W	\1_BPL1PTH+WORD_SIZE,a0
-			move.l	pf1_display(a3),a1
-			MOVEF.L	(\5/8)+(\6*pf1_plane_width*pf1_depth3),d1
+			move.w	#pf1_plane_width,a1
 			moveq	#\3-1,d7 ; number of bitplanes
-\1_set_plane_ptrs_loop
-			move.l	(a1)+,d0
+\1_set_bitplane_pointers_loop
+			move.l	d2,d0
 			add.l	d1,d0
 			move.w	d0,4(a0) ; BPLxPTL
-			swap	d0	
+			swap	d0
 			move.w	d0,(a0)	; BPLxPTH
 			addq.w	#QUADWORD_SIZE,a0
-			dbf	d7,\1_set_plane_ptrs_loop
+			add.l	a1,d2	; next bitplane
+			dbf	d7,\1_set_bitplane_pointers_loop
 		ENDC
 	ELSE
+; Playfield 1
+		move.l	pf1_display(a3),d0
 		move.l	\1_\2(a3),a0
-		lea	\1_BPL2PTH+WORD_SIZE(a0),a1
+		lea	\1_BPL2PTH+2(a0),a1
 		ADDF.W	\1_BPL1PTH+WORD_SIZE,a0
-		move.l	pf1_display(a3),a2
-; Odd playfield
+		move.w	#p1_plane_width,a2
 		moveq	#\3-1,d7	; number of bitplanes
-\1_set_plane_ptrs_loop1
-		move.w	(a2)+,(a0)	; BPLxPTH
-		ADDF.W	2*QUADWORD_SIZE,a0
-		move.w	(a2)+,LONGWORD_SIZE-(2*QUADWORD_SIZE)(a0) ; BPLxPTL
-		dbf	d7,\1_set_plane_ptrs_loop1
-; Even playfield
-		move.l	pf2_display(a3),a2
+\1_set_bitplane_pointers_loop1
+		swap	d0
+		move.w	d0,(a0)		; BPLxPTH
+		swap	d0
+		ADDF.W	QUADWORD_SIZE*2,a0
+		move.w	d0,LONGWORD_SIZE-(QUADWORD_SIZE*2)(a0) ; BPLxPTL
+		add.l	a2,d0		; next bitplane
+		dbf	d7,\1_set_bitplane_pointers_loop1
+; Playfield 2
+		move.l	pf2_display(a3),d0
+		move.w	#p2_plane_width,a2
 		moveq	#\4-1,d7	; number of bitplanes
-\1_set_plane_ptrs_loop2
-		move.w	(a2)+,(a1)	; BPLxPTH
-		ADDF.W	2*QUADWORD_SIZE,a1
-		move.w	(a2)+,LONGWORD_SIZE-(2*QUADWORD_SIZE)(a1) ; BPLxPTL
-		dbf	d7,\1_set_plane_ptrs_loop2
+\1_set_bitplane_pointers_loop2
+		swap	d0
+		move.w	d0,(a1)		; BPLxPTH
+		swap	d0
+		ADDF.W	QUADWORD_SIZE*2,a1
+		move.w	d0,LONGWORD_SIZE-(QUADWORD_SIZE*2)(a1) ; BPLxPTL
+		add.l	a2,d0		; next bitplane
+		dbf	d7,\1_set_bitplane_pointers_loop2
 	ENDC
 	rts
 	ENDM
@@ -252,14 +268,14 @@ COP_INIT_SPRITE_POINTERS	MACRO
 		FAIL Macro COP_INIT_SPRITE_POINTERS: Labels prefix missing
 	ENDC
 	CNOP 0,4
-\1_init_sprite_ptrs
+\1_init_sprite_pointers
 	move.w	#SPR0PTH,d0
 	moveq	#(spr_number*2)-1,d7	; number of bitplanes
-\1_init_sprite_ptrs_loop
+\1_init_sprite_pointers_loop
 	move.w	d0,(a0)			; SPRxPTH/L
 	addq.w	#WORD_SIZE,d0		; next register
 	addq.w	#LONGWORD_SIZE,a0	; next entry in cl
-	dbf	d7,\1_init_sprite_ptrs_loop
+	dbf	d7,\1_init_sprite_pointers_loop
 	rts
 	ENDM
 
@@ -281,21 +297,21 @@ COP_SET_SPRITE_POINTERS		MACRO
 		FAIL Macro COP_SET_SPRITE_POINTERS: Number of sprites missing
 	ENDC
 	CNOP 0,4
-\1_set_sprite_ptrs
+\1_set_sprite_pointers
 	move.l	\1_\2(a3),a0
 	IFC "","\4"
-		lea	spr_ptrs_display(pc),a1
+		lea	spr_pointers_display(pc),a1
 		ADDF.W	\1_SPR0PTH+WORD_SIZE,a0
 	ELSE
-		lea	spr_ptrs_display+(\4*4)(pc),a1 ; with index
+		lea	spr_pointers_display+(\4*4)(pc),a1 ; with index
 		ADDF.W	\1_SPR\3PTH+WORD_SIZE,a0
 	ENDC
 	moveq	#\3-1,d7		; number of sprites
-\1_set_sprite_ptrs_loop
+\1_set_sprite_pointers_loop
 	move.w	(a1)+,(a0)		; SPRxPTH
 	addq.w	#QUADWORD_SIZE,a0
 	move.w	(a1)+,4-8(a0)		; SPRxPTL
-	dbf	d7,\1_set_sprite_ptrs_loop
+	dbf	d7,\1_set_sprite_pointers_loop
 	rts
 	ENDM
 
@@ -317,6 +333,7 @@ COP_INIT_COLOR			MACRO
 	IFNC "","\3"
 		lea	\3(pc),a1	; pointer color table
 	ENDC
+
 	bsr	cop_init_colors
 	ENDM
 
@@ -334,19 +351,18 @@ COP_INIT_COLOR00_REGISTERS	MACRO
 	move.l	#(((\1_vstart1<<24)|(((\1_hstart1/4)*2)<<16))|$10000)|$fffe,d0 ; CWAIT
 	move.l	#(COLOR00<<16)|color00_bits,d1
 	IFC "YWRAP","\2"
-		move.l	#(((CL_Y_WRAP<<24)|(((\1_hstart1/4)*2)<<16))|$10000)|$fffe,d5 ; CWAIT
+		move.l	#(((CL_Y_WRAPPING<<24)|(((\1_hstart1/4)*2)<<16))|$10000)|$fffe,d5 ; CWAIT
 	ENDC
-	moveq	#1,d6
-	ror.l	#8,d6			; $01000000
+	move.l	#8$01000000,d6
 	MOVEF.W	\1_display_y_size-1,d7
 \1_init_color00_loop
 	move.l	d0,(a0)+		; CWAIT x,y
 	move.l	d1,(a0)+		; COLOR00
 	IFC "YWRAP","\2"
-		cmp.l	d5,d0		; raster line $ff reached ?
+		cmp.l	d5,d0		; y wrapping ?
 		bne.s	no_patch_copperlist2
 patch_copperlist2
-		COP_WAIT CL_X_WRAP,CL_Y_WRAP ; patch cl
+		COP_WAIT CL_X_WRAPPING,CL_Y_WRAPPING ; patch cl
 		bra.s	 \1_init_color00_skip
 		CNOP 0,4
 no_patch_copperlist2
@@ -406,6 +422,31 @@ COP_INIT_BPLCON1_CHUNKY_SCREEN	MACRO
 	ENDM
 
 
+COP_INIT_DISPLAY_VSTOP		MACRO
+; Input
+; \1 STRING:	Labels prefix copperlist [cl1,cl2]
+; \2 WORD:	X position
+; \3 WORD:	Y postion
+; Result
+	IFC "","\1"
+		FAIL Macro COP_INIT_DISPLAY_VSTOP: Labels prefix missing
+	ENDC
+	IFC "","\2"
+		FAIL Macro COP_INIT_DISPLAY_VSTOP: X position missing
+	ENDC
+	IFC "","\3"
+		FAIL Macro COP_INIT_DISPLAY_VSTOP: Y position missing
+	ENDC
+	CNOP 0,4
+\1_init_display_vstop
+	COP_WAIT \2,\3
+	COP_MOVEQ BPLCON0F_COLOR,BPLCON0
+	rts
+	ENDM
+
+
+
+
 COP_INIT_COPINT			MACRO
 ; Input
 ; \1 STRING:	Labels prefix copperlist [cl1,cl2]
@@ -419,7 +460,7 @@ COP_INIT_COPINT			MACRO
 	CNOP 0,4
 \1_init_copper_interrupt
 	IFC "YWRAP","\4"
-		COP_WAIT CL_X_WRAP,CL_Y_WRAP ; patch cl
+		COP_WAIT CL_X_WRAPPING,CL_Y_WRAPPING ; patch cl
 	ENDC
 	IFNC "","\2"
 		IFNC "","\3"
@@ -1074,7 +1115,7 @@ restore_first_copperlist_loop
 	ENDC
 	IFC "cl2","\2"
 restore_second_copperlist
-		IFEQ \1_restore_cl_cpu_enabled
+		IFEQ \1_cpu_restore_cl_enabled
 			IFC "","\6"
 				IFC "16","\5"
 					moveq	#-2,d0 ; 2nd word CWAIT
@@ -1149,7 +1190,7 @@ restore_second_copperlist_loop
 				ENDC
 			ENDC
 		ENDC
-		IFEQ \1_restore_cl_blitter_enabled
+		IFEQ \1_blitter_restore_cl_enabled
 			IFC "","\7"
 				move.l	\2_\3(a3),a0	 
 				WAITBLIT

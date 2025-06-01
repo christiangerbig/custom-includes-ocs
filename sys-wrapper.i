@@ -160,23 +160,14 @@ wm
 		bsr	alloc_pf1_memory1
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
-		bsr	check_pf1_memory1
-		move.l	d0,dos_return_code(a3)
-		bne	cleanup_all_memory
 	ENDC
 	IFNE pf1_x_size2
 		bsr	alloc_pf1_memory2
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
-		bsr	check_pf1_memory2
-		move.l	d0,dos_return_code(a3)
-		bne	cleanup_all_memory
 	ENDC
 	IFNE pf1_x_size3
 		bsr	alloc_pf1_memory3
-		move.l	d0,dos_return_code(a3)
-		bne	cleanup_all_memory
-		bsr	check_pf1_memory3
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
 	ENDC
@@ -185,15 +176,9 @@ wm
 		bsr	alloc_pf2_memory1
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
-		bsr	check_pf2_memory1
-		move.l	d0,dos_return_code(a3)
-		bne	cleanup__all_memory
 	ENDC
 	IFNE pf2_x_size2
 		bsr	alloc_pf2_memory2
-		move.l	d0,dos_return_code(a3)
-		bne	cleanup_all_memory
-		bsr	check_pf2_memory2
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
 	ENDC
@@ -201,16 +186,10 @@ wm
 		bsr	alloc_pf2_memory3
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
-		bsr	check_pf2_memory3
-		move.l	d0,dos_return_code(a3)
-		bne	cleanup_all_memory
 	ENDC
 
 	IFNE pf_extra_number
 		bsr	alloc_pf_extra_memory
-		move.l	d0,dos_return_code(a3)
-		bne	cleanup_all_memory
-		bsr	check_pf_extra_memory
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
 	ENDC
@@ -220,15 +199,9 @@ wm
 			bsr	alloc_sprite_memory1
 			move.l	d0,dos_return_code(a3)
 			bne	cleanup_all_memory
-			bsr	check_sprite_memory1
-			move.l	d0,dos_return_code(a3)
-			bne	cleanup_all_memory
 		ENDC
 		IFNE spr_x_size2
 			bsr	alloc_sprite_memory2
-			move.l	d0,dos_return_code(a3)
-			bne	cleanup_all_memory
-			bsr	check_sprite_memory2
 			move.l	d0,dos_return_code(a3)
 			bne	cleanup_all_memory
 		ENDC
@@ -936,7 +909,7 @@ init_invisible_window_tags
 init_pf_extra_structure
 		lea	pf_extra_attributes(pc),a0
 		IFGE pf_extra_number-1
-			move.l	#extra_pf1_x_size,(a0)+
+			move.l	#extra_pf1_x_size/8,(a0)+
 			move.l	#extra_pf1_y_size,(a0)+
 			moveq	#extra_pf1_depth,d0
 			IFEQ pf_extra_number-1
@@ -946,7 +919,7 @@ init_pf_extra_structure
 			ENDC
 		ENDC
 		IFGE pf_extra_number-2
-			move.l	#extra_pf2_x_size,(a0)+
+			move.l	#extra_pf2_x_size/8,(a0)+
 			move.l	#extra_pf2_y_size,(a0)+
 			moveq	#extra_pf2_depth,d0
 			IFEQ pf_extra_number-2
@@ -956,7 +929,7 @@ init_pf_extra_structure
 			ENDC
 		ENDC
 		IFGE pf_extra_number-3
-			move.l	#extra_pf3_x_size,(a0)+
+			move.l	#extra_pf3_x_size/8,(a0)+
 			move.l	#extra_pf3_y_size,(a0)+
 			moveq	#extra_pf3_depth,d0
 			IFEQ pf_extra_number-3
@@ -966,7 +939,7 @@ init_pf_extra_structure
 			ENDC
 		ENDC
 		IFGE pf_extra_number-4
-			move.l	#extra_pf4_x_size,(a0)+
+			move.l	#extra_pf4_x_size/8,(a0)+
 			move.l	#extra_pf4_y_size,(a0)+
 			moveq	#extra_pf4_depth,d0
 			IFEQ pf_extra_number-4
@@ -976,7 +949,7 @@ init_pf_extra_structure
 			ENDC
 		ENDC
 		IFGE pf_extra_number-5
-			move.l	#extra_pf5_x_size,(a0)+
+			move.l	#extra_pf5_x_size/8,(a0)+
 			move.l	#extra_pf5_y_size,(a0)+
 			moveq	#extra_pf5_depth,d0
 			IFEQ pf_extra_number-5
@@ -986,7 +959,7 @@ init_pf_extra_structure
 			ENDC
 		ENDC
 		IFGE pf_extra_number-6
-			move.l	#extra_pf6_x_size,(a0)+
+			move.l	#extra_pf6_x_size/8,(a0)+
 			move.l	#extra_pf6_y_size,(a0)+
 			moveq	#extra_pf6_depth,d0
 			IFEQ pf_extra_number-6
@@ -996,7 +969,7 @@ init_pf_extra_structure
 			ENDC
 		ENDC
 		IFGE pf_extra_number-7
-			move.l	#extra_pf7_x_size,(a0)+
+			move.l	#extra_pf7_x_size/8,(a0)+
 			move.l	#extra_pf7_y_size,(a0)+
 			moveq	#extra_pf7_depth,d0
 			IFEQ pf_extra_number-7
@@ -1006,7 +979,7 @@ init_pf_extra_structure
 			ENDC
 		ENDC
 		IFGE pf_extra_number-8
-			move.l	#extra_pf8_x_size,(a0)+
+			move.l	#extra_pf8_x_size/8,(a0)+
 			move.l	#extra_pf8_y_size,(a0)+
 			moveq	#extra_pf8_depth,d0
 			IFEQ pf_extra_number-8
@@ -1025,86 +998,86 @@ init_pf_extra_structure
 spr_init_structure
 		IFNE spr_x_size1
 			lea	sprite_attributes1(pc),a0
-			moveq	#spr0_x_size1,d0
+			moveq	#spr0_x_size1/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr0_y_size1,(a0)+
 			moveq	#spr_depth,d1
 			move.l	d1,(a0)+
 
-			moveq	#spr1_x_size1,d0
+			moveq	#spr1_x_size1/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr1_y_size1,(a0)+
 			move.l	d1,(a0)+
 
-			moveq	#spr2_x_size1,d0
+			moveq	#spr2_x_size1/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr2_y_size1,(a0)+
 			move.l	d1,(a0)+
 
-			moveq	#spr3_x_size1,d0
+			moveq	#spr3_x_size1/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr3_y_size1,(a0)+
 			move.l	d1,(a0)+
 
-			moveq	#spr4_x_size1,d0
+			moveq	#spr4_x_size1/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr4_y_size1,(a0)+
 			move.l	d1,(a0)+
 
-			moveq	#spr5_x_size1,d0
+			moveq	#spr5_x_size1/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr5_y_size1,(a0)+
 			move.l	d1,(a0)+
 
-			moveq	#spr6_x_size1,d0
+			moveq	#spr6_x_size1/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr6_y_size1,(a0)+
 			move.l	d1,(a0)+
 
-			moveq	#spr7_x_size1,d0
+			moveq	#spr7_x_size1/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr7_y_size1,(a0)+
 			move.l	d1,(a0)
 		ENDC
 		IFNE spr_x_size2
 			lea	sprite_attributes2(pc),a0
-			moveq	#spr0_x_size2,d0
+			moveq	#spr0_x_size2/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr0_y_size2,(a0)+
 			moveq	#spr_depth,d1
 			move.l	d1,(a0)+
 
-			moveq	#spr1_x_size2,d0
+			moveq	#spr1_x_size2/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr1_y_size2,(a0)+
 			move.l	d1,(a0)+
 
-			moveq	#spr2_x_size2,d0
+			moveq	#spr2_x_size2/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr2_y_size2,(a0)+
 			move.l	d1,(a0)+
 
-			moveq	#spr3_x_size2,d0
+			moveq	#spr3_x_size2/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr3_y_size2,(a0)+
 			move.l	d1,(a0)+
 
-			moveq	#spr4_x_size2,d0
+			moveq	#spr4_x_size2/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr4_y_size2,(a0)+
 			move.l	d1,(a0)+
 
-			moveq	#spr5_x_size2,d0
+			moveq	#spr5_x_size2/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr5_y_size2,(a0)+
 			move.l	d1,(a0)+
 
-			moveq	#spr6_x_size2,d0
+			moveq	#spr6_x_size2/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr6_y_size2,(a0)+
 			move.l	d1,(a0)+
 
-			moveq	#spr7_x_size2,d0
+			moveq	#spr7_x_size2/8,d0
 			move.l	d0,(a0)+
 			move.l	#spr7_y_size2,(a0)+
 			move.l	d1,(a0)
@@ -1572,8 +1545,7 @@ alloc_cl2_memory3_ok
 ; d0.l	return code/error code
 		CNOP 0,4
 alloc_pf1_memory1
-		MOVEF.L	pf1_x_size1,d0
-		MOVEF.L	pf1_y_size1*pf1_depth1,d1
+		MOVEF.L	(pf1_x_size1/8)*pf1_y_size1*pf1_depth1,d0 ; total size
 		bsr	do_alloc_bitmap_memory
 		move.l	d0,pf1_bitmap1(a3)
 		bne.s	alloc_pf1_memory1_ok
@@ -1592,8 +1564,7 @@ alloc_pf1_memory1_ok
 ; d0.l	return code/error code
 		CNOP 0,4
 alloc_pf1_memory2
-		MOVEF.L	pf1_x_size2,d0
-		MOVEF.L	pf1_y_size2*pf1_depth2,d1
+		MOVEF.L	(pf1_x_size2/8)*pf1_y_size2*pf1_depth2,d0 ; total size
 		bsr	do_alloc_bitmap_memory
 		move.l	d0,pf1_bitmap2(a3)
 		bne.s	alloc_pf1_memory2_ok
@@ -1612,8 +1583,7 @@ alloc_pf1_memory2_ok
 ; d0.l	return code/error code
 		CNOP 0,4
 alloc_pf1_memory3
-		MOVEF.L	pf1_x_size3,d0
-		MOVEF.L	pf1_y_size3*pf1_depth3,d1
+		MOVEF.L	(pf1_x_size3/8)*pf1_y_size3*pf1_depth3,d0 ; total size
 		bsr	do_alloc_bitmap_memory
 		move.l	d0,pf1_bitmap3(a3)
 		bne.s	alloc_pf1_memory3_ok
@@ -1634,8 +1604,7 @@ alloc_pf1_memory3_ok
 ; d0.l	return code/error code
 		CNOP 0,4
 alloc_pf2_memory1
-		MOVEF.L	pf2_x_size1,d0
-		MOVEF.L	pf2_y_size1*pf2_depth1,d1
+		MOVEF.L	(pf2_x_size1/8)*pf2_y_size1*pf2_depth1,d0 ; total size
 		bsr	do_alloc_bitmap_memory
 		move.l	d0,pf2_bitmap1(a3)
 		bne.s	alloc_pf2_memory1_ok
@@ -1654,8 +1623,7 @@ alloc_pf2_memory1_ok
 ; d0.l	return code/error code
 		CNOP 0,4
 alloc_pf2_memory2
-		MOVEF.L	pf2_x_size2,d0
-		MOVEF.L	pf2_y_size2*pf2_depth2,d1
+		MOVEF.L	(pf2_x_size2/8)*pf2_y_size2*pf2_depth2,d0 ; total size
 		bsr	do_alloc_bitmap_memory
 		move.l	d0,pf2_bitmap2(a3)
 		bne.s	alloc_pf2_memory2_ok
@@ -1674,8 +1642,7 @@ alloc_pf2_memory2_ok
 ; d0.l	return code/error code
 		CNOP 0,4
 alloc_pf2_memory3
-		MOVEF.L	pf2_x_size3,d0
-		MOVEF.L	pf2_y_size3*pf2_depth3,d1
+		MOVEF.L	(pf2_x_size3/8)*pf2_y_size3*pf2_depth3,d0 ; total size
 		bsr	do_alloc_bitmap_memory
 		move.l	d0,pf2_bitmap3(a3)
 		bne.s	alloc_pf2_memory3_ok
@@ -1701,10 +1668,11 @@ alloc_pf_extra_memory
 		lea	pf_extra_attributes(pc),a5
 		moveq	#pf_extra_number-1,d7
 alloc_pf_extra_memory_loop
-		move.l	(a5)+,d0	; playfield width
-		move.l	(a5)+,d1	; playfield height
+		move.l	(a5)+,d0	; playfield x size in bytes
+		move.l	(a5)+,d1	; playfield y size
 		move.l	(a5)+,d2	; playfield depth
 		mulu.w	d2,d1
+		mulu.w	d1,d0
 		bsr	do_alloc_bitmap_memory
 		move.l	d0,(a2)+	; pointer bitmap
 		beq.s	alloc_pf_extra_memory_fail
@@ -1731,10 +1699,11 @@ alloc_sprite_memory1
 		lea	sprite_attributes1(pc),a5
 		moveq	#spr_number-1,d7
 alloc_sprite_memory1_loop
-		move.l	(a5)+,d0	; sprite width
-		move.l	(a5)+,d1	; sprite height
+		move.l	(a5)+,d0	; sprite x size in bytes
+		move.l	(a5)+,d1	; sprite y size
 		move.l	(a5)+,d2	; sprite depth
 		mulu.w	d2,d1
+		mulu.w	d1,d0
 		bsr	do_alloc_bitmap_memory
 		move.l	d0,(a2)+	; pointer bitmap
 		beq.s	alloc_sprite_memory1_fail
@@ -1761,10 +1730,11 @@ alloc_sprite_memory2
 		lea	sprite_attributes2(pc),a5
 		moveq	#spr_number-1,d7
 alloc_sprite_memory2_loop
-		move.l	(a5)+,d0	; sprite width
-		move.l	(a5)+,d1	; sprite height
+		move.l	(a5)+,d0	; sprite x size in bytes
+		move.l	(a5)+,d1	; sprite y size
 		move.l	(a5)+,d2	; sprite depth
 		mulu.w	d2,d1
+		mulu.w	d1,d0
 		bsr	do_alloc_bitmap_memory
 		move.l	d0,(a2)+	; pointer bitmap
 		beq.s	alloc_sprite_memory2_fail
@@ -2114,7 +2084,7 @@ rgb4_screen_fader_out_loop
 			lsr.w	#8,d3	; R4 destination
 			moveq	#0,d1
 			move.b  1(a0),d1
-			moveq	#$f,d2
+			moveq	#NIBBLE_MASK_LOW,d2
 			and.b	d1,d2	; B4
 			move.w  a1,d5
 			and.w	#$000f,d5 ; B4 destination
@@ -3033,11 +3003,11 @@ rgb4_screen_fader_in_loop
 			lsr.w	#8,d3	; R4 destination
 			moveq	#0,d1
 			move.b  1(a0),d1
-			moveq	#$f,d2
+			moveq	#NIBBLE_MASK_LOW,d2
 			and.b	d1,d2	; B4
 			moveq	#0,d4
 			move.b	1(a1),d4
-			moveq	#$f,d5
+			moveq	#NIBBLE_MASK_LOW,d5
 			and.b	d4,d5	; B4 destination
 			lsr.b	#4,d1	; G4
 			lsr.b   #4,d4	; G4 destination
@@ -3242,14 +3212,18 @@ free_audio_memory_skip
 		CNOP 0,4
 free_sprite_memory2
 		lea	spr0_bitmap2(a3),a2
+		lea	sprite_attributes2(pc),a4
 		moveq	#spr_number-1,d7
 free_sprite_memory2_loop
-		move.l	(a2)+,d0
+		move.l	(a2)+,d0	; pointer memory block
 		beq.s	free_sprite_memory2_quit
-		move.l	d0,a0
-		moveq	#spr_x_size2,d0
-		MOVEF.L	spr_y_size2*spr_depth,d1
-		CALLGRAF FreeRaster
+		move.l	d0,a1
+		move.l	(a4)+,d0	; x size in bytes
+		move.l	(a4)+,d1	; y size
+		move.l	(a4)+,d2        ; depth
+		mulu.w	d2,d1
+		mulu.w	d1,d0		; total size
+		CALLEXEC FreeMem
 		dbf	d7,free_sprite_memory2_loop
 free_sprite_memory2_quit
 		rts
@@ -3262,14 +3236,18 @@ free_sprite_memory2_quit
 		CNOP 0,4
 free_sprite_memory1
 		lea	spr0_bitmap1(a3),a2
+		lea	sprite_attributes1(pc),a4
 		moveq	#spr_number-1,d7
 free_sprite_memory1_loop
-		move.l	(a2)+,d0
+		move.l	(a2)+,d0	; pointer memory block
 		beq.s	free_sprite_memory1_quit
-		move.l	d0,a0
-		moveq	#spr_x_size1,d0
-		MOVEF.L	spr_y_size1*spr_depth,d1
-		CALLGRAF FreeRaster
+		move.l	d0,a1
+		move.l	(a4)+,d0	; x size in bytes
+		move.l	(a4)+,d1	; y size
+		move.l	(a4)+,d2        ; depth
+		mulu.w	d2,d1
+		mulu.w	d1,d0		; total size
+		CALLEXEC FreeMem
 		dbf	d7,free_sprite_memory1_loop
 free_sprite_memory1_quit
 		rts
@@ -3285,14 +3263,15 @@ free_pf_extra_memory
 		lea	pf_extra_attributes(pc),a4
 		moveq	#pf_extra_number-1,d7
 free_pf_extra_memory_loop
-		move.l	(a2)+,d0
+		move.l	(a2)+,d0	; pointer memory block
 		beq.s	free_pf_extra_memory_quit
-		move.l	d0,a0
-		move.l	(a4)+,d0	; playfield width
-		move.l	(a4)+,d1	; playfield height
-		move.l	(a4)+,d2	; playfield depth
+		move.l	d0,a1
+		move.l	(a4)+,d0	; x size in bytes
+		move.l	(a4)+,d1	; y size
+		move.l	(a4)+,d2        ; depth
 		mulu.w	d2,d1
-		CALLGRAF FreeRaster
+		mulu.w	d1,d0		; total size
+		CALLEXEC FreeMem
 		dbf	d7,free_pf_extra_memory_loop
 free_pf_extra_memory_quit
 		rts
@@ -3310,10 +3289,9 @@ free_pf2_memory3_quit
 		rts
 		CNOP 0,4
 free_pf2_memory3_skip
-		move.l	d0,a0
-		MOVEF.L	pf2_x_size3,d0
-		MOVEF.L	pf2_y_size3*pf2_depth3,d1
-		CALLGRAF FreeRaster
+		move.l	d0,a1
+		MOVEF.L	(pf2_x_size3/8)*pf2_y_size3*pf2_depth3,d0
+		CALLEXEC FreeMem
 		bra.s	free_pf2_memory3_quit
 	ENDC
 	IFNE pf2_x_size2
@@ -3327,10 +3305,9 @@ free_pf2_memory2_quit
 		rts
 		CNOP 0,4
 free_pf2_memory2_skip
-		move.l	d0,a0
-		MOVEF.L	pf2_x_size2,d0
-		MOVEF.L	pf2_y_size2*pf2_depth2,d1
-		CALLGRAF FreeRaster
+		move.l	d0,a1
+		MOVEF.L	(pf2_x_size2/8)*pf2_y_size2*pf2_depth2,d0
+		CALLEXEC FreeMem
 		bra.s	free_pf2_memory2_quit
 	ENDC
 	IFNE pf2_x_size1
@@ -3344,10 +3321,9 @@ free_pf2_memory1_quit
 		rts
 		CNOP 0,4
 free_pf2_memory1_skip
-		move.l	d0,a0
-		MOVEF.L	pf2_x_size1,d0
-		MOVEF.L	pf2_y_size1*pf2_depth1,d1
-		CALLGRAF FreeRaster
+		move.l	d0,a1
+		MOVEF.L	(pf2_x_size1/8)*pf2_y_size1*pf2_depth1,d0
+		CALLEXEC FreeMem
 		bra.s	free_pf2_memory1_quit
 	ENDC
 
@@ -3363,10 +3339,9 @@ free_pf1_memory3_quit
 		rts
 		CNOP 0,4
 free_pf1_memory3_skip
-		move.l	d0,a0
-		MOVEF.L	pf1_x_size3,d0
-		MOVEF.L	pf1_y_size3*pf2_depth3,d1
-		CALLGRAF FreeRaster
+		move.l	d0,a1
+		MOVEF.L	(pf1_x_size3/8)*pf1_y_size3*pf1_depth3,d0
+		CALLEXEC FreeMem
 		bra.s	free_pf1_memory3_quit
 	ENDC
 	IFNE pf1_x_size2
@@ -3381,10 +3356,9 @@ free_pf1_memory2_quit
 		rts
 		CNOP 0,4
 free_pf1_memory2_skip
-		move.l	d0,a0
-		MOVEF.L	pf1_x_size2,d0
-		MOVEF.L	pf1_y_size2*pf2_depth2,d1
-		CALLGRAF FreeRaster
+		move.l	d0,a1
+		MOVEF.L	(pf1_x_size2/8)*pf1_y_size2*pf1_depth2,d0
+		CALLEXEC FreeMem
 		bra.s	free_pf1_memory2_quit
 	ENDC
 	IFNE pf1_x_size1
@@ -3398,10 +3372,9 @@ free_pf1_memory1_quit
 		rts
 		CNOP 0,4
 free_pf1_memory1_skip
-		move.l	d0,a0
-		MOVEF.L	pf1_x_size1,d0
-		MOVEF.L	pf1_y_size1*pf2_depth1,d1
-		CALLGRAF FreeRaster
+		move.l	d0,a1
+		MOVEF.L	(pf1_x_size1/8)*pf1_y_size1*pf1_depth1,d0
+		CALLEXEC FreeMem
 		bra.s	free_pf1_memory1_quit
 	ENDC
 

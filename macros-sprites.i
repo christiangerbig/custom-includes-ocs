@@ -15,17 +15,13 @@ SET_SPRITE_POSITION		MACRO
 	IFC "","\3"
 		FAIL Makro SET_SPRITE_POSITION: Height missing
 	ENDC
-	rol.w	#8,\2			;  SV7 SV6 SV5 SV4 SV3 SV2 SV1 SV0 --- --- --- --- --- --- --- SV8
-	lsl.w	#5,\1			; SH10 SH9 SH8 SH7 SH6 SH5 SH4 SH3 SH2 SH1 SH0 --- --- --- --- ---
-	lsl.w	#8,\3			;  EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0 --- --- --- --- --- --- --- ---
-	addx.b	\2,\2			;  --- --- --- --- --- --- SV8 EV8
-	add.b	\1,\1			;  SH1 SH0 --- --- --- --- --- ---
-	addx.b	\2,\2			;  --- --- --- --- --- SV8 EV8 SH2
-	lsr.b	#3,\1			;  --- --- --- SH1 SH0 --- --- ---
-	or.b	\1,\2			;  --- --- --- SH1 SH0 SV8 EV8 SH2
-	lsr.w	#8,\1			;  --- --- --- --- --- --- --- --- SH10 SH9 SH8 SH7 SH6 SH5 SH4 SH3
-	move.b	\2,\3			;  EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0	--- --- --- SH1 SH0 SV8 EV8 SH2
-	move.b	\1,\2			;  SV7 SV6 SV5 SV4 SV3 SV2 SV1 SV0 SH10 SH9 SH8 SH7 SH6 SH5 SH4 SH3
+	lsl.w	#7,\3			; EV8 EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0 --- --- --- --- --- --- ---
+	lsl.w	#8,\2		 	; SV7 SV6 SV5 SV4 SV3 SV2 SV1 SV0 --- --- --- --- --- --- --- ---
+	addx.w	\3,\3			; EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0 --- --- --- --- --- --- --- SV8
+	addx.b	\3,\3			; EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0 --- --- --- --- --- --- SV8 EV8
+	lsr.w	#1,\1			; --- --- --- --- --- --- --- --- SH8 SH7 SH6 SH5 SH4 SH3 SH2 SH1
+	addx.b	\3,\3			; EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0 --- --- --- --- --- SV8 EV8 SH0 SPRxCTL
+	move.b	\1,\2			; SV7 SV6 SV5 SV4 SV3 SV2 SV1 SV0 SH8 SH7 SH6 SH5 SH4 SH3 SH2 SH1 SPRxPOS
 	ENDM
 
 
@@ -55,24 +51,22 @@ INIT_SPRITE_POINTERS_TABLE	MACRO
 ; Input
 ; Result
 	CNOP 0,4
-spr_init_ptrs_table
+spr_init_pointers_table
 	IFNE spr_x_size1
 		lea	spr0_construction(a3),a0
-		lea	spr_ptrs_construction(pc),a1
+		lea	spr_pointers_construction(pc),a1
 		moveq	#spr_number-1,d7
-spr_init_ptrs_table_loop1
-		move.l	(a0)+,a2
-		move.l	(a2),(a1)+
-		dbf	d7,spr_init_ptrs_table_loop1
+spr_init_pointers_table_loop1
+		move.l	(a0)+,(a1)+
+		dbf	d7,spr_init_pointers_table_loop1
 	ENDC
 	IFNE spr_x_size2
 		lea	spr0_display(a3),a0
-		lea	spr_ptrs_display(pc),a1
+		lea	spr_pointers_display(pc),a1
 		moveq	#spr_number-1,d7
-spr_init_ptrs_table_loop2
-		move.l	(a0)+,a2
-		move.l	(a2),(a1)+
-		dbf	d7,spr_init_ptrs_table_loop2
+spr_init_pointers_table_loop2
+		move.l	(a0)+,(a1)+
+		dbf	d7,spr_init_pointers_table_loop2
 	ENDC
 	rts
 	ENDM
@@ -84,8 +78,8 @@ COPY_SPRITE_STRUCTURES		MACRO
 	CNOP 0,4
 spr_copy_structures
 	move.l	a4,-(a7)
-	lea	spr_ptrs_construction(pc),a2
-	lea	spr_ptrs_display(pc),a4
+	lea	spr_pointers_construction(pc),a2
+	lea	spr_pointers_display(pc),a4
 	move.w	#(sprite0_size/LONGWORD_SIZE)-1,d7
 	bsr.s	spr_copy_data
 	move.w	#(sprite1_size/LONGWORD_SIZE)-1,d7
@@ -115,46 +109,57 @@ spr_copy_data_loop
 	ENDM
 
 
-SWAP_SPRITES_STRUCTURES		MACRO
+SWAP_SPRITES			MACRO
 ; Input
-; \1 STRING:		Labels prefix
-; \2 BYTE SIGNED:	Number of sprites
-; \3 NUMBER:		Index [1,2,3,4,6,7] (optional)
+; \1 BYTE SIGNED:	Number of sprites
+; \2 NUMBER:		Sprite structure pointer index [1,2,3,4,6,7] (optional)
+; Result
 	IFC "","\1"
-		FAIL Makro SWAP_SPRITES_STRUCTURES: Labels prefix missing
-	ENDC
-	IFC "","\2"
-		FAIL Makro SWAP_SPRITES_STRUCTURES: Number of sprites missing
+		FAIL Macro SWAP_SPRITE_STRUCTURES: Number of sprites missing
 	ENDC
 	CNOP 0,4
-\1_swap_structures
-	IFC "","\3"
-		lea	spr_ptrs_construction(pc),a0
-		lea	spr_ptrs_display(pc),a1
+swap_sprite_structures
+	IFC "","\2"
+		lea	spr_pointers_construction(pc),a0
+		lea	spr_pointers_display(pc),a1
 	ELSE
-		lea	spr_ptrs_construction+(\3*4)(pc),a0
-		lea	spr_ptrs_display+(\3*4)(pc),a1
+		lea	spr_pointers_construction+(\3*LONGWORD_SIZE)(pc),a0
+		lea	spr_pointers_display+(\2*LONGWORD_SIZE)(pc),a1
 	ENDC
-	moveq	#\2-1,d7		; number of sprites
-\1_swap_structures_loop
+	moveq	#\1-1,d7		; number of sprites
+swap_sprite_structures_loop
 	move.l	(a0),d0
 	move.l	(a1),(a0)+
 	move.l	d0,(a1)+
-	dbf	d7,\1_swap_structures_loop
+	dbf	d7,swap_sprite_structures_loop
+	rts
+	ENDM
 
+
+SET_SPRITES			MACRO
+; Input
+; \1 BYTE SIGNED:	Number of sprites
+; \2 NUMBER:		Sprite structure pointer index [1,2,3,4,6,7] (optional)
+; Result
+	IFC "","\1"
+		FAIL Macro SWAP_SPRITE_STRUCTURES: Number of sprites missing
+	ENDC
+	CNOP 0,4
+set_sprite_pointers
 	move.l	cl1_display(a3),a0 
-	IFC "","\3"
-		lea	spr_ptrs_display(pc),a1
+	IFC "","\2"
+		lea	spr_pointers_display(pc),a1
 		ADDF.W	cl1_SPR0PTH+WORD_SIZE,a0
 	ELSE
-		lea	spr_ptrs_display+(\3*4)(pc),a1 ; with index
+		lea	spr_pointers_display+(\2*LONGWORD_SIZE)(pc),a1
 		ADDF.W	cl1_SPR\3PTH+WORD_SIZE,a0
 	ENDC
-	moveq	#\2-1,d7		; Number of sprites
-\1_set_sprite_ptrs_loop
+	moveq	#\1-1,d7		; number of sprites
+set_sprite_pointers_loop
 	move.w	(a1)+,(a0)		; SPRxPTH
 	addq.w	#QUADWORD_SIZE,a0
 	move.w	(a1)+,LONGWORD_SIZE-QUADWORD_SIZE(a0) ; SPRxPTL
-	dbf	d7,\1_set_sprite_ptrs_loop
+	dbf	d7,set_sprite_pointers_loop
 	rts
 	ENDM
+

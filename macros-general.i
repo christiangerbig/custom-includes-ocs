@@ -25,6 +25,16 @@ wait_right_button_loop\@
 	ENDM
 
 
+WAIT_MOUSE			MACRO	; ONLY for testing purposes
+; Input
+; Result
+wm_loop\@
+	move.w	$dff006,$dff180
+	btst	#2,$dff016
+	bne.s	wm_loop\@
+	ENDM
+
+
 RASTER_TIME			MACRO
 ; Input
 ; \1 HEXNUMBER:	RGB4 value (optional)
@@ -36,9 +46,9 @@ RASTER_TIME			MACRO
 	and.l	#$3ff00,d0
 	lsr.l	#8,d0
 	cmp.l	rt_rasterlines_number(a3),d0
-	blt.s	rt_no_update_y_pos_max\@
+	blt.s	raster_time_skip\@
 	move.l	d0,rt_rasterlines_number(a3)
-rt_no_update_y_pos_max\@
+raster_time_skip\@
 	IFNC "","\1"
 		SHOW_BEAM_POSITION \1
 	ENDC
@@ -50,6 +60,8 @@ SHOW_BEAM_POSITION		MACRO
 ; Input
 ; \1 WORD:	RGB4 color value
 ; Result
+	MOVEF.W	bplcon3_bits1,d0
+	move.w	d0,BPLCON3-DMACONR(a6)
 	move.w	#\1,COLOR00-DMACONR(a6)
 	ENDM
 
@@ -57,22 +69,22 @@ SHOW_BEAM_POSITION		MACRO
 AUDIO_TEST			MACRO
 ; Input
 ; Result
-	lea	$20000,a0		; pointer chip memory
+	lea	$20000,a0		; dummy chip memory address
 	move.l	a0,AUD0LCH-DMACONR(a6)
 	move.l	a0,AUD1LCH-DMACONR(a6)
 	move.l	a0,AUD2LCH-DMACONR(a6)
 	move.l	a0,AUD3LCH-DMACONR(a6)
-	moveq	#1,d0			; length = 1 word
+	moveq	#1,d0
 	move.w	d0,AUD0LEN-DMACONR(a6)	
 	move.w	d0,AUD1LEN-DMACONR(a6)
 	move.w	d0,AUD2LEN-DMACONR(a6)
 	move.w	d0,AUD3LEN-DMACONR(a6)
-	moveq	#0,d0			; clear volume
-	move.w	d0,AUD0VOL-DMACONR(a6)	
+	moveq	#0,d0
+	move.w	d0,AUD0VOL-DMACONR(a6)
 	move.w	d0,AUD1VOL-DMACONR(a6)
 	move.w	d0,AUD2VOL-DMACONR(a6)
 	move.w	d0,AUD3VOL-DMACONR(a6)
-	move.w	#DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3|DMAF_SETCLR,DMACON-DMACONR(a6) ; enable audio DMA
+	move.w	#DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3|DMAF_SETCLR,DMACON-DMACONR(a6) ; start replay
 	ENDM
 
 
@@ -1273,12 +1285,12 @@ INIT_CHARS_OFFSETS MACRO
 		moveq	#0,d0		; x offset first character
 		moveq	#\1_image_plane_width,d1 ; X offset last character
 		move.w	d1,d2		; x offset reset
-		MOVEF.W \1_image_plane_width*\1_image_depth*(\1_origin_character_y_size+1),d3 ; y offset next character line
+		MOVEF.W \1_image_plane_width*\1_image_depth*(\1_origin_char_y_size+1),d3 ; y offset next character line
 		lea	\1_chars_offsets(pc),a0
 		moveq	#\1_ascii_end-\1_ascii-1,d7 ; number of font characters
 \1_init_chars_offsets_loop
 		move.w	d0,(a0)+	; xy character offset
-		addq.w	#\1_origin_character_x_size/8,d0 ; X offset next character
+		addq.w	#\1_origin_char_x_size/8,d0 ; X offset next character
 		cmp.w	d1,d0		; last character in line ?
 		bne.s	\1_no_x_offset_reset
 \1_x_offset_reset
@@ -1294,11 +1306,11 @@ INIT_CHARS_OFFSETS MACRO
 		moveq	#0,d0		; x offset first character
 		moveq	#\1_image_plane_width,d1 ; x offset last character
 		move.l	d1,d2		; x offset reset
-		move.l	#\1_image_plane_width*\1_image_depth*(\1_origin_character_y_size),d3			Y-Offset für nächste Reihe der Zeichen in Zeichen-Playfieldvorlage
+		move.l	#\1_image_plane_width*\1_image_depth*(\1_origin_char_y_size),d3			Y-Offset für nächste Reihe der Zeichen in Zeichen-Playfieldvorlage
 		moveq	#\1_ascii_end-\1_ascii-1,d7 ; number of font characters
 \1_init_chars_offsets_loop
 		move.l	d0,(a0)+	; xy offset character
-		add.l	#\1_origin_character_x_size/8,d0 ; x offset next character
+		add.l	#\1_origin_char_x_size/8,d0 ; x offset next character
 		cmp.l	d1,d0		; last character ?
 		bne.s	\1_no_x_offset_reset
 \1_x_offset_reset
@@ -1329,13 +1341,13 @@ INIT_CHARS_X_POSITIONS	MACRO
 	ENDC
 	moveq	#0,d0			; first x position
 	IFC "LORES","\2"
-		moveq	#\1_text_character_x_size,d1 ; next character image
+		moveq	#\1_text_char_x_size,d1 ; next character image
 	ENDC
 	IFC "HIRES","\2"
-		moveq	#\1_text_character_x_size*2,d1 ; next character image
+		moveq	#\1_text_char_x_size*2,d1 ; next character image
 	ENDC
 	IFC "SHIRES","\2"
-		MOVEF.W	\1_text_character_x_size*4,d1 ; next character image
+		MOVEF.W	\1_text_char_x_size*4,d1 ; next character image
 	ENDC
 	IFNC "BACKWARDS","\3"
 		lea	\1_chars_x_positions(pc),a0
@@ -1374,7 +1386,7 @@ INIT_CHARS_Y_POSITIONS	MACRO
 		FAIL Macro INIT_CHARS_Y_POSITIONS: Labels prefix missing
 	ENDC
 	moveq	#0,d0			; first y position
-	moveq	#\1_text_character_y_size,d1 ; next y position
+	moveq	#\1_text_char_y_size,d1 ; next y position
 	lea	\1_chars_y_positions(pc),a0
 	IFC "","\2"
 		moveq	#(\1_text_chars_number)-1,d7
@@ -1401,14 +1413,14 @@ INIT_CHARS_IMAGES		MACRO
 	lea	\1_chars_image_pointers(pc),a2
 	MOVEF.W	(\1_text_chars_number)-1,d7
 \1_init_chars_images_loop
-	bsr	\1_get_new_character_image
+	bsr	\1_get_new_char_image
 	move.l	d0,(a2)+		; character image
 	dbf	d7,\1_init_chars_images_loop
 	rts
 	ENDM
 
 
-GET_NEW_CHARACTER_IMAGE		MACRO
+GET_NEW_CHAR_IMAGE		MACRO
 ; Input
 ; \0 STRING:	Size [W/L]
 ; \1 STRING:	Labels prefix
@@ -1418,13 +1430,13 @@ GET_NEW_CHARACTER_IMAGE		MACRO
 ; Result
 ; d0.l		Pointer character image
 	IFC "","\0"
-		FAIL Macro GET_NEW_CHARACTER_IMAGE: Size missing
+		FAIL Macro GET_NEW_CHAR_IMAGE: Size missing
 	ENDC
 	IFC "","\1"
-		FAIL Macro GET_NEW_CHARACTER_IMAGE: Labels prefix missing
+		FAIL Macro GET_NEW_CHAR_IMAGE: Labels prefix missing
 	ENDC
 	CNOP 0,4
-\1_get_new_character_image
+\1_get_new_char_image
 	move.w	\1_text_table_start(a3),d1
 	IFC "BACKWARDS","\4"
 		bpl.s	\1_no_restart_text
@@ -1432,7 +1444,7 @@ GET_NEW_CHARACTER_IMAGE		MACRO
 \1_no_restart_text
 	ENDC
 	lea	\1_text(pc),a0
-\1_read_character
+\1_read_char
 	move.b	(a0,d1.w),d0		; ASCII code
 	IFNC "","\2"
 		bsr.s	\2
@@ -1447,44 +1459,44 @@ GET_NEW_CHARACTER_IMAGE		MACRO
 	ENDC
 	lea	\1_ascii(pc),a0
 	moveq	#\1_ascii_end-\1_ascii-1,d6 ; number of characters
-\1_get_new_character_image_loop
+\1_get_new_char_image_loop
 	cmp.b	(a0)+,d0		; code found ?
-	dbeq	d6,\1_get_new_character_image_loop
+	dbeq	d6,\1_get_new_char_image_loop
 	IFC "BACKWARDS","\4"
 		subq.w	#BYTE_SIZE,d1	; next character
 	ELSE
-		IFLT \1_origin_character_x_size-32
+		IFLT \1_origin_char_x_size-32
 			addq.w	#BYTE_SIZE,d1 ; next character
 		ELSE
-		IFNE \1_text_character_x_size-16
+		IFNE \1_text_char_x_size-16
 			addq.w	#BYTE_SIZE,d1 ; next character
 		ENDC
 		ENDC
 	ENDC
 
 	moveq	#\1_ascii_end-\1_ascii-1,d0 ; number of characters
-	IFLT \1_origin_character_x_size-32
+	IFLT \1_origin_char_x_size-32
 		move.w	d1,\1_text_table_start(a3)
 	ELSE
-		IFNE \1_text_character_x_size-16
+		IFNE \1_text_char_x_size-16
 			move.w	d1,\1_text_table_start(a3)
 		ENDC
 	ENDC
 	sub.w	d6,d0			; number of characters
 	lea	\1_chars_offsets(pc),a0
 	IFC "W","\0"
-		MULUFW	2,d0
+		MULUF.W	2,d0
 		move.w	(a0,d0.w),d0	; character offset
 	ENDC
 	IFC "L","\0"
-		MULUFW	4,d0
+		MULUF.W	4,d0
 		move.l	(a0,d0.w),d0	; character offset
 	ENDC
 	add.l	\1_image(a3),d0
 	IFNC "BACKWARDS","\4"
-		IFEQ \1_origin_character_x_size-32
-			IFEQ \1_text_character_x_size-16
-				not.w	\1_character_toggle_image(a3) ; new character image ?
+		IFEQ \1_origin_char_x_size-32
+			IFEQ \1_text_char_x_size-16
+				not.w	\1_char_toggle_image(a3) ; new character image ?
 				bne.s	\1_no_second_image_part
 \1_second_image_part
 				addq.w	#BYTE_SIZE,d1 ; next character
@@ -1493,22 +1505,22 @@ GET_NEW_CHARACTER_IMAGE		MACRO
 \1_no_second_image_part
 			ENDC
 		ENDC
-		IFGT \1_origin_character_x_size-32
-			IFEQ \1_text_character_x_size-16
+		IFGT \1_origin_char_x_size-32
+			IFEQ \1_text_char_x_size-16
 				moveq	#0,d3
-				move.w	\1_character_words_counter(a3),d3
+				move.w	\1_char_words_counter(a3),d3
 				move.l	d3,d4
 				MULUF.W	2,d4 ; character image word offset
 				addq.w	#BYTESIZE,d3 ; next part of character image
 				add.l	d4,d0 ; character image address
-				cmp.w	#\1_origin_character_x_size/16,d3 ; new character image ?
-				bne.s	\1_keep_character_image
-\1_next_character
+				cmp.w	#\1_origin_char_x_size/16,d3 ; new character image ?
+				bne.s	\1_keep_char_image
+\1_next_char
 				addq.w	#1,d1 ; nächster Buchstabe
 				move.w	d1,\1_text_table_start(a3)
 				moveq	#0,d3 ; reset words counter
-\1_keep_character_image
-				move.w	d3,\1_character_words_counter(a3)
+\1_keep_char_image
+				move.w	d3,\1_char_words_counter(a3)
 			ENDC
 		ENDC
 	ENDC
@@ -1517,13 +1529,13 @@ GET_NEW_CHARACTER_IMAGE		MACRO
 		IFNC "","\2"
 \1_skip_control_code
 			addq.w	#BYTE_SIZE,d1 ; next character
-			bra.s	\1_read_character
+			bra.s	\1_read_char
 		ENDC
 		IFNC "NORESTART","\3"
 			CNOP 0,4
 \1_restart_text
 			moveq	#0,d1
-			bra.s	\1_read_character
+			bra.s	\1_read_char
 		ENDC
 	ENDC
 	ENDM
@@ -1717,7 +1729,7 @@ GET_SINE_BARS_YZ_COORDINATES MACRO
 \1_get_yz_coordinates_loop
 		moveq	#-(sine_table_length/4),d1 ; - 90°
 		move.w	d2,d0
-		MULUFW	4,d0
+		MULUF.W	4,d0
 		move.l	(a0,d0.w),d0	; sin(w)
 		add.w	d2,d1		; - 90°
 		bmi.s	\1_get_yz_coordinates_skip2
