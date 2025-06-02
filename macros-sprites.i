@@ -1,4 +1,4 @@
-SET_SPRITE_POSITION		MACRO
+SET_SPRITE_POSITION			MACRO
 ; Input
 ; \1 WORD:	X position
 ; \2 WORD:	Y position
@@ -20,12 +20,12 @@ SET_SPRITE_POSITION		MACRO
 	addx.w	\3,\3			; EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0 --- --- --- --- --- --- --- SV8
 	addx.b	\3,\3			; EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0 --- --- --- --- --- --- SV8 EV8
 	lsr.w	#1,\1			; --- --- --- --- --- --- --- --- SH8 SH7 SH6 SH5 SH4 SH3 SH2 SH1
-	addx.b	\3,\3			; EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0 --- --- --- --- --- SV8 EV8 SH0 SPRxCTL
-	move.b	\1,\2			; SV7 SV6 SV5 SV4 SV3 SV2 SV1 SV0 SH8 SH7 SH6 SH5 SH4 SH3 SH2 SH1 SPRxPOS
+	addx.b	\3,\3			; EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0 --- --- --- --- --- SV8 EV8 SH0 = SPRxCTL
+	move.b	\1,\2			; SV7 SV6 SV5 SV4 SV3 SV2 SV1 SV0 SH8 SH7 SH6 SH5 SH4 SH3 SH2 SH1 = SPRxPOS
 	ENDM
 
 
-SET_SPRITE_POSITION_1X		MACRO
+INIT_SPRITE_CONTROL_WORDS	MACRO
 ; Input
 ; \1 WORD:	X position
 ; \2 WORD:	Y position
@@ -33,17 +33,17 @@ SET_SPRITE_POSITION_1X		MACRO
 ; Result
 ; \2 LONGWORD:	low word SPRxCTL, high word SPRxPOS
 	IFC "","\1"
-		FAIL Makro SET_SPRITE_POSITION_1X: X position missing
+		FAIL Makro INIT_SPRITE_CONTROL_WORDS: X position missing
 	ENDC
 	IFC "","\2"
-		FAIL Makro SET_SPRITE_POSITION_1X: Y position missing
+		FAIL Makro INIT_SPRITE_CONTROL_WORDS: Y position missing
 	ENDC
 	IFC "","\3"
-		FAIL Makro SET_SPRITE_POSITION_1X: Height missing
+		FAIL Makro INIT_SPRITE_CONTROL_WORDS: Height missing
 	ENDC
 	SET_SPRITE_POSITION \1,\2,\3
-	swap	\2			; SV7 SV6 SV5 SV4 SV3 SV2 SV1 SV0 SH10 SH9 SH8 SH7 SH6 SH5 SH4 SH3 --- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---
-	move.w	\3,\2			; SV7 SV6 SV5 SV4 SV3 SV2 SV1 SV0 SH10 SH9 SH8 SH7 SH6 SH5 SH4 SH3 SV7 SV6 SV5 SV4 SV3 SV2 SV1 SV0 SH10 SH9 SH8 SH7 SH6 SH5 SH4 SH3 --- --- --- SH1 SH0 SV8 EV8 SH2
+	swap	\2			; high word: SPRxPOS
+	move.w	\3,\2			; low word: SPRxCTL
 	ENDM
 
 
@@ -162,4 +162,3 @@ set_sprite_pointers_loop
 	dbf	d7,set_sprite_pointers_loop
 	rts
 	ENDM
-
