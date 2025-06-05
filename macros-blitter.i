@@ -1,6 +1,6 @@
 WAITBLIT			MACRO
 ; Input
-; \1 STRING:	"BUSYBITBUG" for Agnus in Amiga 1000/2000-A to avoid blitter busy bit bug (optional)
+; \1 STRING:	["BUSYBITBUG"] avoid Agnus Amiga 1000/2000-A blitter busy bit bug (optional)
 ; Result
 	IFC "BUSYBITBUG","\1"
 		tst.w	(a6) 
@@ -14,7 +14,7 @@ waitblit_loop\@
 WAITBLITQ			MACRO
 ; Input
 ; \1		DMA blitter busy bit in dx or immediate
-; \2 STRING:	"BUSYBITBUG" for Agnus in Amiga 1000/2000-A to avoid the blitter busy bit bug (optional)
+; \2 STRING:	["BUSYBITBUG"] avoid Agnus Amiga 1000/2000-A blitter busy bit bug (optional)
 ; Result
 	IFC "BUSYBITBUG","\2"
 		tst.w	(a6) 
@@ -28,8 +28,8 @@ wait_blitter_quick_loop\@
 GET_LINE_PARAMETERS		MACRO
 ; Input
 ; \1 STRING:	Labels prefix
-; \2 STRING:	"AREAFILL" (optional)
-; \3 STRING:	"COPPERUSE" (optional)
+; \2 STRING:	["AREAFILL"] (optional)
+; \3 STRING:	["COPPERUSE"] (optional)
 ; \4 WORD:	Multiplicator for y offset in playfield
 ; Result
 	IFC "","\1"

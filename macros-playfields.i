@@ -2,7 +2,7 @@ INIT_BPLCON0_BITS		MACRO
 ; Input
 ; \1 STRING:	Label
 ; \2 NUMBER:	Playfield depth
-; \3 STRING:	BPLCON0 additional bits (optiona)
+; \3 STRING:	BPLCON0 additional bits (optional)
 ; Result
 	IFC "","\1"
 		FAIL Macro INIT_BPLCON0_BITS: Label missing
@@ -72,7 +72,7 @@ PF_SOFTSCROLL_16PIXEL_LORES	MACRO
 ; Input
 ; \1 WORD:	Playfield x start
 ; \2 WORD:	Scratch register
-; \3 STRING:	Maske H0-H5 (optional)
+; \3 STRING:	Mask H0-H5 (optional)
 ; Result
 ; \1 WORD:	BPLCON1 soft scroll
 	IFC "","\1"
@@ -98,7 +98,7 @@ PF_SOFTSCROLL_16PIXEL_LORES	MACRO
 PF_SOFTSCROLL_8PIXEL_HIRES	MACRO
 ; Input
 ; \1 WORD:	Playfield x start
-; \2 WORD:	scratch register
+; \2 WORD:	Scratch register
 ; \3 STRING:	Mask H0-H3 (optional)
 ; Result
 ; \1 WORD:	BPLCON1 soft scroll
@@ -152,10 +152,10 @@ PF_SOFTSCROLL_16PIXEL_HIRES	MACRO
 
 SWAP_PLAYFIELD			MACRO
 ; \1 STRING:		Labels prefix
-; \2 NUMBER:		Number of playfields [2,3]
+; \2 NUMBER:		[2,3] number of playfields
 ; \3 BYTE SIGNED:	Playfield depth
-; \4 WORD:		x offset (optional)
-; \5 WORD:		y offset (optional)
+; \4 WORD:		X offset (optional)
+; \5 WORD:		Y offset (optional)
 	IFC "","\1"
 		FAIL Macro SWAP_PLAYFIELD: Labels prefix missing
 	ENDC

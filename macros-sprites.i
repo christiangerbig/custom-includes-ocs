@@ -112,7 +112,7 @@ spr_copy_data_loop
 SWAP_SPRITES			MACRO
 ; Input
 ; \1 BYTE SIGNED:	Number of sprites
-; \2 NUMBER:		Sprite structure pointer index [1,2,3,4,6,7] (optional)
+; \2 NUMBER:		[1..7] sprite structure pointer index (optional)
 ; Result
 	IFC "","\1"
 		FAIL Macro SWAP_SPRITE_STRUCTURES: Number of sprites missing
@@ -139,7 +139,7 @@ swap_sprite_structures_loop
 SET_SPRITES			MACRO
 ; Input
 ; \1 BYTE SIGNED:	Number of sprites
-; \2 NUMBER:		Sprite structure pointer index [1,2,3,4,6,7] (optional)
+; \2 NUMBER:		[1..7] sprite structure pointer index (optional)
 ; Result
 	IFC "","\1"
 		FAIL Macro SWAP_SPRITE_STRUCTURES: Number of sprites missing

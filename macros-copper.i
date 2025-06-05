@@ -1,13 +1,13 @@
 COP_MOVE			MACRO
 ; Input
-; \1 WORD:	16 bit value
-; \2 WORD :	CUSTOM register offset
+; \1 WORD:	Source 16 bit value
+; \2 WORD:	CUSTOM register offset
 ; Result
 	IFC "","\1"
-		FAIL Macro COP_MOVE: 16 bit value missing
+		FAIL Macro COP_MOVE: Source missing
 	ENDC
 	IFC "","\2"
-		FAIL Macro COP_MOVE: CUSTOM register offset missing
+		FAIL Macro COP_MOVE: Custom register offset missing
 	ENDC
 	move.w	#\2,(a0)+		; CUSTOM register offset
 	move.w	\1,(a0)+		; register value
@@ -16,14 +16,14 @@ COP_MOVE			MACRO
 
 COP_MOVEQ			MACRO
 ; Input
-; \1 WORD:	16 bit value
+; \1 WORD:	Source 16 bit value
 ; \2 WORD:	CUSTOM register offset
 ; Result
 	IFC "","\1"
-		FAIL Macro COP_MOVEQ: 16 bit value missing
+		FAIL Macro COP_MOVEQ: Source missing
 	ENDC
 	IFC "","\2"
-		FAIL Macro COP_MOVEQ: CUSTOM register offset missing
+		FAIL Macro COP_MOVEQ: Custom register offset missing
 	ENDC
 		move.l	#((\2)<<16)|((\1)&$ffff),(a0)+ ; CUSTOM-Registeroffset + Wert für Register
 	ENDM
@@ -31,8 +31,8 @@ COP_MOVEQ			MACRO
 
 COP_WAIT			MACRO
 ; Input
-; \1	X position (bits 2..8)
-; \2	Y Position (bits 0..7)
+; \1 BYTE:	X position (bits 2..8)
+; \2 BYTE:	Y Position (bits 0..7)
 ; Result
 	IFC "","\1"
 		FAIL Macro COP_WAIT: X position missing
@@ -53,8 +53,8 @@ COP_WAITBLIT			MACRO
 
 COP_WAITBLIT2			MACRO
 ; Input
-; \1	X position (bits 2..8)
-; \2	Y position (bits 0..7)
+; \1 BYTE:	X position (bits 2..8)
+; \2 BYTE: 	Y position (bits 0..7)
 ; Result
 	IFC "","\1"
 		FAIL Macro COP_WAITBLIT2: X position missing
@@ -67,8 +67,8 @@ COP_WAITBLIT2			MACRO
 
 
 COP_SKIP MACRO
-; \1	X position (bits 2..8)
-; \2	Y position (bits 0..7)
+; \1 BYTE:	X position (bits 2..8)
+; \2 BYTE:	Y position (bits 0..7)
 	IFC "","\1"
 		FAIL Macro COP_SKIP: X position missing
 	ENDC
@@ -81,7 +81,7 @@ COP_SKIP MACRO
 
 COP_LISTEND MACRO
 ; Input
-; \1 STRING:	"SAVETAIL" (optional)
+; \1 STRING:	["SAVETAIL"] (optional)
 ; Result
 	moveq	#-2,d0
 	move.l	d0,(a0)
@@ -95,8 +95,8 @@ COP_INIT_PLAYFIELD_REGISTERS	MACRO
 ; Input
 ; \1 STRING:	Labels prefix
 ; \2 STRING:	["NOBITPLANES", "BLANK"] type of display
-; \3 STRING:	Viewport label prefix [vp1,vp2..vpn] (optional)
-; \4 STRING	"TRIGGERBITPLANES" inititialize BPLCON0 (optional)
+; \3 STRING:	["vp1", "vp2".."vpn"] viewport label prefix (optional)
+; \4 STRING	["TRIGGERBITPLANES"] inititialize BPLCON0 (optional)
 ; Result
 	IFC "","\1"
 		FAIL Macro COP_INIT_PLAYFIELD_REGISTERS: Labels prefix missing
@@ -178,7 +178,7 @@ COP_INIT_BITPLANE_POINTERS	MACRO
 COP_SET_BITPLANE_POINTERS	MACRO
 ; Input
 ; \1 STRING:		Labels prefix
-; \2 STRING:		["construction1","construction2","display"]
+; \2 STRING:		["construction1", "construction2", "display"] name of copperlist
 ; \3 BYTE SIGNED:	Number of bitplanes playfield1
 ; \4 BYTE SIGNED:	Number of bisplanes playfield2 (optional)
 ; \5 WORD:		X offset (optional)
@@ -188,7 +188,7 @@ COP_SET_BITPLANE_POINTERS	MACRO
 		FAIL Macro COP_SET_BITPLANE_POINTERS: Labels prefix missing
 	ENDC
 	IFC "","\2"
-		FAIL Macro COP_SET_BITPLANE_POINTERS: Name of copperlist ["construction1", "display"] missing
+		FAIL Macro COP_SET_BITPLANE_POINTERS: Name of copperlist missing
 	ENDC
 	IFC "","\3"
 		FAIL Macro COP_SET_BITPLANE_POINTERS: Number of bitplanes playfield1 missing
@@ -283,9 +283,9 @@ COP_INIT_SPRITE_POINTERS	MACRO
 COP_SET_SPRITE_POINTERS		MACRO
 ; Input
 ; \1 STRING:		Labels prefix
-; \2 STRING:		Name of copperlist ["construction1", "construction2", "display"]
-; \3 BYTE SIGNED:	Number of sprites
-; \4 NUMBER:		Index [1,2,3,4,5,6,7] (optional)
+; \2 STRING:		["construction1", "construction2", "display"] name of copperlist
+; \3 BYTE SIGNED:	[1..8] number of sprites
+; \4 NUMBER:		[1..7] index (optional)
 ; Result
 	IFC "","\1"
 		FAIL Macro COP_SET_SPRITE_POINTERS: Labels prefix missing
@@ -341,7 +341,7 @@ COP_INIT_COLOR			MACRO
 COP_INIT_COLOR00_REGISTERS	MACRO
 ; Input
 ; \1 STRING:	Labels prefix
-; \2 STRING:	"YWRAP" (optional)
+; \2 STRING:	["YWRAP"] (optional)
 ; Result
 	IFC "","\1"
 		FAIL Macro COP_INIT_COLOR00_REGISTERS: Labels prefix missing
@@ -353,7 +353,7 @@ COP_INIT_COLOR00_REGISTERS	MACRO
 	IFC "YWRAP","\2"
 		move.l	#(((CL_Y_WRAPPING<<24)|(((\1_hstart1/4)*2)<<16))|$10000)|$fffe,d5 ; CWAIT
 	ENDC
-	move.l	#8$01000000,d6
+	move.l	#$01000000,d6
 	MOVEF.W	\1_display_y_size-1,d7
 \1_init_color00_loop
 	move.l	d0,(a0)+		; CWAIT x,y
@@ -366,7 +366,7 @@ patch_copperlist2
 		bra.s	 \1_init_color00_skip
 		CNOP 0,4
 no_patch_copperlist2
-		COP_MOVEQ TRUE,NOOP
+		COP_MOVEQ 0,NOOP
 \1_init_color00_skip
 	ENDC
 	add.l	d6,d0			; next raster line
@@ -375,29 +375,70 @@ no_patch_copperlist2
 	ENDM
 
 
-COP_INIT_BPLCON1_CHUNKY_SCREEN	MACRO
+COP_INIT_COLOR00_CHUNKY		MACRO
 ; Input
-; \1 STRING:	Labels prefix copperlist [cl1,cl2]
+; \1 STRING:	["cl1", "cl2"] label prefix copperlist
+; \2 NUMBER:	HSTART
+; \3 NUMBER:	VSTART
+; \4 NUMBER:	Width
+; \5 NUMBER:	Height
+; Result
+	IFC "","\1"
+		FAIL Macro COP_INIT_COLOR00_CHUNKY: Label prefix copperlist missing
+	ENDC
+	IFC "","\2"
+		FAIL Macro COP_INIT_COLOR00_CHUNKY: HSTART missing
+	ENDC
+	IFC "","\3"
+		FAIL Macro COP_INIT_COLOR00_CHUNKY: VSTART missing
+	ENDC
+	IFC "","\4"
+		FAIL Macro COP_INIT_COLOR00_CHUNKY: Width missing
+	ENDC
+	IFC "","\5"
+		FAIL Macro COP_INIT_COLOR00_CHUNKY: Height missing
+	ENDC
+	CNOP 0,4
+\1_init_color00_chunky
+	move.l	#(((\3<<24)|(((\2/4)*2)<<16))|$10000)|$fffe,d0 ; CWAIT
+	move.l	#(COLOR00<<16)|(COLOR00_bits),d1
+	move.l	#$01000000,d2
+	MOVEF.W	\5-1,d7		; number of lines
+\1_init_color00_chunky_loop1
+	move.l	d0,(a0)+	; CWAIT x,y
+	moveq	#(\4/8)-1,d6	; number of columns
+\1_init_color00_chunky_loop2
+	move.l	d1,(a0)+	; COLOR00
+	dbf	d6,\1_init_color00_chunky_loop2
+	add.l	d2,d0		; next line in cl
+	dbf	d7,\1_init_color00_chunky_loop1
+	rts
+	ENDM
+
+
+COP_INIT_BPLCON1_CHUNKY	MACRO
+; Input
+; \1 STRING:	["cl1", "cl2"] labels prefix copperlist
 ; \2 NUMBER:	HSTART
 ; \3 NUMBER:	VSTART
 ; \4 NUMBER:	width
 ; \5 NUMBER:	height
-; \6 WORD:	alternative BPLCON1 bits
+; \6 WORD:	alternative BPLCON1 bits (optional)
 ; Result
 	IFC "","\1"
-		FAIL Macro COP_INIT_BPLCON1_CHUNKY_SCREEN: Labels prefix copperliste missing
+		FAIL Macro COP_INIT_BPLCON1_CHUNKY: Labels prefix copperliste missing
 	ENDC
 	IFC "","\2"
-		FAIL Macro COP_INIT_BPLCON1_CHUNKY_SCREEN: HSTART missing
+		FAIL Macro COP_INIT_BPLCON1_CHUNKY: HSTART missing
 	ENDC
 	IFC "","\3"
-		FAIL Macro COP_INIT_BPLCON1_CHUNKY_SCREEN: VSTART missing
+		FAIL Macro COP_INIT_BPLCON1_CHUNKY: VSTART missing
 	ENDC
 	IFC "","\4"
-		FAIL Macro COP_INIT_BPLCON1_CHUNKY_SCREEN: Width missing
+		FAIL Macro COP_INIT_BPLCON1_CHUNKY: Width missing
 	ENDC
 	IFC "","\5"
-		FAIL Macro COP_INIT_BPLCON1_CHUNKY_SCREEN: Height missing
+		FAIL Macro COP_INIT_BPLCON1_CHUNKY: Height missing
 	ENDC
 	CNOP 0,4
 \1_init_bplcon1s
@@ -407,24 +448,23 @@ COP_INIT_BPLCON1_CHUNKY_SCREEN	MACRO
 	ELSE
 		move.l	#(BPLCON1<<16)|\6,d1
 	ENDC
-	moveq	 #1,d3
-	ror.l	 #8,d3			; $01000000
+	move.l	#$01000000,d3
 	MOVEF.W \5-1,d7
 \1_init_bplcon1s_loop1
 	move.l	d0,(a0)+		; CWAIT x,y
-	moveq	 #(\4/8)-1,d6		; number of coloms
+	moveq	 #(\4/8)-1,d6		; number of colums
 \1_init_bplcon1s_loop2
 	move.l	d1,(a0)+		; BPLCON1
-	dbf		 d6,\1_init_bplcon1s_loop2
-	add.l	 d3,d0			; next raster line
-	dbf		 d7,\1_init_bplcon1s_loop1
+	dbf	d6,\1_init_bplcon1s_loop2
+	add.l	d3,d0			; next raster line
+	dbf	d7,\1_init_bplcon1s_loop1
 	rts
 	ENDM
 
 
 COP_INIT_DISPLAY_VSTOP		MACRO
 ; Input
-; \1 STRING:	Labels prefix copperlist [cl1,cl2]
+; \1 STRING:	["cl1", "cl2"] labels prefix copperlist
 ; \2 WORD:	X position
 ; \3 WORD:	Y postion
 ; Result
@@ -445,14 +485,12 @@ COP_INIT_DISPLAY_VSTOP		MACRO
 	ENDM
 
 
-
-
 COP_INIT_COPINT			MACRO
 ; Input
-; \1 STRING:	Labels prefix copperlist [cl1,cl2]
+; \1 STRING:	["cl1", "cl2"] labels prefix copperlist
 ; \2 WORD:	X position (optional)
 ; \3 WORD:	Y postion (optional)
-; \4 STRING:	"YWRAP" (optional)
+; \4 STRING:	["YWRAP"] (optional)
 ; Result
 	IFC "","\1"
 		FAIL Macro COP_INIT_COPINT: Labels prefix missing
@@ -474,8 +512,8 @@ COP_INIT_COPINT			MACRO
 
 COPY_COPPERLIST			MACRO
 ; Input
-; \1 STRING:	Labels prefix copperlist [cl1,cl2]
-; \2 NUMBER:	Number of copperlists [2,3]
+; \1 STRING:	["cl1", "cl2"] labels prefix copperlist
+; \2 NUMBER:	[2, 3] number of copperlists
 ; Result
 	IFC "","\1"
 		FAIL Macro COPY_COPPERLIST: Labels prefix missing
@@ -537,7 +575,7 @@ CONVERT_IMAGE_TO_RGB4_CHUNKY	MACRO
 ; Input
 ; \1 STRING:	Labels prefix
 ; \2 POINTER:	BPLAM table
-; \3 STRING:	pointer- base [pc,a3]
+; \3 STRING:	["pc", "a3"] pointer base
 ; Result
 	IFC "","\1"
 		FAIL Macro CONVERT_IMAGE_TO_RGB4_CHUNKY: Labels prefix missing
@@ -612,7 +650,7 @@ CONVERT_IMAGE_TO_HAM6_CHUNKY	MACRO
 ; Input
 ; \1 STRING:	Labels prefix
 ; \2 POINTER:	BPLAM table
-; \3 STRING:	pointer base [pc,a3]
+; \3 STRING:	["pc", "a3"] pointer base
 	IFC "","\1"
 		FAIL Macro CONVERT_IMAGE_TO_HAM6_CHUNKY: Labels prefix missing
 	ENDC
@@ -713,25 +751,23 @@ CONVERT_IMAGE_TO_HAM6_CHUNKY	MACRO
 
 
 SWAP_COPPERLIST			MACRO
+; Input
 ; \1 STRING:	Labels prefix
-; \2 NUMBER:	Number of copperlists [2,3]
-; \3 STRING:	"NOSET" dont set pointer (optional)
+; \2 NUMBER:	[2, 3] number of copperlists
+; Result
 	IFC "","\1"
 		FAIL Macro SWAP_COPPERLIST: Labels prefix missing
 	ENDC
 	IFC "","\2"
 		FAIL Macro SWAP_COPPERLIST: Number of copperlists missing
 	ENDC
-	CNOP 0,4
 	IFC "cl1","\1"
+		CNOP 0,4
 swap_first_copperlist
 		IFEQ \2-2
 			move.l	\1_construction2(a3),a0
 			move.l	\1_display(a3),\1_construction2(a3)
 			move.l	a0,\1_display(a3)
-			IFNC "NOSET","\3"
-				move.l	a0,COP1LC-DMACONR(a6)
-			ENDC
 			rts
 		ENDC
 		IFEQ \2-3
@@ -740,21 +776,16 @@ swap_first_copperlist
 			move.l	\1_construction2(a3),a1
 			move.l	a0,\1_construction2(a3)
 			move.l	a1,\1_display(a3)
-			IFNC "NOSET","\3"
-				move.l	a1,COP1LC-DMACONR(a6)
-			ENDC
 			rts
 		ENDC
 	ENDC
 	IFC "cl2","\1"
+		CNOP 0,4
 swap_second_copperlist
 		IFEQ \2-2
 			move.l	\1_construction2(a3),a0
 			move.l	\1_display(a3),\1_construction2(a3)
 			move.l	a0,\1_display(a3)
-			IFNC "NOSET","\3"
-				move.l	a0,COP2LC-DMACONR(a6)
-			ENDC
 			rts
 		ENDC
 		IFEQ \2-3
@@ -763,48 +794,67 @@ swap_second_copperlist
 			move.l	\1_construction2(a3),a1
 			move.l	a0,\1_construction2(a3)
 			move.l	a1,\1_display(a3)
-			IFNC "NOSET","\3"
-				move.l	a1,COP2LC-DMACONR(a6)
-			ENDC
 			rts
 		ENDC
 	ENDC
 	ENDM
 
 
-CLEAR_COLOR00_CHUNKY_SCREEN	MACRO
+SET_COPPERLIST			MACRO
 ; Input
 ; \1 STRING:	Labels prefix
-; \2 STRING:	Labels prefix copperlist [cl1,cl2]
-; \3 STRING:	Name of copperlist [construction1,construction2]
-; \4 STRING:	"extension[1..n]"
-; \5 NUMBER:	number of commands per loop [16,32]
+; Result
 	IFC "","\1"
-		FAIL Macro CLEAR_COLOR00_CHUNKY_SCREEN: Labels prefix missing
+		FAIL Macro SET_COPPERLIST: Labels prefix missing
+	ENDC
+	IFC "cl1","\1"
+		CNOP 0,4
+set_first_copperlist
+		move.l	\1_display(a3),COP1LC-DMACONR(a6)
+		rts
+	ENDC
+	IFC "cl2","\1"
+		CNOP 0,4
+set_second_copperlist
+		move.l	\1_display(a3),COP2LC-DMACONR(a6)
+		rts
+	ENDC
+	ENDM
+
+
+CLEAR_COLOR00_SCREEN		MACRO
+; Input
+; \1 STRING:	Labels prefix
+; \2 STRING:	["cl1", "cl2"] labels prefix copperlist
+; \3 STRING:	["construction1","construction2"] name of copperlist
+; \4 STRING:	"extension[1..n]"
+; \5 NUMBER:	[16, 32] number of commands per loop
+	IFC "","\1"
+		FAIL Macro CLEAR_COLOR00_SCREEN: Labels prefix missing
 	ENDC
 	IFC "","\2"
-		FAIL Macro CLEAR_COLOR00_CHUNKY_SCREEN: Labeld prefix copperlist missing
+		FAIL Macro CLEAR_COLOR00_SCREEN: Labeld prefix copperlist missing
 	ENDC
 	IFC "","\3"
-		FAIL Macro CLEAR_COLOR00_CHUNKY_SCREEN: Name of copperlist missing
+		FAIL Macro CLEAR_COLOR00_SCREEN: Name of copperlist missing
 	ENDC
 	IFC "","\4"
-		FAIL Macro CLEAR_COLOR00_CHUNKY_SCREEN: "extension[1..n]" missing
+		FAIL Macro CLEAR_COLOR00_SCREEN: Extension missing
 	ENDC
 	IFC "","\5"
-		FAIL Macro CLEAR_COLOR00_CHUNKY_SCREEN: Number of commands per loop missing
+		FAIL Macro CLEAR_COLOR00_SCREEN: Number of commands per loop missing
 	ENDC
 	CNOP 0,4
 	IFC "cl1","\2"
-\1_clear_first_copperlist
+clear_first_copperlist
 		IFC "16","\5"
 			move.w	#color00_bits,d0
-			MOVEF.L	\2_\4_size*16,d2
+			MOVEF.L	\2_\4_size*16,d1
 			move.l	\2_\3(a3),a0
 			ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00+WORD_SIZE,a0
 			moveq	#(\2_display_y_size/16)-1,d7
-\1_clear_first_copperlist_loop
-			move.w	d0,(a0)	; COLOR00 high
+clear_first_copperlist_loop
+			move.w	d0,(a0)	; COLOR00
 			move.w	d0,\2_\4_size*1(a0)
 			move.w	d0,\2_\4_size*2(a0)
 			move.w	d0,\2_\4_size*3(a0)
@@ -819,7 +869,7 @@ CLEAR_COLOR00_CHUNKY_SCREEN	MACRO
 			move.w	d0,\2_\4_size*12(a0)
 			move.w	d0,\2_\4_size*13(a0)
 			move.w	d0,\2_\4_size*14(a0)
-			add.l	d2,a0	; nächste Zeile in CL
+			add.l	d1,a0	; next line in cl
 			move.w	d0,(\2_\4_size*15)-(\2_\4_size*16)(a0)
 			dbf	d7,\1_clear_first_copperlist_loop
 			rts
@@ -830,8 +880,8 @@ CLEAR_COLOR00_CHUNKY_SCREEN	MACRO
 			move.l	\2_\3(a3),a0
 			ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00+WORD_SIZE,a0
 			moveq	#(\2_display_y_size/32)-1,d7
-\1_clear_first_copperlist_loop
-			move.w	d0,(a0)	; COLOR00 high
+clear_first_copperlist_loop
+			move.w	d0,(a0)	; COLOR00
 			move.w	d0,\2_\4_size*1(a0)
 			move.w	d0,\2_\4_size*2(a0)
 			move.w	d0,\2_\4_size*3(a0)
@@ -862,56 +912,38 @@ CLEAR_COLOR00_CHUNKY_SCREEN	MACRO
 			move.w	d0,\2_\4_size*28(a0)
 			move.w	d0,\2_\4_size*29(a0)
 			move.w	d0,\2_\4_size*30(a0)
-			move.w	d0,\2_\4_size*31(a0)
-			add.l	d2,a0	; nächste Zeile in CL
-			move.w	d0,(\2_\4_size*32)-(\2_\4_size*32)(a0)
+			add.l	d1,a0	; next line in cl
+			move.w	d0,(\2_\4_size*31)-(\2_\4_size*32)(a0)
 			dbf	d7,\1_clear_first_copperlist_loop
 			rts
 		ENDC
 	ENDC
 	IFC "cl2","\2"
-\1_clear_second_copperlist
+clear_second_copperlist
 		IFC "16","\5"
-			move.w	#color00_high_bits,d0
-			move.w	#color00_low_bits,d1
-			MOVEF.L	\2_\4_size*16,d2
+			move.w	#color00_bits,d0
+			MOVEF.L	\2_\4_size*16,d1
 			move.l	\2_\3(a3),a0
 			ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00_high+WORD_SIZE,a0
 			moveq	#(\2_display_y_size/16)-1,d7
-\1_clear_second_copperlist_loop
-			move.w	d0,(a0)	; COLOR00 high
-			move.w	d1,\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high(a0) ; COLOR00 low
+clear_second_copperlist_loop
+			move.w	d0,(a0)	; COLOR00
 			move.w	d0,\2_\4_size*1(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*1)(a0)
 			move.w	d0,\2_\4_size*2(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*2)(a0)
 			move.w	d0,\2_\4_size*3(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*3)(a0)
 			move.w	d0,\2_\4_size*4(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*4)(a0)
 			move.w	d0,\2_\4_size*5(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*5)(a0)
 			move.w	d0,\2_\4_size*6(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*6)(a0)
 			move.w	d0,\2_\4_size*7(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*7)(a0)
 			move.w	d0,\2_\4_size*8(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*8)(a0)
 			move.w	d0,\2_\4_size*9(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*9)(a0)
 			move.w	d0,\2_\4_size*10(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*10)(a0)
 			move.w	d0,\2_\4_size*11(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*11)(a0)
 			move.w	d0,\2_\4_size*12(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*12)(a0)
 			move.w	d0,\2_\4_size*13(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*13)(a0)
 			move.w	d0,\2_\4_size*14(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*14)(a0)
-			move.w	d0,\2_\4_size*15(a0)
-			add.l	d2,a0							;nächste Zeile in CL
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*15)-(\2_\4_size*16)(a0)
+			add.l	d2,a0	; skip 16 lines in cl
+			move.w	d0,(\2_\4_size*15)-(\2_\4_size*16)(a0)
 			dbf		 d7,\1_clear_second_copperlist_loop
 			rts
 		ENDC
@@ -922,74 +954,40 @@ CLEAR_COLOR00_CHUNKY_SCREEN	MACRO
 			move.l	\2_\3(a3),a0
 			ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00_high+WORD_SIZE,a0
 			moveq	#(\2_display_y_size/32)-1,d7
-\1_clear_second_copperlist_loop
-			move.w	d0,(a0)	; COLOR00 high
-			move.w	d1,\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high(a0) ; COLOR00 low
+clear_second_copperlist_loop
+			move.w	d0,(a0)	; COLOR00
 			move.w	d0,\2_\4_size*1(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*1)(a0)
 			move.w	d0,\2_\4_size*2(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*2)(a0)
 			move.w	d0,\2_\4_size*3(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*3)(a0)
 			move.w	d0,\2_\4_size*4(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*4)(a0)
 			move.w	d0,\2_\4_size*5(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*5)(a0)
 			move.w	d0,\2_\4_size*6(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*6)(a0)
 			move.w	d0,\2_\4_size*7(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*7)(a0)
 			move.w	d0,\2_\4_size*8(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*8)(a0)
 			move.w	d0,\2_\4_size*9(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*9)(a0)
 			move.w	d0,\2_\4_size*10(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*10)(a0)
 			move.w	d0,\2_\4_size*11(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*11)(a0)
 			move.w	d0,\2_\4_size*12(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*12)(a0)
 			move.w	d0,\2_\4_size*13(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*13)(a0)
 			move.w	d0,\2_\4_size*14(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*14)(a0)
 			move.w	d0,\2_\4_size*15(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*15)(a0)
 			move.w	d0,\2_\4_size*16(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*16)(a0)
 			move.w	d0,\2_\4_size*17(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*17)(a0)
 			move.w	d0,\2_\4_size*18(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*18)(a0)
 			move.w	d0,\2_\4_size*19(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*19)(a0)
 			move.w	d0,\2_\4_size*20(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*20)(a0)
 			move.w	d0,\2_\4_size*21(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*21)(a0)
 			move.w	d0,\2_\4_size*22(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*22)(a0)
 			move.w	d0,\2_\4_size*23(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*23)(a0)
 			move.w	d0,\2_\4_size*24(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*24)(a0)
 			move.w	d0,\2_\4_size*25(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*25)(a0)
 			move.w	d0,\2_\4_size*26(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*26)(a0)
 			move.w	d0,\2_\4_size*27(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*27)(a0)
 			move.w	d0,\2_\4_size*28(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*28)(a0)
 			move.w	d0,\2_\4_size*29(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*29)(a0)
 			move.w	d0,\2_\4_size*30(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*30)(a0)
-			move.w	d0,\2_\4_size*31(a0)
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*31)(a0)
-			move.w	d0,\2_\4_size*32(a0)
-			add.l	d2,a0							;nächste Zeile in CL
-			move.w	d1,(\2_ext\*RIGHT(\4,1)_COLOR00_low-\2_ext\*RIGHT(\4,1)_COLOR00_high)+(\2_\4_size*15)-(\2_\4_size*32)(a0)
+			add.l	d1,a0	; skip 32 lines in cl
+			move.w	d0,(\2_\4_size*31)-(\2_\4_size*32)(a0)
 			dbf	d7,\1_clear_second_copperlist_loop
 			rts
 		ENDC
@@ -997,228 +995,101 @@ CLEAR_COLOR00_CHUNKY_SCREEN	MACRO
 	ENDM
 
 
-RESTORE_COLOR00_CHUNKY_SCREEN	MACRO
+CLEAR_COLOR00_CHUNKY		MACRO
 ; Input
 ; \1 STRING:	Labels prefix
-; \2 STRING:	Labels prefix copperlist [cl1,cl2]
-; \3 STRING:	Name of copperlist [construction1,construction2]
+; \2 STRING:	["cl1", "cl2"] label prefix copperlist
+; \3 STRING:	["construction1","construction2"] name of copperlist
 ; \4 STRING:	"extension[1..n]"
-; \5 NUMBER:	Number of xommands per loop [16,32]
-; \6 LABEL:	Clear sub routine CPU (optional)
-; \7 LABEL:	Clear sub routine blitter (optional)
+; Result
 	IFC "","\1"
-		FAIL Macro RESTORE_COLOR00_CHUNKY_SCREEN: Labels prefix missing
+		FAIL Macro CLEAR_COLOR00_CHUNKY: Labels prefix missing
 	ENDC
 	IFC "","\2"
-		FAIL Macro RESTORE_COLOR00_CHUNKY_SCREEN: Labels prefix copperlist missing
+		FAIL Macro CLEAR_COLOR00_CHUNKY: Label prefix copperlist missing
 	ENDC
 	IFC "","\3"
-		FAIL Macro RESTORE_COLOR00_CHUNKY_SCREEN: Name of copperlist missing
+		FAIL Macro CLEAR_COLOR00_CHUNKY: Name of copperlist missing
 	ENDC
 	IFC "","\4"
-		FAIL Macro RESTORE_COLOR00_CHUNKY_SCREEN: "extension[1..n]" missing
-	ENDC
-	IFC "","\5"
-		FAIL Macro RESTORE_COLOR00_CHUNKY_SCREEN: Number of commands per loop missing
+		FAIL Macro CLEAR_COLOR00_CHUNKY: Extension missing
 	ENDC
 	CNOP 0,4
 	IFC "cl1","\2"
-restore_first_copperlist
-		IFEQ \1_restore_cl_cpu_enabled
-			IFC "","\6"
-				IFC "16","\5"
-					moveq	#-2,d0 ; 2nd word CWAIT
-					MOVEF.L	\2_\4_size*16,d1
-					move.l	\2_\3(a3),a0
-					ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_WAIT+WORD_SIZE,a0
-					moveq	#(\2_display_y_size/16)-1,d7
-restore_first_copperlist_loop
-					move.w	d0,(a0)	; restore CWAIT
-					move.w	d0,\2_\4_size*1(a0)
-					move.w	d0,\2_\4_size*2(a0)
-					move.w	d0,\2_\4_size*3(a0)
-					move.w	d0,\2_\4_size*4(a0)
-					move.w	d0,\2_\4_size*5(a0)
-					move.w	d0,\2_\4_size*6(a0)
-					move.w	d0,\2_\4_size*7(a0)
-					move.w	d0,\2_\4_size*8(a0)
-					move.w	d0,\2_\4_size*9(a0)
-					move.w	d0,\2_\4_size*10(a0)
-					move.w	d0,\2_\4_size*11(a0)
-					move.w	d0,\2_\4_size*12(a0)
-					move.w	d0,\2_\4_size*13(a0)
-					move.w	d0,\2_\4_size*14(a0)
-					move.w	d0,\2_\4_size*15(a0)
-					add.l	d1,a0							;16 Zeilen überspringen
-					move.w	d0,(\2_\4_size*15)-(\2_\4_size*16)(a0)
-					dbf	d7,restore_first_copperlist_loop
-					rts
-				ENDC
-				IFC "32","\5"
-					moveq	#-2,d0 ; 2nd word CWAIT
-					MOVEF.L	\2_\4_size*32,d1
-					move.l	\2_\3(a3),a0
-					ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_WAIT+WORD_SIZE,a0
-					moveq	#(\2_display_y_size/32)-1,d7
-restore_first_copperlist_loop
-					move.w	d0,(a0)	; resore CWAIT
-					move.w	d0,\2_\4_size*1(a0)
-					move.w	d0,\2_\4_size*2(a0)
-					move.w	d0,\2_\4_size*3(a0)
-					move.w	d0,\2_\4_size*4(a0)
-					move.w	d0,\2_\4_size*5(a0)
-					move.w	d0,\2_\4_size*6(a0)
-					move.w	d0,\2_\4_size*7(a0)
-					move.w	d0,\2_\4_size*8(a0)
-					move.w	d0,\2_\4_size*9(a0)
-					move.w	d0,\2_\4_size*10(a0)
-					move.w	d0,\2_\4_size*11(a0)
-					move.w	d0,\2_\4_size*12(a0)
-					move.w	d0,\2_\4_size*13(a0)
-					move.w	d0,\2_\4_size*14(a0)
-					move.w	d0,\2_\4_size*15(a0)
-					move.w	d0,\2_\4_size*16(a0)
-					move.w	d0,\2_\4_size*17(a0)
-					move.w	d0,\2_\4_size*18(a0)
-					move.w	d0,\2_\4_size*19(a0)
-					move.w	d0,\2_\4_size*20(a0)
-					move.w	d0,\2_\4_size*21(a0)
-					move.w	d0,\2_\4_size*22(a0)
-					move.w	d0,\2_\4_size*23(a0)
-					move.w	d0,\2_\4_size*24(a0)
-					move.w	d0,\2_\4_size*25(a0)
-					move.w	d0,\2_\4_size*26(a0)
-					move.w	d0,\2_\4_size*27(a0)
-					move.w	d0,\2_\4_size*28(a0)
-					move.w	d0,\2_\4_size*29(a0)
-					move.w	d0,\2_\4_size*30(a0)
-					add.l	d1,a0							;32 Zeilen überspringen
-					move.w	d0,(\2_\4_size*31)-(\2_\4_size*32)(a0)
-					dbf	d7,restore_first_copperlist_loop
-					rts
-				ENDC
-			ENDC
+clear_first_copperlist
+		bsr.s	clear_first_copperlist_init
+		move.l	\2_\3(a3),a0
+		ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00_1+WORD_SIZE,a0
+		moveq	#(\2_display_width-1)-1,d7
+clear_first_copperlist_loop
+		WAITBLIT
+		move.l	a0,BLTDPT-DMACONR(a6) ; destination
+		move.w	#(\1_clear_blit_y_size<<6)|(\1_clear_blit_x_size/WORD_BITS),BLTSIZE-DMACONR(a6)
+		addq.w	#LONGWORD_SIZE,a0
+		dbf	d7,clear_first_copperlist_loop
+		move.w	#DMAF_BLITHOG,DMACON-DMACONR(a6)
+		rts
+		CNOP 0,4
+clear_first_copperlist_init
+		move.w	#DMAF_BLITHOG|DMAF_SETCLR,DMACON-DMACONR(a6)
+		WAITBLIT
+		move.l	#(BC0F_DEST|ANBNC|ANBC|ABNC|ABC)<<16,BLTCON0-DMACONR(a6) ; minterm D=A
+		moveq	#-1,d0
+		move.l	d0,BLTAFWM-DMACONR(a6)
+		move.w	#\2_\4_size-\1_clear_blit_width,BLTDMOD-DMACONR(a6)
+		IFEQ color00_bits
+			moveq	#color00_bits,d0
+			move.w	d0,BLTADAT-DMACONR(a6)
+		ELSE
+			move.w	#color00_bits,BLTADAT-DMACONR(a6)
 		ENDC
-		IFEQ \1_restore_cl_blitter_enabled
-			IFC "","\7"
-				move.l	\2_\3(a3),a0
-				WAITBLIT
-				ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_WAIT+WORD_SIZE,a0
-				move.l	a0,BLTDPT-DMACONR(a6) ; detination
-				move.w	#\2_\4_size-\1_restore_blit_width,BLTDMOD-DMACONR(a6)
-				moveq	#-2,d0 ; 2nd word CWAIT
-				move.w	d0,BLTADAT-DMACONR(a6) ; source
-				move.w	#((\1_restore_blit_y_size<<6)|(\1_restore_blit_x_size/16),BLTSIZE-DMACONR(a6)
-				rts
-			ENDC
-		ENDC
+		rts
 	ENDC
 	IFC "cl2","\2"
-restore_second_copperlist
-		IFEQ \1_cpu_restore_cl_enabled
-			IFC "","\6"
-				IFC "16","\5"
-					moveq	#-2,d0 ; 2nd word CWAIT
-					MOVEF.L	\2_\4_size*16,d1
-					move.l	\2_\3(a3),a0
-					ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_WAIT+WORD_SIZE,a0
-					moveq	#(\2_display_y_size/16)-1,d7
-restore_second_copperlist_loop
-					move.w	d0,(a0) ; restore CWAIT
-					move.w	d0,\2_\4_size*1(a0)
-					move.w	d0,\2_\4_size*2(a0)
-					move.w	d0,\2_\4_size*3(a0)
-					move.w	d0,\2_\4_size*4(a0)
-					move.w	d0,\2_\4_size*5(a0)
-					move.w	d0,\2_\4_size*6(a0)
-					move.w	d0,\2_\4_size*7(a0)
-					move.w	d0,\2_\4_size*8(a0)
-					move.w	d0,\2_\4_size*9(a0)
-					move.w	d0,\2_\4_size*10(a0)
-					move.w	d0,\2_\4_size*11(a0)
-					move.w	d0,\2_\4_size*12(a0)
-					move.w	d0,\2_\4_size*13(a0)
-					move.w	d0,\2_\4_size*14(a0)
-					move.w	d0,\2_\4_size*15(a0)
-					add.l	d1,a0 ; skip lines
-					move.w	d0,(\2_\4_size*15)-(\2_\4_size*16)(a0)
-					dbf	d7,restore_second_copperlist_loop
-					rts
-				ENDC
-				IFC "32","\5"
-					moveq	 #-2,d0	; 2nd word CWAIT
-					MOVEF.L \2_\4_size*32,d1
-					move.l	\2_\3(a3),a0 
-					ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_WAIT+WORD_SIZE,a0
-					moveq	 #(\2_display_y_size/32)-1,d7
-restore_second_copperlist_loop
-					move.w	d0,(a0) ; restore CWAIT
-					move.w	d0,\2_\4_size*1(a0)
-					move.w	d0,\2_\4_size*2(a0)
-					move.w	d0,\2_\4_size*3(a0)
-					move.w	d0,\2_\4_size*4(a0)
-					move.w	d0,\2_\4_size*5(a0)
-					move.w	d0,\2_\4_size*6(a0)
-					move.w	d0,\2_\4_size*7(a0)
-					move.w	d0,\2_\4_size*8(a0)
-					move.w	d0,\2_\4_size*9(a0)
-					move.w	d0,\2_\4_size*10(a0)
-					move.w	d0,\2_\4_size*11(a0)
-					move.w	d0,\2_\4_size*12(a0)
-					move.w	d0,\2_\4_size*13(a0)
-					move.w	d0,\2_\4_size*14(a0)
-					move.w	d0,\2_\4_size*15(a0)
-					move.w	d0,\2_\4_size*16(a0)
-					move.w	d0,\2_\4_size*17(a0)
-					move.w	d0,\2_\4_size*18(a0)
-					move.w	d0,\2_\4_size*19(a0)
-					move.w	d0,\2_\4_size*20(a0)
-					move.w	d0,\2_\4_size*21(a0)
-					move.w	d0,\2_\4_size*22(a0)
-					move.w	d0,\2_\4_size*23(a0)
-					move.w	d0,\2_\4_size*24(a0)
-					move.w	d0,\2_\4_size*25(a0)
-					move.w	d0,\2_\4_size*26(a0)
-					move.w	d0,\2_\4_size*27(a0)
-					move.w	d0,\2_\4_size*28(a0)
-					move.w	d0,\2_\4_size*29(a0)
-					move.w	d0,\2_\4_size*30(a0)
-					add.l	d1,a0 ; skip lines
-					move.w	d0,(\2_\4_size*31)-(\2_\4_size*32)(a0)
-					dbf	d7,restore_second_copperlist_loop
-					rts
-				ENDC
-			ENDC
+clear_second_copperlist
+		bsr.s	clear_second_copperlist_init
+		move.l	\2_\3(a3),a0
+		ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00_1+WORD_SIZE,a0
+		moveq	#(\2_display_width-1)-1,d7
+clear_second_copperlist_loop
+		WAITBLIT
+		move.l	a0,BLTDPT-DMACONR(a6) ; destination
+		move.w	#(\1_clear_blit_y_size<<6)|(\1_clear_blit_x_size/WORD_BITS),BLTSIZE-DMACONR(a6)
+		addq.w	#LONGWORD_SIZE,a0
+		dbf	d7,clear_second_copperlist_loop
+		move.w	#DMAF_BLITHOG,DMACON-DMACONR(a6)
+		rts
+		CNOP 0,4
+clear_second_copperlist_init
+		move.w	#DMAF_BLITHOG|DMAF_SETCLR,DMACON-DMACONR(a6)
+		WAITBLIT
+		move.l	#(BC0F_DEST|ANBNC|ANBC|ABNC|ABC)<<16,BLTCON0-DMACONR(a6) ; minterm D=A
+		moveq	#-1,d0
+		move.l	d0,BLTAFWM-DMACONR(a6)
+		move.w	#\2_\4_size-\1_clear_blit_width,BLTDMOD-DMACONR(a6)
+		IFEQ color00_bits
+			moveq	#color00_bits,d0
+			move.w	d0,BLTADAT-DMACONR(a6)
+		ELSE
+			move.w	#color00_bits,BLTADAT-DMACONR(a6)
 		ENDC
-		IFEQ \1_blitter_restore_cl_enabled
-			IFC "","\7"
-				move.l	\2_\3(a3),a0	 
-				WAITBLIT
-				ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_WAIT+WORD_SIZE,a0
-				move.l	a0,BLTDPT-DMACONR(a6) ; Ziel = Copperliste
-				move.w	#\2_\4_size-\1_restore_blit_width,BLTDMOD-DMACONR(a6)
-				moveq	#-2,d0 ; 2nd word CWAIT
-				move.w	d0,BLTADAT-DMACONR(a6) ; source
-				move.w	#((\1_restore_blit_y_size<<6)|(\1_restore_blit_x_size/16),BLTSIZE-DMACONR(a6)
-				rts
-			ENDC
-		ENDC
+		rts
 	ENDC
 	ENDM
 
 
 SET_TWISTED_BACKGROUND_BARS	MACRO
 ; Input
-; \0 STRING:	size ["B","W"]
+; \0 STRING:	["B", "W"] size
 ; \1 STRING:	Labels prefix
-; \2 STRING:	Labels prefix copperlist ["cl1","cl2"]
-; \3 STRING:	Name of copperlist ["construction2","construction3"]
+; \2 STRING:	["cl1", "cl2"] labels prefix copperlist
+; \3 STRING:	["construction2","construction3"] name of copperlist
 ; \4 STRING:	"extension[1..n]"
-; \5 NUMBER:	Bar height [32,48] lines
+; \5 NUMBER:	[32, 48] bar height in lines
 ; \6 POINTER:	BPLAM table
-; \7 STRING:	Pointer base [pc,a3]
+; \7 STRING:	["pc", "a3"] pointer base
 ; \8 WORD:	Offset table start (optional)
-; \9 STRING:	"45" columns (optional)
+; \9 STRING:	["45"] number of columns (optional)
 ; Result
 	IFC "","\0"
 		FAIL Macro SET_TWISTED_BACKGROUND_BARS: Size missing
@@ -1233,7 +1104,7 @@ SET_TWISTED_BACKGROUND_BARS	MACRO
 		FAIL Macro SET_TWISTED_BACKGROUND_BARS: Name of copperlist missing
 	ENDC
 	IFC "","\4"
-		FAIL Macro SET_TWISTED_BACKGROUND_BARS: "extension[1..n]" missing
+		FAIL Macro SET_TWISTED_BACKGROUND_BARS: Extension missing
 	ENDC
 	IFC "","\5"
 		FAIL Macro SET_TWISTED_BACKGROUND_BARS: Bar height missing
@@ -1252,7 +1123,7 @@ SET_TWISTED_BACKGROUND_BARS	MACRO
 	ENDC
 	lea	\1_yz_coords(pc),a0
 	move.l	\2_\3(a3),a2
-	ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_BPLCON4_1+WORD_SIZE,a2
+	ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00_1+WORD_SIZE,a2
 	IFC "pc","\7"
 		lea	\1_\6(\7),a5	; pointer BPLAM table
 	ENDC
@@ -1298,16 +1169,16 @@ SET_TWISTED_BACKGROUND_BARS	MACRO
 
 SET_TWISTED_FOREGROUND_BARS	MACRO
 ; Input
-; \0 STRING:	Size [B/W]
+; \0 STRING:	["B", "W"] size
 ; \1 STRING:	Labels prefix
-; \2 STRING:	Labels prefix copperlist [cl1,cl2]
-; \3 STRING:	Name of copperlist "construction[2,3]"
+; \2 STRING:	["cl1", "cl2"] labels prefix copperlist
+; \3 STRING:	"construction[2,3]" name of copperlist
 ; \4 STRING:	"extension[1..n]"
-; \5 NUMBER:	Bar height [32, 48] lines
+; \5 NUMBER:	[32, 48] bar height in lines
 ; \6 POINTER:	BPLAM table
-; \7 STRING:	Pointer base [pc, a3]
+; \7 STRING:	["pc", "a3"] pointer base
 ; \8 WORD:	Offset table start (optional)
-; \9 STRING:	"45" columns (optional)
+; \9 STRING:	["45"] number of columns (optional)
 ; Result
 	IFC "","\0"
 		FAIL Macro SET_TWISTED_FOREGROUND_BARS: Size missing
@@ -1322,7 +1193,7 @@ SET_TWISTED_FOREGROUND_BARS	MACRO
 		FAIL Macro SET_TWISTED_FOREGROUND_BARS: Name of copperlist missing
 	ENDC
 	IFC "","\4"
-		FAIL Macro SET_TWISTED_FOREGROUND_BARS: "extension[1..n]" missing
+		FAIL Macro SET_TWISTED_FOREGROUND_BARS: Extension missing
 	ENDC
 	IFC "","\5"
 		FAIL Macro SET_TWISTED_FOREGROUND_BARS: Bar height missing
@@ -1341,7 +1212,7 @@ SET_TWISTED_FOREGROUND_BARS	MACRO
 	ENDC
 	lea	\1_yz_coords(pc),a0
 	move.l	\2_\3(a3),a2
-	ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_BPLCON4_1+WORD_SIZE,a2
+	ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00_1+WORD_SIZE,a2
 	IFC "pc","\7"
 		lea	\1_\6(\7),a5	; pointer BPLAM table
 	ENDC
@@ -1387,11 +1258,11 @@ SET_TWISTED_FOREGROUND_BARS	MACRO
 
 COPY_TWISTED_BAR		MACRO
 ; Input
-; \0 STRING:	Size ["B","W"]
+; \0 STRING:	["B", "W"] size
 ; \1 STRING:	Labels prefix
-; \2 STRING:	Labelsa prefix copperlist ["cl1","cl2"]
+; \2 STRING:	["cl1", "cl2"] labels prefix copperlist
 ; \3 STRING:	"extension[1..n]"
-; \4 NUMBER:	Bar height [31] lines
+; \4 NUMBER:	[31] bar height in lines
 	IFC "","\0"
 		FAIL Macro COPY_TWISTED_BAR: Size missing
 	ENDC
@@ -1402,7 +1273,7 @@ COPY_TWISTED_BAR		MACRO
 		FAIL Macro COPY_TWISTED_BAR: Labels prefix copperlist missing
 	ENDC
 	IFC "","\3"
-		FAIL Macro COPY_TWISTED_BAR: "extension[1..n]" missing
+		FAIL Macro COPY_TWISTED_BAR: Extension missing
 	ENDC
 	IFC "","\4"
 		FAIL Macro COPY_TWISTED_BAR: Bar height missing

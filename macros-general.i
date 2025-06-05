@@ -25,19 +25,19 @@ wait_right_button_loop\@
 	ENDM
 
 
-WAIT_MOUSE			MACRO	; ONLY for testing purposes
+WAIT_MOUSE			MACRO	; !ONLY for testing purposes!
 ; Input
 ; Result
 wm_loop\@
-	move.w	$dff006,$dff180
-	btst	#2,$dff016
+	move.w	_CUSTOM+VHPOSR,_CUSTOM+COLOR00
+	btst	#POTINPB_DATLY-8,POTINP-DMACONR(a6)
 	bne.s	wm_loop\@
 	ENDM
 
 
 RASTER_TIME			MACRO
 ; Input
-; \1 HEXNUMBER:	RGB4 value (optional)
+; \1 WORD:	RGB4 value (optional)
 ; Result
 	move.l	d0,-(a7)
 	move.w	VPOSR-DMACONR(a6),d0
@@ -58,8 +58,11 @@ raster_time_skip\@
 
 SHOW_BEAM_POSITION		MACRO
 ; Input
-; \1 WORD:	RGB4 color value
+; \1 WORD:	RGB4 value
 ; Result
+	IFC "","\1"
+		FAIL Macro SHOW_BEAM_POSITION: RGB4 value missing
+	ENDC
 	MOVEF.W	bplcon3_bits1,d0
 	move.w	d0,BPLCON3-DMACONR(a6)
 	move.w	#\1,COLOR00-DMACONR(a6)
@@ -84,13 +87,13 @@ AUDIO_TEST			MACRO
 	move.w	d0,AUD1VOL-DMACONR(a6)
 	move.w	d0,AUD2VOL-DMACONR(a6)
 	move.w	d0,AUD3VOL-DMACONR(a6)
-	move.w	#DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3|DMAF_SETCLR,DMACON-DMACONR(a6) ; start replay
+	move.w	#DMAF_AUD0|DMAF_AUD1|DMAF_AUD2|DMAF_AUD3|DMAF_SETCLR,DMACON-DMACONR(a6) ; start audio dma replay
 	ENDM
 
 
 MOVEF				MACRO
 ; Input
-; \0 STRING:	Size [B/W/L]
+; \0 STRING:	["B", "W", "L"] size
 ; \1 NUMBER:	Source value
 ; \2 STRING:	Target
 ; Result
@@ -151,18 +154,18 @@ MOVEF				MACRO
 
 ADDF				MACRO
 ; Input
-; \0 STRING:	Size [B/W/L]
+; \0 STRING:	["B", "W", "L"] size
 ; \1 NUMBER:	8/16 bit source
 ; \2 STRING:	Target
 ; Result
 	IFC "","\0"
-	 FAIL Macro ADDF: Size missing
+		FAIL Macro ADDF: Size missing
 	ENDC
 	IFC "","\1"
-	 FAIL Macro ADDF: 8/16 bit source missing
+		FAIL Macro ADDF: Source missing
 	ENDC
 	IFC "","\2"
-	 FAIL Macro ADDF: destination missing
+		FAIL Macro ADDF: Destination missing
 	ENDC
 	IFEQ \1
 		MEXIT
@@ -223,7 +226,7 @@ ADDF				MACRO
 
 SUBF				MACRO
 ; Input
-; \0 STRING:	Size [B/W/L]
+; \0 STRING:	["B", "W", "L"] size
 ; \1 NUMBER:	8/16 bit source value
 ; \2 STRING:	Target
 ; Result
@@ -231,7 +234,7 @@ SUBF				MACRO
 		FAIL Macro SUBF: Size missing
 	ENDC
 	IFC "","\1"
-		FAIL Macro SUBF: 8/16 bit value missing
+		FAIL Macro SUBF: Source missing
 	ENDC
 	IFC "","\2"
 		FAIL Macro SUBF: Target missing
@@ -280,7 +283,7 @@ SUBF				MACRO
 
 MULUF				MACRO
 ; Input
-; \0 STRING:	Size [B/W/L]
+; \0 STRING:	["B", "W", "L"] size
 ; \1 NUMBER:	16/32 bit factor
 ; \2 NUMBER:	Product
 ; \3 STRING:	Scratch register
@@ -289,7 +292,7 @@ MULUF				MACRO
 		FAIL Macro MULUF: Size missing
 	ENDC
 	IFC "","\1"
-		FAIL Macro MULUF: 16/32 bit factor missing
+		FAIL Macro MULUF: Factor missing
 	ENDC
 	IFC "","\2"
 		FAIL Macro MULUF: Product missing
@@ -1201,7 +1204,7 @@ MULSF				MACRO
 
 DIVUF				MACRO
 ; Input
-; \0 STRING:	Size [W]
+; \0 STRING:	["W"] size
 ; \1 NUMBER:	Divisor
 ; \2 NUMBER:	Divident
 ; \3 STRING:	Scratch register
@@ -1226,9 +1229,9 @@ divison_loop\@
 
 CMPF MACRO
 ; Input
-; \0 STRING:	Size [B/W/L]
+; \0 STRING:	["B", "W", "L"] size
 ; \1 NUMBER:	8/16/32 bit source
-; \2 STRING:	destination
+; \2 STRING:	Destination
 ; Result
 	IFC "","\0"
 		FAIL Macro CMPF: Size missing
@@ -1257,7 +1260,7 @@ CPU_INIT_COLOR			MACRO
 		FAIL Macro CPU_INIT_COLOR: First color register offset missing
 	ENDC
 	IFC "","\2"
-		FAIL Macro CPU_INIT_COLOR: Number of color missing
+		FAIL Macro CPU_INIT_COLOR: Number of colors missing
 	ENDC
 	lea	(\1)-DMACONR(a6),a0	; first color register
 	moveq	#\2-1,d7		; number of colors
@@ -1270,7 +1273,7 @@ CPU_INIT_COLOR			MACRO
 
 INIT_CHARS_OFFSETS MACRO
 ; Input
-; \0 STRING:	Size [W/L]
+; \0 STRING:	["W", "L"] size
 ; \1 STRING:	Labels prefix
 ; Result
 	CNOP 0,4
@@ -1327,8 +1330,8 @@ INIT_CHARS_OFFSETS MACRO
 INIT_CHARS_X_POSITIONS	MACRO
 ; Input
 ; \1 STRING:	Labels prefix
-; \2 STRING:	Pixel resolution ["LORES", "HIRES", "SHIRES"]
-; \3 STRING:	Read "BACKWARDS" (optional)
+; \2 STRING:	["LORES", "HIRES", "SHIRES"] pixel resolution
+; \3 STRING:	["BACKWARDS"] (optional)
 ; \4 NUMBER:	Number of characters (optional)
 ; Result
 	CNOP 0,4
@@ -1422,11 +1425,11 @@ INIT_CHARS_IMAGES		MACRO
 
 GET_NEW_CHAR_IMAGE		MACRO
 ; Input
-; \0 STRING:	Size [W/L]
+; \0 STRING:	["W", "L"] size
 ; \1 STRING:	Labels prefix
 ; \2 LABEL:	Additional codes check sub routine (optional)
-; \3 STRING:	"NORESTART" (optional)
-; \4 STRING:	"BACKWARDS" (optional)
+; \3 STRING:	["NORESTART"] (optional)
+; \4 STRING:	["BACKWARDS"] (optional)
 ; Result
 ; d0.l		Pointer character image
 	IFC "","\0"
@@ -1606,8 +1609,8 @@ COPY_IMAGE_TO_BITPLANE		MACRO
 
 INIT_DISPLAY_PATTERN		MACRO
 ; Input
-; \1 STRING: Labels prefix
-; \2 NUMBER: Column width
+; \1 STRING:	Labels prefix
+; \2 NUMBER:	Column width
 ; Result
 	IFC "","\1"
 		FAIL Macro INIT_DISPLAY_PATTERN: Labels prefix missing
@@ -1669,7 +1672,7 @@ INIT_DISPLAY_PATTERN		MACRO
 GET_SINE_BARS_YZ_COORDINATES MACRO
 ; Input
 ; \1 STRING:	Labels prefix
-; \2 NUMBER:	Sine table length [256, 360, 512]
+; \2 NUMBER:	[256, 360, 512] sine table length
 ; \3 WORD:	Multiplicator y offset in copperlist
 ; Result
 	IFC "","\1"
@@ -1679,7 +1682,7 @@ GET_SINE_BARS_YZ_COORDINATES MACRO
 		FAIL Macro GET_SINE_BARS_YZ_COORDINATES: Sine table length missing
 	ENDC
 	IFC "","\3"
-		FAIL Macro GET_SINE_BARS_YZ_COORDINATES: Multiplicator y offset in copperlist missing
+		FAIL Macro GET_SINE_BARS_YZ_COORDINATES: Multiplier y offset in copperlist missing
 	ENDC
 	CNOP 0,4
 \1_get_yz_coordinates
@@ -1790,7 +1793,7 @@ GET_SINE_BARS_YZ_COORDINATES MACRO
 GET_TWISTED_BARS_YZ_COORDINATES MACRO
 ; Input
 ; \1 STRING:	Labels prefix
-; \2 NUMBER:	Sine table length [256, 360, 512]
+; \2 NUMBER:	[256, 360, 512] sine table length
 ; \3 WORD:	Multiplicator y offset in cl
 ; Result
 	IFC "","\1"
@@ -1800,7 +1803,7 @@ GET_TWISTED_BARS_YZ_COORDINATES MACRO
 		FAIL Macro GET_TWISTED_BARS_YZ_COORDINATES: Sine table length missing
 	ENDC
 	IFC "","\3"
-		FAIL Macro GET_TWISTED_BARS_YZ_COORDINATES: Multiplicator y offset in copperlist missing
+		FAIL Macro GET_TWISTED_BARS_YZ_COORDINATES: Multiplier y offset in copperlist missing
 	ENDC
 	CNOP 0,4
 \1_get_yz_coordinates
@@ -1910,39 +1913,29 @@ COLOR_FADER			MACRO
 	moveq	#NIBBLE_MASK_LOW,d5
 	and.b	d3,d5			; B4 destination
 	clr.b	d3			; R4 destination
-
-
-; ** Rotwert **
 \1_check_red_nibble
 	cmp.w	d3,d0
 	bgt.s	\1_decrease_red
 	blt.s	\1_increase_red
 \1_matched_red
 	subq.w	#1,d6			; destination red reached
-
-; ** Grünwert **
 \1_check_green_nibble
 	cmp.w	d4,d1
 	bgt.s	\1_decrease_green
 	blt.s	\1_increase_green
 \1_matched_green
 	subq.w	#1,d6			; destination green reached
-
-; ** Blauwert **
 \1_check_blue_nibble
 	cmp.b	d5,d2
 	bgt.s	\1_decrease_blue
 	blt.s	\1_increase_blue
 \1_matched_blue
 	subq.w	#1,d6			; destination blue reached
-
 \1_merge_rgb_nibbles
 	move.w	d0,d3                   ; R00
 	or.w	d1,d3			; RG0
 	or.b	d2,d3			; RGB
-
-; ** Farbwerte in Copperliste eintragen **
-	move.l	d3,(a0)+		; RGB4
+	move.l	d3,(a0)+		; store RGB4 in cl
 	dbf	d7,\1_fader_loop
 	rts
 	CNOP 0,4
@@ -2065,14 +2058,14 @@ ROTATE_Z_AXIS			MACRO
 
 INIT_COLOR_GRADIENT_RGB4	MACRO
 ; Input
-; \1 HEXNUMBER:		RGB4 current
-; \2 HEXNUMBER:		RGB4 destination
+; \1 NUMBER:		RGB4 value current
+; \2 NUMBER:		RGB4 value destination
 ; \3 BYTE SIGNED:	Number of colors
 ; \4 NUMBER:		Color step for RGB (optional)
 ; \5 POINTER:		Color table (optional)
-; \6 STRING:		Pointer base [pc,a3] (optional)
-; \7 LONGWORD:		Offset next entry (optional)
-; \8 LONGWORD:		Offset table start (optional)
+; \6 STRING:		["pc", "a3"] pointer base (optional)
+; \7 LONGWORD:		Offset table start (optional)
+; \8 LONGWORD:		Offset next entry (optional)
 ; Result
 	IFC "","\1"
 		FAIL Macro COLOR_GRADIENT_RGB4: RGB4 current missing
@@ -2094,7 +2087,7 @@ INIT_COLOR_GRADIENT_RGB4	MACRO
 		ENDC
 	ENDC
 	IFNC "","\8"
-		add.l	#(\8)*WORD_SIZE,a0 ; offset table start
+		add.l	#(\7)*WORD_SIZE,a0 ; offset table start
 	ENDC
 	IFNC "","\4"
 		move.w	#(\4)<<8,a1	; increase/decrease red
@@ -2102,7 +2095,7 @@ INIT_COLOR_GRADIENT_RGB4	MACRO
 		move.w	#\4,a4		; increase/decrease blue
 	ENDC
 	IFNC "","\7"
-		move.w	#(\7)*WORD_SIZE,a5 ; offset next entry
+		move.w	#(\8)*WORD_SIZE,a5 ; offset next entry
 	ENDC
 	MOVEF.W	\3-1,d7			; number of colors
 	bsr	init_color_gradient_RGB4_loop
@@ -2172,4 +2165,54 @@ INIT_INTUI_TEXT			MACRO
 	lea	\6(pc),a1
 	move.l	a1,it_IText(a0)
 	move.l	d0,it_NextText(a0)
+	ENDM
+
+
+INIT_MIRROR_COLOR_TABLE		MACRO
+; Input
+; \1 STRING:		Labels prefix
+; \2 BYTE SIGNED:	Number of color gradients
+; \3 BYTE SIGNED:	Number of segments
+; \4 POINTER:		Source: color table
+; \5 POINTER:		Destination: color table
+; \6 STRING:		["pc", "a3"] pointer base for destination
+; Result
+	CNOP 0,4
+\1_init_mirror_color_table
+	IFC "","\1"
+		FAIL Macro MIRROR_COLOR_TABLE: Labels prefix missing
+	ENDC
+	IFC "","\2"
+		FAIL Macro INIT_MIRROR_COLOR_TABLE: Number of color gradients missing
+	ENDC
+	IFC "","\3"
+		FAIL Macro INIT_MIRROR_COLOR_TABLE: Number of color segments missing
+	ENDC
+	IFC "","\4"
+		FAIL Macro INIT_MIRROR_COLOR_TABLE: Source color table missing
+	ENDC
+	IFC "","\5"
+		FAIL Macro INIT_MIRROR_COLOR_TABLE: Destination color table missing
+	ENDC
+	IFC "","\6"
+		FAIL Macro INIT_MIRROR_COLOR_TABLE: Pointer base for destination missing
+	ENDC
+	lea	\4(pc),a0		; source: color table
+	IFC "pc","\6"
+		lea	\1_\5(\6),a1	; destination: color table
+	ENDC
+	IFC "a3","\6"
+		move.l	\5(\6),a1	; destination: color table
+	ENDC
+	moveq	#\3-1,d7		; number of segments
+\1_init_mirror_color_table_loop1
+	lea	(\2-1)*2*WORD_SIZE(a1),a2 ; end of destination segment
+	moveq	#\2-1,d6		; number of color gradients
+\1_init_mirror_color_table_loop2
+	move.w	(a0),(a1)+		; copy RGB4 value
+	move.w	(a0)+,-(a2)
+	dbf	d6,\1_init_mirror_color_table_loop2
+	ADDF.W	\2*WORD_SIZE,a1
+	dbf	d7,\1_init_mirror_color_table_loop1
+	rts
 	ENDM
