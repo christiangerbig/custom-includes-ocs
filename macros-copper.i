@@ -338,13 +338,13 @@ COP_INIT_COLOR			MACRO
 	ENDM
 
 
-COP_INIT_COLOR00_REGISTERS	MACRO
+COP_INIT_COLOR00_SCREEN	MACRO
 ; Input
 ; \1 STRING:	Labels prefix
 ; \2 STRING:	["YWRAP"] (optional)
 ; Result
 	IFC "","\1"
-		FAIL Macro COP_INIT_COLOR00_REGISTERS: Labels prefix missing
+		FAIL Macro COP_INIT_COLOR00_SCREEN: Labels prefix missing
 	ENDC
 	CNOP 0,4
 \1_init_color00
@@ -846,14 +846,14 @@ CLEAR_COLOR00_SCREEN		MACRO
 	ENDC
 	CNOP 0,4
 	IFC "cl1","\2"
-clear_first_copperlist
+\1_clear_first_copperlist
 		IFC "16","\5"
 			move.w	#color00_bits,d0
 			MOVEF.L	\2_\4_size*16,d1
 			move.l	\2_\3(a3),a0
 			ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00+WORD_SIZE,a0
 			moveq	#(\2_display_y_size/16)-1,d7
-clear_first_copperlist_loop
+\1_clear_first_copperlist_loop
 			move.w	d0,(a0)	; COLOR00
 			move.w	d0,\2_\4_size*1(a0)
 			move.w	d0,\2_\4_size*2(a0)
@@ -875,12 +875,12 @@ clear_first_copperlist_loop
 			rts
 		ENDC
 		IFC "32","\5"
-			move.w	#color00_high_bits,d0
-			MOVEF.L \2_\4_size*32,d2
+			move.w	#color00_bits,d0
+			MOVEF.L \2_\4_size*32,d1
 			move.l	\2_\3(a3),a0
 			ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00+WORD_SIZE,a0
 			moveq	#(\2_display_y_size/32)-1,d7
-clear_first_copperlist_loop
+\1_clear_first_copperlist_loop
 			move.w	d0,(a0)	; COLOR00
 			move.w	d0,\2_\4_size*1(a0)
 			move.w	d0,\2_\4_size*2(a0)
@@ -919,14 +919,14 @@ clear_first_copperlist_loop
 		ENDC
 	ENDC
 	IFC "cl2","\2"
-clear_second_copperlist
+\1_clear_second_copperlist
 		IFC "16","\5"
 			move.w	#color00_bits,d0
 			MOVEF.L	\2_\4_size*16,d1
 			move.l	\2_\3(a3),a0
-			ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00_high+WORD_SIZE,a0
+			ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00+WORD_SIZE,a0
 			moveq	#(\2_display_y_size/16)-1,d7
-clear_second_copperlist_loop
+\1_clear_second_copperlist_loop
 			move.w	d0,(a0)	; COLOR00
 			move.w	d0,\2_\4_size*1(a0)
 			move.w	d0,\2_\4_size*2(a0)
@@ -942,19 +942,18 @@ clear_second_copperlist_loop
 			move.w	d0,\2_\4_size*12(a0)
 			move.w	d0,\2_\4_size*13(a0)
 			move.w	d0,\2_\4_size*14(a0)
-			add.l	d2,a0	; skip 16 lines in cl
+			add.l	d1,a0	; skip 16 lines in cl
 			move.w	d0,(\2_\4_size*15)-(\2_\4_size*16)(a0)
-			dbf		 d7,\1_clear_second_copperlist_loop
+			dbf	d7,\1_clear_second_copperlist_loop
 			rts
 		ENDC
 		IFC "32","\5"
-			move.w	#color00_high_bits,d0
-			move.w	#color00_low_bits,d1
-			MOVEF.L	\2_\4_size*32,d2
+			move.w	#color00_bits,d0
+			MOVEF.L	\2_\4_size*32,d1
 			move.l	\2_\3(a3),a0
-			ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00_high+WORD_SIZE,a0
+			ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00+WORD_SIZE,a0
 			moveq	#(\2_display_y_size/32)-1,d7
-clear_second_copperlist_loop
+\1_clear_second_copperlist_loop
 			move.w	d0,(a0)	; COLOR00
 			move.w	d0,\2_\4_size*1(a0)
 			move.w	d0,\2_\4_size*2(a0)
@@ -1016,12 +1015,12 @@ CLEAR_COLOR00_CHUNKY		MACRO
 	ENDC
 	CNOP 0,4
 	IFC "cl1","\2"
-clear_first_copperlist
-		bsr.s	clear_first_copperlist_init
+\1_clear_first_copperlist
+		bsr.s	\1_clear_first_copperlist_init
 		move.l	\2_\3(a3),a0
 		ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00_1+WORD_SIZE,a0
 		moveq	#(\2_display_width-1)-1,d7
-clear_first_copperlist_loop
+\1_clear_first_copperlist_loop
 		WAITBLIT
 		move.l	a0,BLTDPT-DMACONR(a6) ; destination
 		move.w	#(\1_clear_blit_y_size<<6)|(\1_clear_blit_x_size/WORD_BITS),BLTSIZE-DMACONR(a6)
@@ -1030,7 +1029,7 @@ clear_first_copperlist_loop
 		move.w	#DMAF_BLITHOG,DMACON-DMACONR(a6)
 		rts
 		CNOP 0,4
-clear_first_copperlist_init
+\1_clear_first_copperlist_init
 		move.w	#DMAF_BLITHOG|DMAF_SETCLR,DMACON-DMACONR(a6)
 		WAITBLIT
 		move.l	#(BC0F_DEST|ANBNC|ANBC|ABNC|ABC)<<16,BLTCON0-DMACONR(a6) ; minterm D=A
@@ -1046,21 +1045,21 @@ clear_first_copperlist_init
 		rts
 	ENDC
 	IFC "cl2","\2"
-clear_second_copperlist
-		bsr.s	clear_second_copperlist_init
+\1_clear_second_copperlist
+		bsr.s	\1_clear_second_copperlist_init
 		move.l	\2_\3(a3),a0
 		ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00_1+WORD_SIZE,a0
 		moveq	#(\2_display_width-1)-1,d7
-clear_second_copperlist_loop
+\1_clear_second_copperlist_loop
 		WAITBLIT
 		move.l	a0,BLTDPT-DMACONR(a6) ; destination
 		move.w	#(\1_clear_blit_y_size<<6)|(\1_clear_blit_x_size/WORD_BITS),BLTSIZE-DMACONR(a6)
 		addq.w	#LONGWORD_SIZE,a0
-		dbf	d7,clear_second_copperlist_loop
+		dbf	d7,\1_clear_second_copperlist_loop
 		move.w	#DMAF_BLITHOG,DMACON-DMACONR(a6)
 		rts
 		CNOP 0,4
-clear_second_copperlist_init
+\1_clear_second_copperlist_init
 		move.w	#DMAF_BLITHOG|DMAF_SETCLR,DMACON-DMACONR(a6)
 		WAITBLIT
 		move.l	#(BC0F_DEST|ANBNC|ANBC|ABNC|ABC)<<16,BLTCON0-DMACONR(a6) ; minterm D=A
@@ -1080,20 +1079,15 @@ clear_second_copperlist_init
 
 SET_TWISTED_BACKGROUND_BARS	MACRO
 ; Input
-; \0 STRING:	["B", "W"] size
 ; \1 STRING:	Labels prefix
 ; \2 STRING:	["cl1", "cl2"] labels prefix copperlist
 ; \3 STRING:	["construction2","construction3"] name of copperlist
 ; \4 STRING:	"extension[1..n]"
-; \5 NUMBER:	[32, 48] bar height in lines
-; \6 POINTER:	BPLAM table
+; \5 NUMBER:	[24] bar height in lines
+; \6 POINTER:	color table
 ; \7 STRING:	["pc", "a3"] pointer base
 ; \8 WORD:	Offset table start (optional)
-; \9 STRING:	["45"] number of columns (optional)
 ; Result
-	IFC "","\0"
-		FAIL Macro SET_TWISTED_BACKGROUND_BARS: Size missing
-	ENDC
 	IFC "","\1"
 		FAIL Macro SET_TWISTED_BACKGROUND_BARS: Labels prefix missing
 	ENDC
@@ -1110,7 +1104,7 @@ SET_TWISTED_BACKGROUND_BARS	MACRO
 		FAIL Macro SET_TWISTED_BACKGROUND_BARS: Bar height missing
 	ENDC
 	IFC "","\6"
-		FAIL Macro SET_TWISTED_BACKGROUND_BARS: BPLAM table missing
+		FAIL Macro SET_TWISTED_BACKGROUND_BARS: Color table missing
 	ENDC
 	IFC "","\7"
 		FAIL Macro SET_TWISTED_BACKGROUND_BARS: Pointer base missing
@@ -1118,71 +1112,52 @@ SET_TWISTED_BACKGROUND_BARS	MACRO
 	CNOP 0,4
 \1_set_background_bars
 	movem.l	a4-a5,-(a7)
-	IFC "B","\0"
-		moveq	#\1_bar_height*BYTE_SIZE,d4
-	ENDC
-	lea	\1_yz_coords(pc),a0
+	MOVEF.L	\1_\5*WORD_SIZE,d4
+	lea	\1_yz_coordinates(pc),a0
 	move.l	\2_\3(a3),a2
 	ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00_1+WORD_SIZE,a2
 	IFC "pc","\7"
-		lea	\1_\6(\7),a5	; pointer BPLAM table
+		lea	\1_\6(\7),a5	; pointer color table
 	ENDC
 	IFC "a3","\7"
-		move.l \6(\7),a5	; pointer BPLAM table
+		move.l \6(\7),a5	; pointer collor table
 	ENDC
 	IFNC "","\8"
-		add.l	#\8*BYTE_SIZE,a5 ; offset table start
+		ADDQ.W	\8*WORD_SIZE,a5 ; offset table start
 	ENDC
-	IFC "45","\9"
-		moveq	#(\2_display_width)-1-1,d7 ; number of columns
-	ELSE
-		moveq	#\2_display_width-1,d7 ; number of columns
-	ENDC
+	moveq	#(\2_display_width-1)-1,d7 ; number of columns
 \1_set_background_bars_loop1
-	move.l	a5,a1			; pointer BPLAM table
+	move.l	a5,a1			; pointer color table
 	moveq	#\1_bars_number-1,d6
 \1_set_background_bars_loop2
 	move.l	(a0)+,d0		; low word: y position, high word: z vector
-	IFC "B","\0"
-		bmi	\1_skip_background_bar
-	ENDC
-	IFC "W","\0"
-		bmi	\1_no_background_bar
-	ENDC
-\1_set_background_bar
-	lea	(a2,d0.w*4),a4		; y offset
-	COPY_TWISTED_BAR.\0 \1,\2,\4,\5
-\1_no_background_bar
+	bpl.s	\1_no_background_bars_skip1
+	add.l	d4,a1
+	bra.s	\1_no_background_bars_skip2
+	CNOP 0,4
+\1_no_background_bars_skip1
+	lea	(a2,d0.w),a4		; y offset
+	COPY_TWISTED_BAR \1,\2,\4,\5
+\1_no_background_bars_skip2
 	dbf	d6,\1_set_background_bars_loop2
 	addq.w	#LONGWORD_SIZE,a2	; next column in cl
 	dbf	d7,\1_set_background_bars_loop1
 	movem.l	(a7)+,a4-a5
 	rts
-	IFC "B","\0"
-		CNOP 0,4
-\1_skip_background_bar
-		add.l	d4,a1		; skip BPLAMs
-		bra.s	\1_no_background_bar
-	ENDC
 	ENDM
 
 
 SET_TWISTED_FOREGROUND_BARS	MACRO
 ; Input
-; \0 STRING:	["B", "W"] size
 ; \1 STRING:	Labels prefix
 ; \2 STRING:	["cl1", "cl2"] labels prefix copperlist
 ; \3 STRING:	"construction[2,3]" name of copperlist
 ; \4 STRING:	"extension[1..n]"
-; \5 NUMBER:	[32, 48] bar height in lines
-; \6 POINTER:	BPLAM table
+; \5 NUMBER:	[24] bar height in lines
+; \6 POINTER:	Color table
 ; \7 STRING:	["pc", "a3"] pointer base
 ; \8 WORD:	Offset table start (optional)
-; \9 STRING:	["45"] number of columns (optional)
 ; Result
-	IFC "","\0"
-		FAIL Macro SET_TWISTED_FOREGROUND_BARS: Size missing
-	ENDC
 	IFC "","\1"
 		FAIL Macro SET_TWISTED_FOREGROUND_BARS: Labels prefix missing
 	ENDC
@@ -1199,7 +1174,7 @@ SET_TWISTED_FOREGROUND_BARS	MACRO
 		FAIL Macro SET_TWISTED_FOREGROUND_BARS: Bar height missing
 	ENDC
 	IFC "","\6"
-		FAIL Macro SET_TWISTED_FOREGROUND_BARS: BPLAM table missing
+		FAIL Macro SET_TWISTED_FOREGROUND_BARS: Color table missing
 	ENDC
 	IFC "","\7"
 		FAIL Macro SET_TWISTED_FOREGROUND_BARS: Pointer base missing
@@ -1207,65 +1182,47 @@ SET_TWISTED_FOREGROUND_BARS	MACRO
 	CNOP 0,4
 \1_set_foreground_bars
 	movem.l	a4-a5,-(a7)
-	IFC "B","\0"
-		moveq	#\1_bar_height*BYTE_SIZE,d4
-	ENDC
-	lea	\1_yz_coords(pc),a0
+	MOVEF.L	\1_\5*WORD_SIZE,d4
+	lea	\1_yz_coordinates(pc),a0
 	move.l	\2_\3(a3),a2
 	ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00_1+WORD_SIZE,a2
 	IFC "pc","\7"
-		lea	\1_\6(\7),a5	; pointer BPLAM table
+		lea	\1_\6(\7),a5	; pointer color table
 	ENDC
 	IFC "a3","\7"
-		move.l	\6(\7),a5	; pointer BPLAM table
+		move.l	\6(\7),a5	; pointer color table
 	ENDC
 	IFNC "","\8"
-		add.l	#\8,a5		; Offset table start
+		ADDQ.W	\8*WORD_SIZE,a5 ; offset table start
 	ENDC
-	IFC "45","\9"
-		moveq	#(\2_display_width)-1-1,d7 ; number of columns
-	ELSE
-		moveq	#\2_display_width-1,d7 ; number of columns
-	ENDC
+	moveq	#(\2_display_width-1)-1,d7 ; number of columns
 \1_set_foreground_bars_loop1
-	move.l	a5,a1			; pointer BPLAM table
+	move.l	a5,a1			; pointer color table
 	moveq	#\1_bars_number-1,d6
 \1_set_foreground_bars_loop2
 	move.l	(a0)+,d0		; low word: y position, high word: z vector
-	IFC "B","\0"
-		bpl	\1_skip_foreground_bar
-	ENDC
-	IFC "W","\0"
-		bpl	\1_no_foreground_bar
-	ENDC
-\1_set_foreground_bar
-	lea	(a2,d0.w*4),a4		; y offset
-	COPY_TWISTED_BAR.\0 \1,\2,\4,\5
-\1_no_foreground_bar
+	bmi.s	\1_no_foreground_bars_skip1
+	add.l	d4,a1
+	bra.s	\1_no_foreground_bars_skip2
+	CNOP 0,4
+\1_no_foreground_bars_skip1
+	lea	(a2,d0.w),a4		; y offset
+	COPY_TWISTED_BAR \1,\2,\4,\5
+\1_no_foreground_bars_skip2
 	dbf	d6,\1_set_foreground_bars_loop2
 	addq.w	#LONGWORD_SIZE,a2	; next column
 	dbf	d7,\1_set_foreground_bars_loop1
 	movem.l (a7)+,a4-a5
 	rts
-	IFC "B","\0"
-		CNOP 0,4
-\1_skip_foreground_bar
-		add.l	d4,a1		; skip BPLAMs
-		bra.s	\1_no_foreground_bar
-	ENDC
 	ENDM
 
 
 COPY_TWISTED_BAR		MACRO
 ; Input
-; \0 STRING:	["B", "W"] size
 ; \1 STRING:	Labels prefix
 ; \2 STRING:	["cl1", "cl2"] labels prefix copperlist
 ; \3 STRING:	"extension[1..n]"
-; \4 NUMBER:	[31] bar height in lines
-	IFC "","\0"
-		FAIL Macro COPY_TWISTED_BAR: Size missing
-	ENDC
+; \4 NUMBER:	[24] bar height in lines
 	IFC "","\1"
 		FAIL Macro COPY_TWISTED_BAR: Labels prefix missing
 	ENDC
@@ -1278,86 +1235,36 @@ COPY_TWISTED_BAR		MACRO
 	IFC "","\4"
 		FAIL Macro COPY_TWISTED_BAR: Bar height missing
 	ENDC
-
-	ENDC
-	IFEQ \1_\4-15
-		movem.l	(a1)+,d0-d3	; fetch 8 values
-		move.w	d0,\2_\3_size*1(a4)
-		swap	d0
+	IFEQ \1_\4-24
+		movem.w	(a1)+,d0-d3	; fetch 4x RGB4 values
+		move.w	d1,\2_\3_size*1(a4) ; COLOR00
 		move.w	d0,(a4)
-		move.w	d1,\2_\3_size*3(a4)
-		swap	d1
-		move.w	d1,\2_\3_size*2(a4)
-		move.w	d2,\2_\3_size*5(a4)
-		swap	d2
-		move.w	d2,\2_\3_size*4(a4)
+		move.w	d3,\2_\3_size*3(a4)
+		move.w	d2,\2_\3_size*2(a4)
+		movem.w	(a1)+,d0-d3
+		move.w	d1,\2_\3_size*5(a4)
+		move.w	d0,\2_\3_size*4(a4)
 		move.w	d3,\2_\3_size*7(a4)
-		swap	d3
-		move.w	d3,\2_\3_size*6(a4)
-		movem.l	(a1),d0-d3	; fetch 7 values
-		move.w	d0,\2_\3_size*9(a4)
-		swap	d0
+		move.w	d2,\2_\3_size*6(a4)
+		movem.w	(a1)+,d0-d3
+		move.w	d1,\2_\3_size*9(a4)
 		move.w	d0,\2_\3_size*8(a4)
-		move.w	d1,\2_\3_size*11(a4)
-		swap	d1
-		move.w	d1,\2_\3_size*10(a4)
-		move.w	d2,\2_\3_size*13(a4)
-		swap	d2
-		move.w	d2,\2_\3_size*12(a4)
-		swap	d3
-		move.w	d3,\2_\3_size*14(a4)
-	ENDC
-	IFEQ \1_\4-31
-		movem.l	(a1)+,d0-d3	; fetch 8 values
-		move.w	d0,\2_\3_size*1(a4)
-		swap	d0
-		move.w	d0,(a4)
-		move.w	d1,\2_\3_size*3(a4)
-		swap	d1
-		move.w	d1,\2_\3_size*2(a4)
-		move.w	d2,\2_\3_size*5(a4)
-		swap	d2
-		move.w	d2,\2_\3_size*4(a4)
-		move.w	d3,\2_\3_size*7(a4)
-		swap	d3
-		move.w	d3,\2_\3_size*6(a4)
-		movem.l	(a1),d0-d3	; fetch 8 values
-		move.w	d0,\2_\3_size*9(a4)
-		swap	d0
-		move.w	d0,\2_\3_size*8(a4)
-		move.w	d1,\2_\3_size*11(a4)
-		swap	d1
-		move.w	d1,\2_\3_size*10(a4)
-		move.w	d2,\2_\3_size*13(a4)
-		swap	d2
-		move.w	d2,\2_\3_size*12(a4)
+		move.w	d3,\2_\3_size*11(a4)
+		move.w	d2,\2_\3_size*10(a4)
+		movem.w	(a1)+,d0-d3
+		move.w	d1,\2_\3_size*13(a4)
+		move.w	d0,\2_\3_size*12(a4)
 		move.w	d3,\2_\3_size*15(a4)
-		swap	d3
-		move.w	d3,\2_\3_size*14(a4)
-		movem.l	(a1),d0-d3	; fetch 8 values
-		move.w	d0,\2_\3_size*17(a4)
-		swap	d0
+		move.w	d2,\2_\3_size*14(a4)
+		movem.w	(a1)+,d0-d3
+		move.w	d1,\2_\3_size*17(a4)
 		move.w	d0,\2_\3_size*16(a4)
-		move.w	d1,\2_\3_size*19(a4)
-		swap	d1
-		move.w	d1,\2_\3_size*18(a4)
-		move.w	d2,\2_\3_size*21(a4)
-		swap	d2
-		move.w	d2,\2_\3_size*20(a4)
+		move.w	d3,\2_\3_size*19(a4)
+		move.w	d2,\2_\3_size*18(a4)
+		movem.w	(a1)+,d0-d3
+		move.w	d1,\2_\3_size*21(a4)
+		move.w	d0,\2_\3_size*20(a4)
 		move.w	d3,\2_\3_size*23(a4)
-		swap	d3
-		move.w	d3,\2_\3_size*22(a4)
-		movem.l	(a1),d0-d3	; fetch 7 values
-		move.w	d0,\2_\3_size*25(a4)
-		swap	d0
-		move.w	d0,\2_\3_size*24(a4)
-		move.w	d1,\2_\3_size*27(a4)
-		swap	d1
-		move.w	d1,\2_\3_size*26(a4)
-		move.w	d2,\2_\3_size*29(a4)
-		swap	d2
-		move.w	d2,\2_\3_size*28(a4)
-		swap	d3
-		move.w	d3,\2_\3_size*30(a4)
+		move.w	d2,\2_\3_size*22(a4)
 	ENDC
 	ENDM
