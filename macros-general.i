@@ -1330,7 +1330,7 @@ INIT_CHARS_OFFSETS MACRO
 INIT_CHARS_X_POSITIONS	MACRO
 ; Input
 ; \1 STRING:	Labels prefix
-; \2 STRING:	["LORES", "HIRES", "SHIRES"] pixel resolution
+; \2 STRING:	["LORES", "HIRES"] pixel resolution
 ; \3 STRING:	["BACKWARDS"] (optional)
 ; \4 NUMBER:	Number of characters (optional)
 ; Result
@@ -1343,14 +1343,14 @@ INIT_CHARS_X_POSITIONS	MACRO
 		FAIL Macro INIT_CHARS_X_POSITIONS: Pixel resolution missing
 	ENDC
 	moveq	#0,d0			; first x position
+	IFC "SLORES","\2"
+		moveq	#\1_text_char_x_size/2,d1 ; next character image
+	ENDC
 	IFC "LORES","\2"
 		moveq	#\1_text_char_x_size,d1 ; next character image
 	ENDC
 	IFC "HIRES","\2"
-		moveq	#\1_text_char_x_size*2,d1 ; next character image
-	ENDC
-	IFC "SHIRES","\2"
-		MOVEF.W	\1_text_char_x_size*4,d1 ; next character image
+		moveq	#\1_text_char_x_size*HIRES_PIXEL_FACTOR,d1 ; next character image
 	ENDC
 	IFNC "BACKWARDS","\3"
 		lea	\1_chars_x_positions(pc),a0

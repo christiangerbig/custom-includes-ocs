@@ -196,64 +196,49 @@ COP_SET_BITPLANE_POINTERS	MACRO
 	CNOP 0,4
 \1_set_bitplane_pointers
 	IFC "","\4"
-		IFC "","\5"
-			move.l	pf1_display(a3),d0
-			move.l	\1_\2(a3),a0
-			ADDF.W	\1_BPL1PTH+WORD_SIZE,a0
-			move.w	#pf1_plane_width,a1
-			moveq	#\3-1,d7 ; number of bitplanes
-\1_set_bitplane_pointers_loop
-			swap	d0
-			move.w	d0,(a0) ; BPLxPTH
-			swap	d0
-			addq.w	#QUADWORD_SIZE,a0
-			move.w	d0,LONGWORD_SIZE-QUADWORD_SIZE(a0) ; BPLxPTL
-			add.l	a1,d0	; next bitplane
-			dbf	d7,\1_set_bitplane_pointers_loop
-		ELSE
-			MOVEF.L	(\5/8)+(\6*pf1_plane_width*pf1_depth3),d1
-			move.l	pf1_display(a3),d2
-			move.l	\1_\2(a3),a0
-			ADDF.W	\1_BPL1PTH+WORD_SIZE,a0
-			move.w	#pf1_plane_width,a1
-			moveq	#\3-1,d7 ; number of bitplanes
-\1_set_bitplane_pointers_loop
-			move.l	d2,d0
-			add.l	d1,d0
-			move.w	d0,4(a0) ; BPLxPTL
-			swap	d0
-			move.w	d0,(a0)	; BPLxPTH
-			addq.w	#QUADWORD_SIZE,a0
-			add.l	a1,d2	; next bitplane
-			dbf	d7,\1_set_bitplane_pointers_loop
-		ENDC
-	ELSE
-; Playfield 1
 		move.l	pf1_display(a3),d0
+		IFNC "","\5"
+			ADDF.L	(\5/8)+(\6*pf1_plane_width*pf1_depth3),d0
+		ENDC
+		MOVEF.L	pf1_plane_width,d1
+		move.l	\1_\2(a3),a0
+		ADDF.W	\1_BPL1PTH+WORD_SIZE,a0
+		moveq	#\3-1,d7	; number of bitplanes
+\1_set_bitplane_pointers_loop
+		swap	d0
+		move.w	d0,(a0) 	; BPLxPTH
+		addq.w	#QUADWORD_SIZE,a0
+		swap	d0
+		move.w	d0,LONGWORD_SIZE-QUADWORD_SIZE(a0) ; BPLxPTL
+		add.l	d1,d0		; next bitplane
+		dbf	d7,\1_set_bitplane_pointers_loop
+	ELSE
+; Dual playfield 1
+		move.l	pf1_display(a3),d0
+		MOVEF.L	p1_plane_width,d1
 		move.l	\1_\2(a3),a0
 		lea	\1_BPL2PTH+2(a0),a1
 		ADDF.W	\1_BPL1PTH+WORD_SIZE,a0
-		move.w	#p1_plane_width,a2
 		moveq	#\3-1,d7	; number of bitplanes
 \1_set_bitplane_pointers_loop1
 		swap	d0
 		move.w	d0,(a0)		; BPLxPTH
-		swap	d0
 		ADDF.W	QUADWORD_SIZE*2,a0
+		swap	d0
 		move.w	d0,LONGWORD_SIZE-(QUADWORD_SIZE*2)(a0) ; BPLxPTL
-		add.l	a2,d0		; next bitplane
+		add.l	d1,d0		; next bitplane
 		dbf	d7,\1_set_bitplane_pointers_loop1
-; Playfield 2
+; Dual playfield 2
 		move.l	pf2_display(a3),d0
-		move.w	#p2_plane_width,a2
+		move.w	#p2_plane_width,d1
 		moveq	#\4-1,d7	; number of bitplanes
 \1_set_bitplane_pointers_loop2
 		swap	d0
 		move.w	d0,(a1)		; BPLxPTH
-		swap	d0
 		ADDF.W	QUADWORD_SIZE*2,a1
+		swap	d0
 		move.w	d0,LONGWORD_SIZE-(QUADWORD_SIZE*2)(a1) ; BPLxPTL
-		add.l	a2,d0		; next bitplane
+		add.l	d1,d0		; next bitplane
 		dbf	d7,\1_set_bitplane_pointers_loop2
 	ENDC
 	rts
@@ -369,8 +354,31 @@ no_patch_copperlist2
 		COP_MOVEQ 0,NOOP
 \1_init_color00_skip
 	ENDC
-	add.l	d6,d0			; next raster line
+	add.l	d6,d0			; next rasterline
 	dbf	d7,\1_init_color00_loop
+	rts
+	ENDM
+
+
+COP_RESET_COLOR00		MACRO
+; Input
+; \1 STRING:	["cl1", "cl2"] label prefix copperlist
+; \2 WORD:	X position
+; \3 WORD:	Y postion
+; Result
+	IFC "","\1"
+		FAIL Macro COP_RESET_COLOR00: Label prefix copperlist missing
+	ENDC
+	IFC "","\2"
+		FAIL Macro COP_RESET_COLOR00: X position missing
+	ENDC
+	IFC "","\3"
+		FAIL Macro COP_RESET_COLOR00: Y position missing
+	ENDC
+	CNOP 0,4
+\1_reset_color00
+	COP_WAIT \2,(\3)&$ff
+	COP_MOVEQ color00_bits,COLOR00
 	rts
 	ENDM
 
@@ -456,7 +464,7 @@ COP_INIT_BPLCON1_CHUNKY	MACRO
 \1_init_bplcon1s_loop2
 	move.l	d1,(a0)+		; BPLCON1
 	dbf	d6,\1_init_bplcon1s_loop2
-	add.l	d3,d0			; next raster line
+	add.l	d3,d0			; next rasterline
 	dbf	d7,\1_init_bplcon1s_loop1
 	rts
 	ENDM
