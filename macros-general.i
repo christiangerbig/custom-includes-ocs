@@ -1513,7 +1513,7 @@ GET_NEW_CHAR_IMAGE		MACRO
 				moveq	#0,d3
 				move.w	\1_char_words_counter(a3),d3
 				move.l	d3,d4
-				MULUF.W	2,d4 ; character image word offset
+				MULUF.W	WORD_SIZE,d4,d2 ; character image word offset
 				addq.w	#BYTESIZE,d3 ; next part of character image
 				add.l	d4,d0 ; character image address
 				cmp.w	#\1_origin_char_x_size/16,d3 ; new character image ?
