@@ -1625,7 +1625,7 @@ INIT_DISPLAY_PATTERN		MACRO
 	moveq	#1,d3			; first color number
 	move.l	pf1_display(a3),a0
 	move.l	(a0),a0
-	moveq	#(cl2_display_width)-1,d7 ; number of columns
+	moveq	#cl2_display_width-1,d7 ; number of columns
 \1_init_display_pattern_loop1
 	moveq	#\2-1,d6		; column width
 \1_init_display_pattern_loop2
@@ -1687,6 +1687,7 @@ GET_SINE_BARS_YZ_COORDINATES MACRO
 	CNOP 0,4
 \1_get_yz_coordinates
 	IFEQ \2-256
+		move.l	a4,-(a7)
 		move.w	\1_y_angle(a3),d2
 		move.w	d2,d0				
 		MOVEF.W (sine_table_length)*WORD_SIZE-1,d5 ; overflow 360°
@@ -1694,20 +1695,21 @@ GET_SINE_BARS_YZ_COORDINATES MACRO
 		and.w	d5,d0		; remove overflow
 		move.w	d0,\1_y_angle(a3) 
 		MOVEF.W \1_y_distance*WORD_SIZE,d3
-		MOVEF.W (sine_table_length/2)*WORD_SIZE,d4 ; 180°
+		MOVEF.W (sine_table_length/4)*WORD_SIZE,d4 ; 90°
 		lea	sine_table(pc),a0
 		lea	\1_yz_coordinates(pc),a1
 		move.w	#\1_y_center,a2
+		move.w	#((sine_table_length/3)*2)*WORD_SIZE,a4 ; 270°
 		moveq	#\1_bars_number-1,d7
 \1_get_yz_coordinates_loop
-		MOVEF.W	-((sine_table_length/4)*WORD_SIZE),d1 ; - 90°
+		cmp.w	d4,d2		; behind ?
+		slt	d0
+		cmp.w	a4,d2		; behind ?
+		sgt	d1
+		or.b	d1,d0
+		ext.w	d0
+		move.w	d0,(a1)+	; z vector
 		move.w	(a0,d2.w),d0	; sin(w)
-		add.w	d2,d1		; y angle - 90°
-		bmi.s	\1_get_yz_coordinates_skip
-		sub.w	d4,d1		; y angle + 180°
-		neg.w	d1
-\1_get_yz_coordinates_skip
-		move.w	d1,(a1)+	; z vector
 		MULSF.W \1_y_radius*2,d0,d1 ; y'=(yr*sin(w))/2^15
 		swap	d0
 		add.w	a2,d0		; y' + center
@@ -1716,9 +1718,11 @@ GET_SINE_BARS_YZ_COORDINATES MACRO
 		add.w	d3,d2		; y distance to next bar
 		and.w	d5,d2		; remove overflow
 		dbf	d7,\1_get_yz_coordinates_loop
+		move.l	(a7)+,a4
 		rts
 	ENDC
 	IFEQ \2-360
+		move.l	a4,-(a7)
 		move.w	\1_y_angle(a3),d2
 		move.w	d2,d0				
 		MOVEF.W sine_table_length*WORD_SIZE,d3 ; overflow 360°
@@ -1728,22 +1732,23 @@ GET_SINE_BARS_YZ_COORDINATES MACRO
 		sub.w	d3,d0		; reset y angle
 \1_get_yz_coordinates_skip1
 		move.w	d0,\1_y_angle(a3) 
-		MOVEF.W (sine_table_length/2)*WORD_SIZE,d4 ; 180°
+		MOVEF.W (sine_table_length/4)*WORD_SIZE,d4 ; 90°
 		MOVEF.W \1_y_distance*WORD_SIZE,d5
 		lea	sine_table(pc),a0
 		lea	\1_yz_coordinates(pc),a1
 		move.w	#\1_y_center,a2
+		move.w	#((sine_table_length/3)*2)*WORD_SIZE,a4 ; 270°
 		moveq	#\1_bars_number-1,d7
 \1_get_yz_coordinates_loop
-		MOVEF.W	-((sine_table_length/4)*WORD_SIZE),d1 ; - 90°
+		cmp.w	d4,d2		; behind ?
+		slt	d0
+		cmp.w	a4,d2		; behind ?
+		sgt	d1
+		or.b	d1,d0
+		ext.w	d0
+		move.w	d0,(a1)+	; z vector
 		move.w	d2,d0
 		move.w	(a0,d0.w),d0	; sin(w)
-		add.w	d2,d1		; - 90°
-		bmi.s	\1_get_yz_coordinates_skip2
-		sub.w	d4,d1		; - 180°
-		neg.w	d1
-\1_get_yz_coordinates_skip2
-		move.w	d1,(a1)+	; z vector
 		MULSF.W \1_y_radius*2,d0,d1 ; y'=(yr*sin(w))/2^15
 		swap	d0
 		add.w	a2,d0		; y' + y center
@@ -1755,6 +1760,7 @@ GET_SINE_BARS_YZ_COORDINATES MACRO
 		sub.w	d3,d2		; reset y angle
 \1_get_yz_coordinates_skip3
 		dbf	d7,\1_get_yz_coordinates_loop
+		move.l	(a7)+,a4
 		rts
 	ENDC
 
@@ -1779,29 +1785,32 @@ GET_TWISTED_BARS_YZ_COORDINATES MACRO
 	CNOP 0,4
 \1_get_yz_coordinates
 	IFEQ \2-256
+		move.l	a4,-(a7)
 		move.w	\1_y_angle(a3),d2
 		move.w	d2,d0				
 		MOVEF.W (sine_table_length-1)*WORD_SIZE,d3 ; overflow 360°
 		addq.w	#\1_y_angle_speed*WORD_SIZE,d0
 		and.w	d3,d0		; remove overflow
 		move.w	d0,\1_y_angle(a3) 
-		MOVEF.W (sine_table_length/2)*WORD_SIZE,d4 ; 180°
+		MOVEF.W	(sine_table_length/4)*WORD_SIZE,d4 ; 90°
 		MOVEF.W \1_y_distance*WORD_SIZE,d5
 		lea	sine_table(pc),a0
 		lea	\1_yz_coordinates(pc),a1
 		move.w	#\1_y_center,a2
+		move.w	#((sine_table_length/3)*2)*WORD_SIZE,a4 ; 270°
 		moveq	#(\*LEFT(\3,3)_display_width-1)-1,d7 ; number of colums
 \1_get_yz_coordinates_loop1
 		moveq	#\1_bars_number-1,d6
 \1_get_yz_coordinates_loop2
-		MOVEF.W	-((sine_table_length/4)*WORD_SIZE),d1 ; - 90°
+		cmp.w	d4,d2		; behind ?
+		slt	d0
+		cmp.w	a4,d2		; behind ?
+		sgt	d1
+		or.b	d1,d0
+		ext.w	d0
+		move.w	d0,(a1)+	; z vector
 		move.w	d2,d0
 		move.w	(a0,d0.w),d0	; sin(w)
-		add.w	d2,d1		; - 90°
-		bmi.s	\1_get_yz_coordinates_skip2
-		sub.w	d4,d1		; - 180°
-		neg.w	d1
-\1_get_yz_coordinates_skip2
 		move.w	d1,(a1)+	; z vector
 		MULSF.W \1_y_radius*2,d0,d1 ; y'=(yr*sin(w))/2^15
 		swap	d0
@@ -1814,9 +1823,11 @@ GET_TWISTED_BARS_YZ_COORDINATES MACRO
 		addq.w	#\1_y_angle_step*WORD_SIZE,d2
 		and.w	d3,d2		; remove overflow
 		dbf	d7,\1_get_yz_coordinates_loop1
+		move.l	(a7)+,a4
 		rts
 	ENDC
 	IFEQ \2-360
+		move.l	a4,-(a7)
 		move.w	\1_y_angle(a3),d2
 		move.w	d2,d0				
 		MOVEF.W sine_table_length*WORD_SIZE,d3 ; overflow 360°
@@ -1826,24 +1837,25 @@ GET_TWISTED_BARS_YZ_COORDINATES MACRO
 		sub.w	d3,d0		; reset y angle
 \1_get_yz_coordinates_skip1
 		move.w	d0,\1_y_angle(a3) 
-		MOVEF.W (sine_table_length/2)*WORD_SIZE,d4 ; 180°
+		MOVEF.W (sine_table_length/4)*WORD_SIZE,d4 ; 90°
 		MOVEF.W \1_y_distance*WORD_SIZE,d5
 		lea	sine_table(pc),a0
 		lea	\1_yz_coordinates(pc),a1
 		move.w	#\1_y_center,a2
+		move.w	#((sine_table_length/3)*2)*WORD_SIZE,a4
 		moveq	#(\*LEFT(\3,3)_display_width-1)-1,d7 ; number of colums
 \1_get_yz_coordinates_loop1
 		moveq	#\1_bars_number-1,d6
 \1_get_yz_coordinates_loop2
-		MOVEF.W	-((sine_table_length/4)*WORD_SIZE),d1 ; - 90°
+		cmp.w	d4,d2		; behind ?
+		slt	d0
+		cmp.w	a4,d2		; behind ?
+		sgt	d1
+		or.b	d1,d0
+		ext.w	d0
+		move.w	d0,(a1)+	; z vector
 		move.w	d2,d0
 		move.w	(a0,d0.w),d0	; sin(w)
-		add.w	d2,d1		; - 90°
-		bmi.s	\1_get_yz_coordinates_skip2
-		sub.w	d4,d1		; - 180°
-		neg.w	d1
-\1_get_yz_coordinates_skip2
-		move.w	d1,(a1)+	; z vector
 		MULSF.W \1_y_radius*2,d0,d1 ; y'=(yr*sin(w))/2^15
 		swap	d0
 		add.w	a2,d0		; y' + y center
@@ -1861,6 +1873,7 @@ GET_TWISTED_BARS_YZ_COORDINATES MACRO
 		sub.w	d3,d2		; reset y angle
 \1_get_yz_coordinates_skip4
 		dbf	d7,\1_get_yz_coordinates_loop1
+		move.l	(a7)+,a4
 		rts
 	ENDC
 	ENDM

@@ -1230,7 +1230,7 @@ COPY_TWISTED_BAR		MACRO
 ; \1 STRING:	Labels prefix
 ; \2 STRING:	["cl1", "cl2"] labels prefix copperlist
 ; \3 STRING:	"extension[1..n]"
-; \4 NUMBER:	[24] bar height in lines
+; \4 NUMBER:	[16, 24] bar height in lines
 	IFC "","\1"
 		FAIL Macro COPY_TWISTED_BAR: Labels prefix missing
 	ENDC
@@ -1242,6 +1242,28 @@ COPY_TWISTED_BAR		MACRO
 	ENDC
 	IFC "","\4"
 		FAIL Macro COPY_TWISTED_BAR: Bar height missing
+	ENDC
+	IFEQ \1_\4-16
+		movem.w	(a1)+,d0-d3	; fetch 4x RGB4 values
+		move.w	d1,\2_\3_size*1(a4) ; COLOR00
+		move.w	d0,(a4)
+		move.w	d3,\2_\3_size*3(a4)
+		move.w	d2,\2_\3_size*2(a4)
+		movem.w	(a1)+,d0-d3
+		move.w	d1,\2_\3_size*5(a4)
+		move.w	d0,\2_\3_size*4(a4)
+		move.w	d3,\2_\3_size*7(a4)
+		move.w	d2,\2_\3_size*6(a4)
+		movem.w	(a1)+,d0-d3
+		move.w	d1,\2_\3_size*9(a4)
+		move.w	d0,\2_\3_size*8(a4)
+		move.w	d3,\2_\3_size*11(a4)
+		move.w	d2,\2_\3_size*10(a4)
+		movem.w	(a1)+,d0-d3
+		move.w	d1,\2_\3_size*13(a4)
+		move.w	d0,\2_\3_size*12(a4)
+		move.w	d3,\2_\3_size*15(a4)
+		move.w	d2,\2_\3_size*14(a4)
 	ENDC
 	IFEQ \1_\4-24
 		movem.w	(a1)+,d0-d3	; fetch 4x RGB4 values
