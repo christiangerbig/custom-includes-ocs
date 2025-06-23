@@ -37,7 +37,7 @@ wm_loop\@
 
 RASTER_TIME			MACRO
 ; Input
-; \1 WORD:	RGB4 value (optional)
+; \1 WORD:	RGB4 hex value (optional)
 ; Result
 	move.l	d0,-(a7)
 	move.w	VPOSR-DMACONR(a6),d0
@@ -58,13 +58,11 @@ raster_time_skip\@
 
 SHOW_BEAM_POSITION		MACRO
 ; Input
-; \1 WORD:	RGB4 value
+; \1 WORD:	RGB4 hex value
 ; Result
 	IFC "","\1"
 		FAIL Macro SHOW_BEAM_POSITION: RGB4 value missing
 	ENDC
-	MOVEF.W	bplcon3_bits1,d0
-	move.w	d0,BPLCON3-DMACONR(a6)
 	move.w	#\1,COLOR00-DMACONR(a6)
 	ENDM
 
