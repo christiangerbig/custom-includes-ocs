@@ -1582,19 +1582,20 @@ COPY_IMAGE_TO_BITPLANE		MACRO
 \1_copy_image_to_bitplane_loop1
 	bsr.s	\1_copy_image_data
 	add.l	#\1_image_plane_width,a1 ; next bitplane
+	add.l	#pf1_plane_width,a4	; next bitplane
 	dbf	d7,\1_copy_image_to_bitplane_loop1
 	movem.l (a7)+,a4-a6
 	rts
 	CNOP 0,4
 \1_copy_image_data
 	move.l	a1,a0			; source
-	move.l	(a4)+,a2		; destination
+	move.l	a4,a2			; destination
 	IFNC "","\2"
 		add.l	d4,a2		; xy offset
 	ENDC
 	MOVEF.W	\1_image_y_size-1,d6
 \1_copy_image_data_loop1
-	moveq	#(\1_image_x_size/16)-1,d5
+	moveq	#(\1_image_x_size/WORD_BITS)-1,d5
 \1_copy_image_data_loop2
 	move.w	(a0)+,(a2)+
 	dbf	d5,\1_copy_image_data_loop2
@@ -1877,27 +1878,26 @@ GET_TWISTED_BARS_YZ_COORDINATES MACRO
 	ENDM
 
 
-COLOR_FADER			MACRO
+RGB4_COLOR_FADER		MACRO
 ; \1 STRING: Labels prefix
 	IFC "","\1"
-		FAIL Macro COLOR_FADER: Labels prefix missing
+		FAIL Macro RGB4_COLOR_FADER: Labels prefix missing
 	ENDC
 	CNOP 0,4
-\1_fader_loop
+\1_rgb4_fader_loop
 	move.w	(a0),d0			; RGB4 current
-	MOVEF.B	NIBBLE_MASK_HIGH,d1
-	and.w	d0,d1			; G4 current
+	move.w	d0,d1
+	and.w	#NIBBLE_MASK_HIGH,d1	; G4 current
 	moveq	#NIBBLE_MASK_LOW,d2
 	and.w	d0,d2
 	clr.b	d0			; R4 current
 
 	move.w	(a1)+,d3		; RGB4 destination
-	MOVEF.B	NIBBLE_MASK_HIGH,d4	; G4 destination
-	and.w	d3,d4
+	move.w	d3,d4
+	and.w	#NIBBLE_MASK_HIGH,d4	; G4 destination
 	moveq	#NIBBLE_MASK_LOW,d5
 	and.b	d3,d5			; B4 destination
 	clr.b	d3			; R4 destination
-\1_check_red_nibble
 	cmp.w	d3,d0
 	bgt.s	\1_decrease_red
 	blt.s	\1_increase_red
@@ -1910,17 +1910,16 @@ COLOR_FADER			MACRO
 \1_matched_green
 	subq.w	#1,d6			; destination green reached
 \1_check_blue_nibble
-	cmp.b	d5,d2
+	cmp.w	d5,d2
 	bgt.s	\1_decrease_blue
 	blt.s	\1_increase_blue
 \1_matched_blue
 	subq.w	#1,d6			; destination blue reached
 \1_merge_rgb_nibbles
-	move.w	d0,d3                   ; R00
-	or.w	d1,d3			; RG0
-	or.b	d2,d3			; RGB
-	move.l	d3,(a0)+		; store RGB4 in cl
-	dbf	d7,\1_fader_loop
+	move.b	d1,d0			; RG0
+	or.b	d2,d0			; RGB
+	move.w	d0,(a0)+		; store RGB4
+	dbf	d7,\1_rgb4_fader_loop
 	rts
 	CNOP 0,4
 \1_decrease_red
@@ -1941,7 +1940,7 @@ COLOR_FADER			MACRO
 	sub.w	a4,d1
 	cmp.w	d4,d1
 	bgt.s	\1_check_blue_nibble
-	movewl	d4,d1
+	move.w	d4,d1
 	bra.s	\1_matched_green
 	CNOP 0,4
 \1_increase_green
@@ -1952,18 +1951,93 @@ COLOR_FADER			MACRO
 	bra.s	\1_matched_green
 	CNOP 0,4
 \1_decrease_blue
-	sub.b	a5,d2
-	cmp.b	d5,d2
+	sub.w	a5,d2
+	cmp.w	d5,d2
 	bgt.s	\1_merge_rgb_nibbles
-	move.b	d5,d2
+	move.w	d5,d2
 	bra.s	\1_matched_blue
 	CNOP 0,4
 \1_increase_blue
-	add.b	a5,d2
-	cmp.b	d5,d2
+	add.w	a5,d2
+	cmp.w	d5,d2
 	blt.s	\1_merge_rgb_nibbles
-	move.b	d5,d2
+	move.w	d5,d2
 	bra.s	\1_matched_blue
+	ENDM
+
+
+COPY_RGB4_COLORS_TO_COPPERLIST	MACRO
+; Input
+; \1 STRING:	Labels prefix
+; \2 STRING:	Color table prefix
+; \3 STRUNG:	Copperlist prefix
+; \4 STRING:	Offset in copperlist color
+; \5 LONGWORD:	Offset base (optional)
+; Result
+	IFC "","\1"
+		FAIL Macro COPY_RGB4_COLORS_TO_COPPERLIST: Labels prefix missing
+	ENDC
+	IFC "","\2"
+		FAIL Macro COPY_RGB4_COLORS_TO_COPPERLIST: Color table prefix missing
+	ENDC
+	IFC "","\3"
+		FAIL Macro COPY_RGB4_COLORS_TO_COPPERLIST: Copperlist prefix missing
+	ENDC
+	IFC "","\4"
+		FAIL Macro COPY_RGB4_COLORS_TO_COPPERLIST: Offset in copperlist color missing
+	ENDC
+	CNOP 0,4
+\1_rgb4_copy_color_table
+	IFNE \3_size2
+		move.l	a4,-(a7)
+	ENDC
+	tst.w	\1_rgb4_copy_colors_active(a3)
+	bne.s	\1_rgb4_copy_color_table_skip2
+	lea	\2_rgb4_color_table+(\1_rgb4_color_table_offset*WORD_SIZE)(pc),a0 ; colors buffer
+	move.l	\3_display(a3),a1
+	IFC "","\5"
+		ADDF.W	\4+WORD_SIZE,a1
+	ELSE
+		ADDF.W	\5+\4+WORD_SIZE,a1
+	ENDC
+	IFNE \3_size1
+		move.l	\3_construction1(a3),a2
+		IFC "","\5"
+			ADDF.W	\4+WORD_SIZE,a2
+		ELSE
+			ADDF.W	\5+\4+WORD_SIZE,a2
+		ENDC
+	ENDC
+	IFNE \3_size2
+		move.l	\3_construction2(a3),a4
+		IFC "","\5"
+			ADDF.W	\4+WORD_SIZE,a4
+		ELSE
+			ADDF.W	\5+\4+WORD_SIZE,a4
+		ENDC
+	ENDC
+	MOVEF.W	\1_rgb4_colors_number-1,d7
+\1_rgb4_copy_color_table_loop
+	move.w	(a0)+,d0		; RGB4
+	move.w	d0,(a1)			; color
+	addq.w	#LONGWORD_SIZE,a1 	; next color register
+	IFNE \3_size1
+		move.w	d0,(a2)		; color
+		addq.w	#LONGWORD_SIZE,a2 ; next color register
+	ENDC
+	IFNE \3_size2
+		move.w	d0,(a4)		; color
+		addq.w	#LONGWORD_SIZE,a4 ; next color register
+	ENDC
+	dbf	d7,\1_rgb4_copy_color_table_loop
+	tst.w	\1_rgb4_colors_counter(a3)
+	bne.s	\1_rgb4_copy_color_table_skip2
+	move.w	#FALSE,\1_rgb4_copy_colors_active(a3)
+\1_rgb4_copy_color_table_skip2
+	IFNE \3_size2
+		move.l	(a7)+,a4
+	ENDC
+	rts
 	ENDM
 
 

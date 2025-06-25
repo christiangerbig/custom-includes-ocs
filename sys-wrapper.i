@@ -3089,7 +3089,6 @@ sfi_rgb4_increase_blue
 
 
 		IFEQ text_output_enabled
-; ** formatierten Text ausgeben **
 ; Input
 ; Result
 			CNOP 0,4

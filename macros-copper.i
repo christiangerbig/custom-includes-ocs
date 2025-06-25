@@ -288,7 +288,7 @@ COP_SET_SPRITE_POINTERS		MACRO
 		lea	spr_pointers_display(pc),a1
 		ADDF.W	\1_SPR0PTH+WORD_SIZE,a0
 	ELSE
-		lea	spr_pointers_display+(\4*4)(pc),a1 ; with index
+		lea	spr_pointers_display+(\4*LONGWORD_SIZE)(pc),a1 ; with index
 		ADDF.W	\1_SPR\3PTH+WORD_SIZE,a0
 	ENDC
 	moveq	#\3-1,d7		; number of sprites
