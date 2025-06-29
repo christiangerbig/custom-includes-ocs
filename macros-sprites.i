@@ -20,8 +20,8 @@ SET_SPRITE_POSITION			MACRO
 	addx.w	\3,\3			; EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0 --- --- --- --- --- --- --- SV8
 	addx.b	\3,\3			; EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0 --- --- --- --- --- --- SV8 EV8
 	lsr.w	#1,\1			; --- --- --- --- --- --- --- --- SH8 SH7 SH6 SH5 SH4 SH3 SH2 SH1
-	addx.b	\3,\3			; EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0 --- --- --- --- --- SV8 EV8 SH0 = SPRxCTL
-	move.b	\1,\2			; SV7 SV6 SV5 SV4 SV3 SV2 SV1 SV0 SH8 SH7 SH6 SH5 SH4 SH3 SH2 SH1 = SPRxPOS
+	addx.b	\3,\3			; EV7 EV6 EV5 EV4 EV3 EV2 EV1 EV0 --- --- --- --- --- SV8 EV8 SH0
+	move.b	\1,\2			; SV7 SV6 SV5 SV4 SV3 SV2 SV1 SV0 SH8 SH7 SH6 SH5 SH4 SH3 SH2 SH1
 	ENDM
 
 
@@ -49,6 +49,12 @@ INIT_SPRITE_CONTROL_WORDS	MACRO
 
 INIT_SPRITE_POINTERS_TABLE	MACRO
 ; Input
+; Global reference
+; spr0_construction
+; spr_pointers_construction
+; spr0_display
+; spr_pointers_display
+; spr_number
 ; Result
 	CNOP 0,4
 spr_init_pointers_table
@@ -74,6 +80,17 @@ spr_init_pointers_table_loop2
 
 COPY_SPRITE_STRUCTURES		MACRO
 ; Input
+; Global reference
+; spr_pointers_construction
+; spr_pointers_display
+; sprite0_size
+; sprite1_size
+; sprite2_size
+; sprite3_size
+; sprite4_size
+; sprite5_size
+; sprite6_size
+; sprite7_size
 ; Result
 	CNOP 0,4
 spr_copy_structures
@@ -113,6 +130,9 @@ SWAP_SPRITES			MACRO
 ; Input
 ; \1 BYTE SIGNED:	Number of sprites
 ; \2 NUMBER:		[1..7] sprite structure pointer index (optional)
+; Global reference
+; spr_pointers_construction
+; spr_pointers_display
 ; Result
 	IFC "","\1"
 		FAIL Macro SWAP_SPRITE_STRUCTURES: Number of sprites missing
@@ -140,6 +160,9 @@ SET_SPRITES			MACRO
 ; Input
 ; \1 BYTE SIGNED:	Number of sprites
 ; \2 NUMBER:		[1..7] sprite structure pointer index (optional)
+; Global reference
+; cl1_display
+; spr_pointers_display
 ; Result
 	IFC "","\1"
 		FAIL Macro SWAP_SPRITE_STRUCTURES: Number of sprites missing

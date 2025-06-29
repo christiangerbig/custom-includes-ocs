@@ -38,6 +38,8 @@ wm_loop\@
 RASTER_TIME			MACRO
 ; Input
 ; \1 WORD:	RGB4 hex value (optional)
+; Global reference
+; rt_rasterlines_number
 ; Result
 	move.l	d0,-(a7)
 	move.w	VPOSR-DMACONR(a6),d0
@@ -210,7 +212,7 @@ ADDF				MACRO
 				IFLE (\1)-16
 					addq.l	#8,\2
 					addq.l	#\1-8,\2
-				ELSE						;Wenn Zahl > $0010, dann
+				ELSE
 					add.l	#\1,\2
 				ENDC
 			ENDC
@@ -1253,6 +1255,8 @@ CPU_INIT_COLOR			MACRO
 ; \1 WORD:		First color register offset
 ; \2 BYTE_SIGNED:	Number of colors
 ; \3 POINTER:		Color table (optional)
+; Global reference
+; cpu_init_colors
 ; Result
 	IFC "","\1"
 		FAIL Macro CPU_INIT_COLOR: First color register offset missing
@@ -1260,11 +1264,11 @@ CPU_INIT_COLOR			MACRO
 	IFC "","\2"
 		FAIL Macro CPU_INIT_COLOR: Number of colors missing
 	ENDC
-	lea	(\1)-DMACONR(a6),a0	; first color register
-	moveq	#\2-1,d7		; number of colors
+	lea	(\1)-DMACONR(a6),a0	; 1st color register
 	IFNC "","\3"
-		lea	\3(pc),a1	; pointer color table
+		lea	\3(pc),a1	; color table
 	ENDC
+	moveq	#\2-1,d7		; number of colors
 	bsr	cpu_init_colors
 	ENDM
 
@@ -1273,6 +1277,14 @@ INIT_CHARS_OFFSETS MACRO
 ; Input
 ; \0 STRING:	["W", "L"] size
 ; \1 STRING:	Labels prefix
+; Global reference
+; _image_plane_width
+; _image_depth
+; _origin_char_x_size
+; _origin_char_y_size
+; _chars_offsets
+; _ascii
+; _ascii_end
 ; Result
 	CNOP 0,4
 \1_init_chars_offsets
@@ -1283,41 +1295,41 @@ INIT_CHARS_OFFSETS MACRO
 		FAIL Macro INIT_CHARS_OFFSETS: Labels prefix missing
 	ENDC
 	IFC "W","\0"
-		moveq	#0,d0		; x offset first character
-		moveq	#\1_image_plane_width,d1 ; X offset last character
+		moveq	#0,d0		; 1st character image x offset
+		moveq	#\1_image_plane_width,d1 ; last character image x offset
 		move.w	d1,d2		; x offset reset
-		MOVEF.W \1_image_plane_width*\1_image_depth*(\1_origin_char_y_size+1),d3 ; y offset next character line
+		MOVEF.W \1_image_plane_width*\1_image_depth*(\1_origin_char_y_size+1),d3 ; next character images line
 		lea	\1_chars_offsets(pc),a0
 		moveq	#\1_ascii_end-\1_ascii-1,d7 ; number of font characters
 \1_init_chars_offsets_loop
-		move.w	d0,(a0)+	; xy character offset
-		addq.w	#\1_origin_char_x_size/8,d0 ; X offset next character
-		cmp.w	d1,d0		; last character in line ?
+		move.w	d0,(a0)+	; character image offset
+		addq.w	#\1_origin_char_x_size/8,d0 ; next character image
+		cmp.w	d1,d0		; last character image in line ?
 		bne.s	\1_no_x_offset_reset
 \1_x_offset_reset
 		sub.w	d2,d0		; reset x offset
-		add.w	d3,d1		; y offset
-		add.w	d3,d0		; y offset
+		add.w	d3,d1		; + y offset
+		add.w	d3,d0		; next character images line
 \1_no_x_offset_reset
 		dbf	d7,\1_init_chars_offsets_loop
 		rts
 	ENDC
 	IFC "L","\0"
-		lea	\1_chars_offsets(pc),a0
-		moveq	#0,d0		; x offset first character
-		moveq	#\1_image_plane_width,d1 ; x offset last character
+		moveq	#0,d0		; 1st character image x offset
+		moveq	#\1_image_plane_width,d1 ; last character image x offset
 		move.l	d1,d2		; x offset reset
-		move.l	#\1_image_plane_width*\1_image_depth*(\1_origin_char_y_size),d3			Y-Offset für nächste Reihe der Zeichen in Zeichen-Playfieldvorlage
+		move.l	#\1_image_plane_width*\1_image_depth*(\1_origin_char_y_size),d3 ; next character images line
+		lea	\1_chars_offsets(pc),a0
 		moveq	#\1_ascii_end-\1_ascii-1,d7 ; number of font characters
 \1_init_chars_offsets_loop
-		move.l	d0,(a0)+	; xy offset character
-		add.l	#\1_origin_char_x_size/8,d0 ; x offset next character
-		cmp.l	d1,d0		; last character ?
+		move.l	d0,(a0)+	; character image offset
+		add.l	#\1_origin_char_x_size/8,d0 ; next character image
+		cmp.l	d1,d0		; last character image in line ?
 		bne.s	\1_no_x_offset_reset
 \1_x_offset_reset
 		sub.l	d2,d0		; reset x offset
-		add.l	d3,d1		; y offset
-		add.l	d3,d0		; y offset
+		add.l	d3,d1		; + y offset
+		add.l	d3,d0		; next character images line
 \1_no_x_offset_reset
 		dbf	d7,\1_init_chars_offsets_loop
 		rts
@@ -1331,6 +1343,10 @@ INIT_CHARS_X_POSITIONS	MACRO
 ; \2 STRING:	["LORES", "HIRES"] pixel resolution
 ; \3 STRING:	["BACKWARDS"] (optional)
 ; \4 NUMBER:	Number of characters (optional)
+; Global reference
+; _text_char_x_size
+; _chars_x_positions
+; _text_chars_number
 ; Result
 	CNOP 0,4
 \1_init_chars_x_positions
@@ -1340,7 +1356,7 @@ INIT_CHARS_X_POSITIONS	MACRO
 	IFC "","\2"
 		FAIL Macro INIT_CHARS_X_POSITIONS: Pixel resolution missing
 	ENDC
-	moveq	#0,d0			; first x position
+	moveq	#0,d0			; 1st x
 	IFC "SLORES","\2"
 		moveq	#\1_text_char_x_size/2,d1 ; next character image
 	ENDC
@@ -1380,14 +1396,18 @@ INIT_CHARS_Y_POSITIONS	MACRO
 ; Input
 ; \1 STRING:	Labels prefix
 ; \2 NUMBER:	Number of characters (optional)
+; Global reference
+; _text_char_y_size
+; _chars_y_positions
+; _text_chars_number
 ; Result
 	CNOP 0,4
 \1_init_chars_y_positions
 	IFC "","\1"
 		FAIL Macro INIT_CHARS_Y_POSITIONS: Labels prefix missing
 	ENDC
-	moveq	#0,d0			; first y position
-	moveq	#\1_text_char_y_size,d1 ; next y position
+	moveq	#0,d0			; 1st y
+	moveq	#\1_text_char_y_size,d1 ; next chracter image
 	lea	\1_chars_y_positions(pc),a0
 	IFC "","\2"
 		moveq	#(\1_text_chars_number)-1,d7
@@ -1395,8 +1415,8 @@ INIT_CHARS_Y_POSITIONS	MACRO
 		moveq	#(\1_\2)-1,d7	; number of characters
 	ENDC
 \1_init_chars_y_positions_loop
-	move.w	d0,(a0)+		; x position
-	add.w	d1,d0			; next x position
+	move.w	d0,(a0)+		; y position
+	add.w	d1,d0			; next character image
 	dbf	d7,\1_init_chars_y_positions_loop
 	rts
 	ENDM
@@ -1405,6 +1425,10 @@ INIT_CHARS_Y_POSITIONS	MACRO
 INIT_CHARS_IMAGES		MACRO
 ; Input
 ; \1 STRING:	Labels prefix
+; Global reference
+; _chars_image_pointers
+; _text_chars_number
+; _get_new_char_image
 ; Result
 	CNOP 0,4
 \1_init_chars_images
@@ -1428,6 +1452,18 @@ GET_NEW_CHAR_IMAGE		MACRO
 ; \2 LABEL:	Additional codes check sub routine (optional)
 ; \3 STRING:	["NORESTART"] (optional)
 ; \4 STRING:	["BACKWARDS"] (optional)
+; Global reference
+; _text_table_start
+; _text
+; _text_end
+; _ascii
+; _ascii_end
+; _origin_char_x_size
+; _text_char_x_size
+; _chars_offsets
+; _image
+; _char_toggle_image
+; _char_words_counter
 ; Result
 ; d0.l		Pointer character image
 	IFC "","\0"
@@ -1440,42 +1476,54 @@ GET_NEW_CHAR_IMAGE		MACRO
 \1_get_new_char_image
 	move.w	\1_text_table_start(a3),d1
 	IFC "BACKWARDS","\4"
-		bpl.s	\1_no_restart_text
-		move.w	#\1_text_end-\1_text-1,d1 ; restart y posistion
-\1_no_restart_text
+		bpl.s	\1_get_new_char_image_skip1
+		move.w	#\1_text_end-\1_text-1,d1 ; restart text
+\1_get_new_char_image_skip1
 	ENDC
 	lea	\1_text(pc),a0
-\1_read_char
+\1_get_new_char_image_skip2
 	move.b	(a0,d1.w),d0		; ASCII code
 	IFNC "","\2"
 		bsr.s	\2
-		tst.w	d0
-		beq.s	\1_skip_control_code
+		tst.l	d0
+		beq.s	\1_get_new_char_image_skip5
 	ENDC
 	IFNC "BACKWARDS","\4"
 		IFNC "NORESTART","\3"
-			cmp.b	#FALSE,d0 ; end of scrolltext ?
-			beq.s	\1_restart_text
+			cmp.b	#FALSE,d0 ; end of text ?
+			beq.s	\1_get_new_char_image_skip6
 		ENDC
 	ENDC
 	lea	\1_ascii(pc),a0
 	moveq	#\1_ascii_end-\1_ascii-1,d6 ; number of characters
 \1_get_new_char_image_loop
-	cmp.b	(a0)+,d0		; code found ?
+	cmp.b	(a0)+,d0		; character found ?
 	dbeq	d6,\1_get_new_char_image_loop
 	IFC "BACKWARDS","\4"
-		subq.w	#BYTE_SIZE,d1	; next character
+		IFC "","\5"
+			subq.w	#BYTE_SIZE,d1 ; next character
+		ELSE
+			SUBF.W	\1_\5,d1 ; next character
+		ENDC
 	ELSE
 		IFLT \1_origin_char_x_size-32
-			addq.w	#BYTE_SIZE,d1 ; next character
+			IFC "","\5"
+				addq.w	#BYTE_SIZE,d1 ; next character
+			ELSE
+				ADDF.W	\1_\5,d1 ; next character
+			ENDC
 		ELSE
 		IFNE \1_text_char_x_size-16
-			addq.w	#BYTE_SIZE,d1 ; next character
+			IFC "","\5"
+				addq.w	#BYTE_SIZE,d1 ; next character
+			ELSE
+				ADDF.W	\1_\5,d1 ; next character
+			ENDC
 		ENDC
 		ENDC
 	ENDC
 
-	moveq	#\1_ascii_end-\1_ascii-1,d0 ; number of characters
+	moveq	#\1_ascii_end-\1_ascii-1,d0
 	IFLT \1_origin_char_x_size-32
 		move.w	d1,\1_text_table_start(a3)
 	ELSE
@@ -1483,27 +1531,30 @@ GET_NEW_CHAR_IMAGE		MACRO
 			move.w	d1,\1_text_table_start(a3)
 		ENDC
 	ENDC
-	sub.w	d6,d0			; number of characters
+	sub.w	d6,d0			; number of characters - loop counter
 	lea	\1_chars_offsets(pc),a0
 	IFC "W","\0"
-		MULUF.W	2,d0
-		move.w	(a0,d0.w),d0	; character offset
+		MULUF.W	WORD_SIZE,d0,d2
+		move.w	(a0,d0.w),d0	; offset character image
 	ENDC
 	IFC "L","\0"
-		MULUF.W	4,d0
-		move.l	(a0,d0.w),d0	; character offset
+		MULUF.W	LONGWORD_SIZE,d0,d2
+		move.l	(a0,d0.w),d0	; offset character image
 	ENDC
 	add.l	\1_image(a3),d0
 	IFNC "BACKWARDS","\4"
 		IFEQ \1_origin_char_x_size-32
 			IFEQ \1_text_char_x_size-16
 				not.w	\1_char_toggle_image(a3) ; new character image ?
-				bne.s	\1_no_second_image_part
-\1_second_image_part
-				addq.w	#BYTE_SIZE,d1 ; next character
-				addq.l	#WORD_SIZE,d0 ; 2nd part character image
+				bne.s	\1_get_new_char_image_skip3
+				IFC "","\5"
+					addq.w	#BYTE_SIZE,d1 ; next character
+				ELSE
+					ADDF.W	\1_\5,d1 ; next character
+				ENDC
+				addq.l	#WORD_SIZE,d0 ; 2nd part of character image
 				move.w	d1,\1_text_table_start(a3)
-\1_no_second_image_part
+\1_get_new_char_image_skip3
 			ENDC
 		ENDC
 		IFGT \1_origin_char_x_size-32
@@ -1512,15 +1563,18 @@ GET_NEW_CHAR_IMAGE		MACRO
 				move.w	\1_char_words_counter(a3),d3
 				move.l	d3,d4
 				MULUF.W	WORD_SIZE,d4,d2 ; character image word offset
-				addq.w	#BYTESIZE,d3 ; next part of character image
-				add.l	d4,d0 ; character image address
+				addq.w	#1,d3 ; next character image
+				add.l	d4,d0 ; offset in character image
 				cmp.w	#\1_origin_char_x_size/16,d3 ; new character image ?
-				bne.s	\1_keep_char_image
-\1_next_char
-				addq.w	#1,d1 ; nächster Buchstabe
+				bne.s	\1_get_new_char_image_skip4
+				IFC "","\5"
+					addq.w	#BYTE_SIZE,d1 ; next character
+				ELSE
+					ADDF.W	\1_\5,d1 ; next character
+				ENDC
 				move.w	d1,\1_text_table_start(a3)
 				moveq	#0,d3 ; reset words counter
-\1_keep_char_image
+\1_get_new_char_image_skip4
 				move.w	d3,\1_char_words_counter(a3)
 			ENDC
 		ENDC
@@ -1528,17 +1582,73 @@ GET_NEW_CHAR_IMAGE		MACRO
 	rts
 	IFNC "BACKWARDS","\4"
 		IFNC "","\2"
-\1_skip_control_code
-			addq.w	#BYTE_SIZE,d1 ; next character
-			bra.s	\1_read_char
+			CNOP 0,4
+\1_get_new_char_image_skip5
+			IFC "","\5"
+				addq.w	#BYTE_SIZE,d1 ; next character
+			ELSE
+				ADDF.W	\1_\5,d1 ; next character
+			ENDC
+			IFGE \1_origin_char_x_size-32
+				IFEQ \1_text_char_x_size-16
+					move.w	d1,\1_text_table_start(a3)
+				ENDC
+			ENDC
+		bra.s	\1_get_new_char_image_skip2
 		ENDC
 		IFNC "NORESTART","\3"
 			CNOP 0,4
-\1_restart_text
+\1_get_new_char_image_skip6
 			moveq	#0,d1
-			bra.s	\1_read_char
+			bra.s	\1_get_new_char_image_skip2
 		ENDC
 	ENDC
+	ENDM
+
+
+INIT_COLOR_GRADIENT_RGB4	MACRO
+; Input
+; \1 NUMBER:		RGB4 value current
+; \2 NUMBER:		RGB4 value destination
+; \3 BYTE SIGNED:	Number of colors
+; \4 NUMBER:		Color step for RGB (optional)
+; \5 POINTER:		Color table (optional)
+; \6 STRING:		["pc", "a3"] pointer base (optional)
+; \7 LONGWORD:		Offset table start (optional)
+; \8 LONGWORD:		Offset next entry (optional)
+; Result
+	IFC "","\1"
+		FAIL Macro COLOR_GRADIENT_RGB4: RGB4 current missing
+	ENDC
+	IFC "","\2"
+		FAIL Macro COLOR_GRADIENT_RGB4: RGB4 destination missing
+	ENDC					
+	IFC "","\3"
+		FAIL Macro COLOR_GRADIENT_RGB4: Number of colors missing
+	ENDC
+	move.l	#\1,d0			; RGB4 current
+	move.l	#\2,d6			; RGB4 destination
+	IFNC "","\5"
+		IFC "pc","\6"
+			lea	\5(\6),a0 ; color table
+		ENDC
+		IFC "a3","\6"
+			move.l	\5(\6),a0 ; color table
+		ENDC
+	ENDC
+	IFNC "","\8"
+		add.l	#(\7)*WORD_SIZE,a0 ; offset table start
+	ENDC
+	IFNC "","\4"
+		move.w	#(\4)<<8,a1	; increase/decrease red
+		move.w	#(\4)<<4,a2	; increase/decrease green
+		move.w	#\4,a4		; increase/decrease blue
+	ENDC
+	IFNC "","\7"
+		move.w	#(\8)*WORD_SIZE,a5 ; offset next entry
+	ENDC
+	MOVEF.W	\3-1,d7			; number of colors
+	bsr	init_color_gradient_RGB4_loop
 	ENDM
 
 
@@ -1548,6 +1658,14 @@ COPY_IMAGE_TO_BITPLANE		MACRO
 ; \2 WORD:	X offset (optional)
 ; \3 WORD:	Y offset (optional)
 ; \4 POINTER:	Target image (optional)
+; Global reference
+; pf1_plane_width
+; pf1_depth3
+; pf1_display
+; _image_data
+; _image_plane_width
+; _image_x_size
+; _image_y_size
 ; Result
 	IFC "","\1"
 		FAIL Macro COPY_IMAGE_TO_BITPLANE: Labels prefix missing
@@ -1591,7 +1709,7 @@ COPY_IMAGE_TO_BITPLANE		MACRO
 	move.l	a1,a0			; source
 	move.l	a4,a2			; destination
 	IFNC "","\2"
-		add.l	d4,a2		; xy offset
+		add.l	d4,a2		; + xy offset
 	ENDC
 	MOVEF.W	\1_image_y_size-1,d6
 \1_copy_image_data_loop1
@@ -1610,6 +1728,10 @@ INIT_DISPLAY_PATTERN		MACRO
 ; Input
 ; \1 STRING:	Labels prefix
 ; \2 NUMBER:	Column width
+; Global reference
+; pf1_display
+; cl2_display_width
+; pf1_plane_width
 ; Result
 	IFC "","\1"
 		FAIL Macro INIT_DISPLAY_PATTERN: Labels prefix missing
@@ -1621,45 +1743,45 @@ INIT_DISPLAY_PATTERN		MACRO
 \1_init_display_pattern
 	moveq	#0,d0			; columns counter
 	moveq	#0,d1
-	moveq	#1,d3			; first color number
+	moveq	#1,d3			; 1st color number
 	move.l	pf1_display(a3),a0
 	move.l	(a0),a0
 	moveq	#cl2_display_width-1,d7 ; number of columns
 \1_init_display_pattern_loop1
 	moveq	#\2-1,d6		; column width
 \1_init_display_pattern_loop2
-	move.w	d0,d1			; save columns counter
+	move.w	d0,d1			; columns counter
 	move.w	d0,d2
 	lsr.w	#3,d1			; x offset
 	not.b	d2			; bit number
 	btst	#0,d3
-	beq.s	\1_no_set_pixel_bitplane0
+	beq.s	\1_init_display_pattern_skip1
 	bset	d2,(a0,d1.l)
-\1_no_set_pixel_bitplane0
+\1_init_display_pattern_skip1
 	btst	#1,d3
-	beq.s	\1_no_set_pixel_bitplane1
+	beq.s	\1_init_display_pattern_skip2
 	bset	d2,pf1_plane_width*1(a0,d1.l)
-\1_no_set_pixel_bitplane1
+\1_init_display_pattern_skip2
 	btst	#2,d3
-	beq.s	\1_no_set_pixel_bitplane2
+	beq.s	\1_init_display_pattern_skip3
 	bset	d2,pf1_plane_width*2(a0,d1.l)
-\1_no_set_pixel_bitplane2
+\1_init_display_pattern_skip3
 	btst	#3,d3
-	beq.s	\1_no_set_pixel_bitplane3
+	beq.s	\1_init_display_pattern_skip4
 	bset	d2,pf1_plane_width*3(a0,d1.l)
-\1_no_set_pixel_bitplane3
+\1_init_display_pattern_skip4
 	btst	#4,d3
-	beq.s	\1_no_set_pixel_bitplane4
+	beq.s	\1_init_display_pattern_skip5
 	bset	d2,(pf1_plane_width*4,a0,d1.l)
-\1_no_set_pixel_bitplane4
+\1_init_display_pattern_skip5
 	btst	#5,d3
-	beq.s	\1_no_set_pixel_bitplane5
+	beq.s	\1_init_display_pattern_skip6
 	bset	d2,(pf1_plane_width*5,a0,d1.l)
-\1_no_set_pixel_bitplane5
+\1_init_display_pattern_skip6
 	btst	#6,d3
-	beq.s	\1_no_set_pixel_bitplane6
+	beq.s	\1_init_display_pattern_skip7
 	bset	d2,(pf1_plane_width*6,a0,d1.l)
-\1_no_set_pixel_bitplane6
+\1_init_display_pattern_skip7
 	addq.w	#1,d0			; next column
 	dbf	d6,\1_init_display_pattern_loop2
 	addq.w	#1,d3			; next color number
@@ -1673,6 +1795,16 @@ GET_SINE_BARS_YZ_COORDINATES MACRO
 ; \1 STRING:	Labels prefix
 ; \2 NUMBER:	[256, 360] sine table length
 ; \3 WORD:	Multiplicator y offset in copperlist
+; Global reference
+; sine_table
+; sine_table_length
+; _y_angle
+; _y_angle_speed
+; _y_distance
+; _yz_coordinates
+; _y_center
+; _y_radius
+; _bars_number
 ; Result
 	IFC "","\1"
 		FAIL Macro GET_SINE_BARS_YZ_COORDINATES: Labels-Prefix missing
@@ -1770,7 +1902,18 @@ GET_TWISTED_BARS_YZ_COORDINATES MACRO
 ; Input
 ; \1 STRING:	Labels prefix
 ; \2 NUMBER:	[256, 360] sine table length
-; \3 WORD:	Multiplier y offset in cl
+; \3 WORD:	Multiplier y offset in copperlist
+; Global reference
+; sine_table
+; sine_table_length
+; _y_angle
+; _y_angle_speed
+; _y_distance
+; _y_center
+; _display_width
+; _bars_number
+; _y_radius
+; _y_angle_step
 ; Result
 	IFC "","\1"
 		FAIL Macro GET_TWISTED_BARS_YZ_COORDINATES: Labels prefix missing
@@ -1891,7 +2034,6 @@ RGB4_COLOR_FADER		MACRO
 	moveq	#NIBBLE_MASK_LOW,d2
 	and.w	d0,d2
 	clr.b	d0			; R4 current
-
 	move.w	(a1)+,d3		; RGB4 destination
 	move.w	d3,d4
 	and.w	#NIBBLE_MASK_HIGH,d4	; G4 destination
@@ -1923,45 +2065,45 @@ RGB4_COLOR_FADER		MACRO
 	rts
 	CNOP 0,4
 \1_decrease_red
-	sub.w	a2,d0
+	sub.w	a2,d0			; decrease red
 	cmp.w	d3,d0
 	bgt.s	\1_check_green_nibble
-	move.w	d3,d0
+	move.w	d3,d0			; destination red
 	bra.s	\1_matched_red
 	CNOP 0,4
 \1_increase_red
-	add.w	a2,d0
+	add.w	a2,d0			; increase red
 	cmp.w	d3,d0
 	blt.s	\1_check_green_nibble
-	move.w	d3,d0
+	move.w	d3,d0			; destination red
 	bra.s	\1_matched_red
 	CNOP 0,4
 \1_decrease_green
-	sub.w	a4,d1
+	sub.w	a4,d1			; decrease green
 	cmp.w	d4,d1
 	bgt.s	\1_check_blue_nibble
-	move.w	d4,d1
+	move.w	d4,d1			; destination green
 	bra.s	\1_matched_green
 	CNOP 0,4
 \1_increase_green
-	add.w	a4,d1
+	add.w	a4,d1			; increase green
 	cmp.w	d4,d1
 	blt.s	\1_check_blue_nibble
-	move.w	d4,d1
+	move.w	d4,d1			; destination green
 	bra.s	\1_matched_green
 	CNOP 0,4
 \1_decrease_blue
-	sub.w	a5,d2
+	sub.w	a5,d2			; decrease blue
 	cmp.w	d5,d2
 	bgt.s	\1_merge_rgb_nibbles
-	move.w	d5,d2
+	move.w	d5,d2			; destination blue
 	bra.s	\1_matched_blue
 	CNOP 0,4
 \1_increase_blue
-	add.w	a5,d2
+	add.w	a5,d2			; increase blue
 	cmp.w	d5,d2
 	blt.s	\1_merge_rgb_nibbles
-	move.w	d5,d2
+	move.w	d5,d2			; destination blue
 	bra.s	\1_matched_blue
 	ENDM
 
@@ -1973,6 +2115,12 @@ COPY_RGB4_COLORS_TO_COPPERLIST	MACRO
 ; \3 STRUNG:	Copperlist prefix
 ; \4 STRING:	Offset in copperlist color
 ; \5 LONGWORD:	Offset base (optional)
+; Global reference
+; _rgb4_copy_colors_active
+; _rgb4_colors_number
+; _rgb4_start_color
+; _rgb4_color_table
+; _rgb4_color_table_offset
 ; Result
 	IFC "","\1"
 		FAIL Macro COPY_RGB4_COLORS_TO_COPPERLIST: Labels prefix missing
@@ -1996,30 +2144,30 @@ COPY_RGB4_COLORS_TO_COPPERLIST	MACRO
 	lea	\2_rgb4_color_table+(\1_rgb4_color_table_offset*WORD_SIZE)(pc),a0 ; colors buffer
 	move.l	\3_display(a3),a1
 	IFC "","\5"
-		ADDF.W	\4+WORD_SIZE,a1
+		ADDF.W	\4+(\1_rgb4_start_color*LONGWORD_SIZE)+WORD_SIZE,a1
 	ELSE
-		ADDF.W	\5+\4+WORD_SIZE,a1
+		ADDF.W	\5+\4+(\1_rgb4_start_color*LONGWORD_SIZE)+WORD_SIZE,a1
 	ENDC
 	IFNE \3_size1
 		move.l	\3_construction1(a3),a2
 		IFC "","\5"
-			ADDF.W	\4+WORD_SIZE,a2
+			ADDF.W	\4+(\1_rgb4_start_color*LONGWORD_SIZE)+WORD_SIZE,a2
 		ELSE
-			ADDF.W	\5+\4+WORD_SIZE,a2
+			ADDF.W	\5+\4+(\1_rgb4_start_color*LONGWORD_SIZE)+WORD_SIZE,a2
 		ENDC
 	ENDC
 	IFNE \3_size2
 		move.l	\3_construction2(a3),a4
 		IFC "","\5"
-			ADDF.W	\4+WORD_SIZE,a4
+			ADDF.W	\4+(\1_rgb4_start_color*LONGWORD_SIZE)+WORD_SIZE,a4
 		ELSE
-			ADDF.W	\5+\4+WORD_SIZE,a4
+			ADDF.W	\5+\4+(\1_rgb4_start_color*LONGWORD_SIZE)+WORD_SIZE,a4
 		ENDC
 	ENDC
 	MOVEF.W	\1_rgb4_colors_number-1,d7
 \1_rgb4_copy_color_table_loop
 	move.w	(a0)+,d0		; RGB4
-	move.w	d0,(a1)			; color
+	move.w	d0,(a1)			; color xx
 	addq.w	#LONGWORD_SIZE,a1 	; next color register
 	IFNE \3_size1
 		move.w	d0,(a2)		; color
@@ -2113,53 +2261,6 @@ ROTATE_Z_AXIS			MACRO
 	ENDM
 
 
-
-INIT_COLOR_GRADIENT_RGB4	MACRO
-; Input
-; \1 NUMBER:		RGB4 value current
-; \2 NUMBER:		RGB4 value destination
-; \3 BYTE SIGNED:	Number of colors
-; \4 NUMBER:		Color step for RGB (optional)
-; \5 POINTER:		Color table (optional)
-; \6 STRING:		["pc", "a3"] pointer base (optional)
-; \7 LONGWORD:		Offset table start (optional)
-; \8 LONGWORD:		Offset next entry (optional)
-; Result
-	IFC "","\1"
-		FAIL Macro COLOR_GRADIENT_RGB4: RGB4 current missing
-	ENDC
-	IFC "","\2"
-		FAIL Macro COLOR_GRADIENT_RGB4: RGB4 destination missing
-	ENDC					
-	IFC "","\3"
-		FAIL Macro COLOR_GRADIENT_RGB4: Number of colors missing
-	ENDC
-	move.l	#\1,d0			; RGB4 current
-	move.l	#\2,d6			; RGB4 destination
-	IFNC "","\5"
-		IFC "pc","\6"
-			lea	\5(\6),a0 ; pointer color table
-		ENDC
-		IFC "a3","\6"
-			move.l	\5(\6),a0 ; pointer color table
-		ENDC
-	ENDC
-	IFNC "","\8"
-		add.l	#(\7)*WORD_SIZE,a0 ; offset table start
-	ENDC
-	IFNC "","\4"
-		move.w	#(\4)<<8,a1	; increase/decrease red
-		move.w	#(\4)<<4,a2	; increase/decrease green
-		move.w	#\4,a4		; increase/decrease blue
-	ENDC
-	IFNC "","\7"
-		move.w	#(\8)*WORD_SIZE,a5 ; offset next entry
-	ENDC
-	MOVEF.W	\3-1,d7			; number of colors
-	bsr	init_color_gradient_RGB4_loop
-	ENDM
-
-
 INIT_CUSTOM_ERROR_ENTRY		MACRO
 ; Input
 ; \1 BYTE_SIGNED:	Error number
@@ -2182,7 +2283,6 @@ INIT_CUSTOM_ERROR_ENTRY		MACRO
 	moveq	#\3,d1
 	move.l	d1,4(a0,d0.w)
 	ENDM
-
 
 
 INIT_INTUI_TEXT			MACRO
