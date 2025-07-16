@@ -45,15 +45,17 @@ timer_io
 pal_extended_newscreen
 		DS.B ens_SIZEOF
 
-		IFNE screen_fader_enabled
-			CNOP 0,2
+		CNOP 0,2
 pal_screen_rgb4_colors
-			DS.W pal_screen_colors_number
-		ENDC
+		DS.W pal_screen_colors_number
 
 		CNOP 0,4
 video_control_tags
 		DS.B video_control_tag_list_size
+
+		CNOP 0,2
+pal_screen_color_spec
+		DS.B cs2_SIZEOF*(pal_screen_color_spec_number+1)
 
 		CNOP 0,4
 pal_screen_tags

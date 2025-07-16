@@ -23,8 +23,6 @@
 		INCLUDE "custom-error-entry.i"
 
 		INCLUDE "taglists.i"
-
-		INCLUDE "screen-colors.i"
 	ENDC
 
 	IFD PASS_GLOBAL_REFERENCES
@@ -258,7 +256,8 @@
 
 		bsr	get_sprite_resolution
 		bsr	get_first_window
-		bsr	get_screen_mode
+		move.l	d0,first_window(a3)
+		bsr	check_screen_mode
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
 		IFEQ screen_fader_enabled
@@ -307,7 +306,7 @@
 		bsr	turn_off_drive_motors
 	ENDC
 
-	move.w	#dma_bits&(~(DMAF_SPRITE|DMAF_COPPER|DMAF_RASTER)),DMACON-DMACONR(a6) ; DMA ausser Sprite/Copper/Bitplane-DMA an
+	move.w	#dma_bits&(~(DMAF_SPRITE|DMAF_COPPER|DMAF_RASTER)),DMACON-DMACONR(a6) ; enable DMA excluded Sprite/Copper/Bitplane DMA
 	bsr	init_main		; external routine
 	bsr	start_own_display
 	IFNE (intena_bits&(~INTF_SETCLR))|(ciaa_icr_bits&(~CIAICRF_SETCLR))|(ciab_icr_bits&(~CIAICRF_SETCLR))
@@ -573,11 +572,10 @@ init_structures
 		bsr	init_auto_request_texts
 		bsr	init_timer_io
 		bsr	init_pal_extended_newscreen
-		IFNE screen_fader_enabled
-			bsr	init_pal_screen_rgb4_colors
-		ENDC
-		bsr	init_video_control_tags
+		bsr	init_pal_screen_color_spec
+		bsr	init_pal_screen_rgb4_colors
 		bsr	init_pal_screen_tags
+		bsr	init_video_control_tags
 		bsr	init_invisible_extended_newwindow
 		bsr	init_invisible_window_tags
 	ENDC
@@ -719,28 +717,43 @@ init_pal_extended_newscreen
 		rts
 
 
-		IFNE screen_fader_enabled
+
 ; Input
 ; Result
-			CNOP 0,4
-init_pal_screen_rgb4_colors
-			lea	pal_screen_rgb4_colors(pc),a0
-			move.w	pf1_rgb4_color_table(pc),d0
-			MOVEF.W	pal_screen_colors_number-1,d7
-init_pal_screen_rgb4_colors_loop
-			move.w	d0,(a0)+ ; RGB4
-			dbf	d7,init_pal_screen_rgb4_colors_loop
-			rts
-		ENDC
+		CNOP 0,4
+init_pal_screen_color_spec
+		lea	pal_screen_color_spec(pc),a0
+		move.w	pf1_rgb4_color_table(pc),d2	; COLOR00 RGB4
+		moveq	#NIBBLE_MASK_LOW,d0
+		and.w	d2,d0		; B4
+		move.w	d2,d1
+		lsr.w	#4,d1
+		and.w	#NIBBLE_MASK_LOW,d1 ;G4
+		lsr.w	#8,d2
+		and.w	#NIBBLE_MASK_LOW,d2 ;R4
+		moveq	#0,d3		: color index
+		MOVEF.W	pal_screen_color_spec_number-1,d7
+init_pal_screen_color_spec_loop
+		move.w	d3,(a0)+	; color index
+		move.w	d2,(a0)+	; R4
+		move.w	d1,(a0)+	; G4
+		addq.w	#1,d3
+		move.w	d0,(a0)+	; B4
+		dbf	d7,init_pal_screen_color_spec_loop
+		move.w	#-1,(a0)	; terminate array
+		rts
 
 
 ; Input
 ; Result
 		CNOP 0,4
-init_video_control_tags
-		lea	video_control_tags(pc),a0
-		moveq	#TAG_DONE,d2
-		move.l	d2,vctl_TAG_DONE(a0)
+init_pal_screen_rgb4_colors
+		lea	pal_screen_rgb4_colors(pc),a0
+		move.w	pf1_rgb4_color_table(pc),d0
+		MOVEF.W	pal_screen_colors_number-1,d7
+init_pal_screen_rgb4_colors_loop
+		move.w	d0,(a0)+ ; RGB4
+		dbf	d7,init_pal_screen_rgb4_colors_loop
 		rts
 
 
@@ -778,8 +791,9 @@ init_pal_screen_tags
 		move.l	#SA_Title,(a0)+
 		lea	pal_screen_name(pc),a1
 		move.l	a1,(a0)+
-		move.l	#SA_Colors32,(a0)+
-		move.l	d0,(a0)+
+		move.l	#SA_Colors,(a0)+
+		lea	pal_screen_color_spec(pc),a1
+		move.l	a1,(a0)+
 		move.l	#SA_VideoControl,(a0)+
 		lea	video_control_tags(pc),a1
 		move.l	#VTAG_SPRITERESN_SET,vctl_VTAG_SPRITERESN+ti_tag(a1)
@@ -812,6 +826,16 @@ init_pal_screen_tags
 ; Input
 ; Result
 		CNOP 0,4
+init_video_control_tags
+		lea	video_control_tags(pc),a0
+		moveq	#TAG_DONE,d2
+		move.l	d2,vctl_TAG_DONE(a0)
+		rts
+
+
+; Input
+; Result
+		CNOP 0,4
 init_invisible_extended_newwindow
 		lea	invisible_extended_newwindow(pc),a0
 		move.w	#invisible_window_pre_36_left,nw_LeftEdge(a0)
@@ -827,7 +851,7 @@ init_invisible_extended_newwindow
 		move.l	d0,nw_CheckMark(a0)
 		lea	invisible_window_name(pc),a1
 		move.l	a1,nw_Title(a0)
-		move.l	d0,nw_Screen(a0) ; Zeiger wird später initialisiert
+		move.l	d0,nw_Screen(a0) ; will be initialized later
 		move.l	d0,nw_BitMap(a0)
 		move.w	#invisible_window_pre_36_x_size,nw_MinWidth(a0)
 		move.w	#invisible_window_pre_36_y_size,nw_MinHeight(a0)
@@ -2008,6 +2032,7 @@ get_sprite_resolution_skip2
 
 ; Input
 ; Result
+; d0.l	Window structure first window
 		CNOP 0,4
 get_first_window
 		move.l	active_screen(a3),d0
@@ -2017,7 +2042,7 @@ get_first_window_quit
 		CNOP 0,4
 get_first_window_skip
 		move.l	d0,a0
-		move.l	sc_FirstWindow(a0),first_window(a3)
+		move.l	sc_FirstWindow(a0),d0
 		bra.s	get_first_window_quit
 
 
@@ -2025,33 +2050,33 @@ get_first_window_skip
 ; Result
 ; d0.l	return code
 		CNOP 0,4
-get_screen_mode
+check_screen_mode
 		cmp.w	#OS2_VERSION,os_version(a3)
-		bge.s   get_screen_mode_skip1
-get_screen_mode_ok
+		bge.s   check_screen_mode_skip1
+check_screen_mode_ok
 		moveq	#RETURN_OK,d0
-get_screen_mode_quit
+check_screen_mode_quit
 		rts
 		CNOP 0,4
-get_screen_mode_skip1
+check_screen_mode_skip1
 		move.l	active_screen(a3),d0
-		bne.s	get_screen_mode_skip2
-		bra.s	get_screen_mode_ok
+		bne.s	check_screen_mode_skip2
+		bra.s	check_screen_mode_ok
 		CNOP 0,4
-get_screen_mode_skip2
+check_screen_mode_skip2
 		move.l	d0,a0
 		ADDF.W	sc_ViewPort,a0
 		CALLGRAF GetVPModeID
 		cmp.l	#INVALID_ID,d0
-		bne.s	get_screen_mode_skip3
+		bne.s	check_screen_mode_skip3
 		move.w	#VIEWPORT_MONITOR_ID_NOT_FOUND,custom_error_code(a3)
 		moveq	#RETURN_FAIL,d0
-		bra.s	get_screen_mode_quit
+		bra.s	check_screen_mode_quit
 		CNOP 0,4
-get_screen_mode_skip3
+check_screen_mode_skip3
 		and.l	#MONITOR_ID_MASK,d0	; without resolution
 		move.l	d0,screen_mode(a3)
-		bra.s	get_screen_mode_ok
+		bra.s	check_screen_mode_ok
 
 
 
@@ -2332,7 +2357,8 @@ clear_mousepointer
 		moveq	#cleared_sprite_x_size,d1
 		moveq	#cleared_sprite_x_offset,d2
 		moveq	#cleared_sprite_y_offset,d3
-		CALLINTQ SetPointer
+		CALLINT SetPointer
+		rts
 
 
 ; Input
@@ -2348,8 +2374,8 @@ blank_display_loop
 		sub.l	a1,a1			; no view
 		CALLGRAF LoadView
 		CALLLIBS WaitTOF
-		CALLLIBS WaitTOF		; for interlace screens with 2 copperlists
-		tst.l	gb_ActiView(a6)		; did meanwhile appear a diffeerent view ?
+		CALLLIBS WaitTOF		; wait for interlace screens with two copperlists
+		tst.l	gb_ActiView(a6)		; did another view appear in the meantime ?
 		bne.s	blank_display_loop
 		bra.s	blank_display_quit
 
@@ -2982,7 +3008,7 @@ restore_sprite_resolution_skip
 		move.l	#VTAG_SPRITERESN_SET,vctl_VTAG_SPRITERESN+ti_tag(a1)
 		move.l	old_sprite_resolution(a3),vctl_VTAG_SPRITERESN+ti_data(a1)
 		CALLGRAF VideoControl
-		move.l	a2,a0			; screen structure
+		move.l	a2,a0			; screen
 		CALLINT MakeScreen
 		CALLLIBS RethinkDisplay
 		bra.s	restore_sprite_resolution_quit
@@ -3146,9 +3172,9 @@ sfi_rgb4_increase_blue
 print_formatted_text
 			lea	format_string(pc),a0
 			lea	data_stream(pc),a1
-			lea	put_ch_process(pc),a2 ; pointer copy routine
+			lea	put_ch_process(pc),a2 ; copy routine
 			move.l	a3,-(a7)
-			lea	put_ch_data(pc),a3 ; pointer output string
+			lea	put_ch_data(pc),a3 ; output string
 			CALLEXEC RawDoFmt
 			move.l	(a7)+,a3
 			move.l	output_handle(a3),d1
@@ -3673,7 +3699,7 @@ original_screen_to_front_skip
 
 ; Input
 ; Result
-; d0.l	pointer screen structure first screen
+; d0.l	Pointer screen structure first screen
 		CNOP 0,4
 get_first_screen
 		moveq	#0,d0		; all locks
