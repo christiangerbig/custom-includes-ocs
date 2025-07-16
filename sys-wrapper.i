@@ -732,7 +732,7 @@ init_pal_screen_color_spec
 		lsr.w	#8,d2
 		and.w	#NIBBLE_MASK_LOW,d2 ;R4
 		moveq	#0,d3		: color index
-		MOVEF.W	pal_screen_color_spec_number-1,d7
+		MOVEF.W	pal_screen_max_colors_number-1,d7
 init_pal_screen_color_spec_loop
 		move.w	d3,(a0)+	; color index
 		move.w	d2,(a0)+	; R4

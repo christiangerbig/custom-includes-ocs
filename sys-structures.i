@@ -55,7 +55,7 @@ video_control_tags
 
 		CNOP 0,2
 pal_screen_color_spec
-		DS.B cs2_SIZEOF*(pal_screen_color_spec_number+1)
+		DS.B cs2_SIZEOF*(pal_screen_max_colors_number+1)
 
 		CNOP 0,4
 pal_screen_tags

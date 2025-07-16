@@ -87,7 +87,7 @@ pal_screen_x_size		EQU 2
 pal_screen_y_size		EQU 2
 pal_screen_depth		EQU 1
 pal_screen_colors_number	EQU 2
-pal_screen_color_spec_number	EQU 32
+pal_screen_max_colors_number	EQU 32
 
 invisible_window_pre_36_left	EQU 0
 invisible_window_pre_36_top	EQU 0
