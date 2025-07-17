@@ -572,9 +572,9 @@ init_structures
 		bsr	init_auto_request_texts
 		bsr	init_timer_io
 		bsr	init_pal_extended_newscreen
+		bsr	init_pal_screen_tags
 		bsr	init_pal_screen_color_spec
 		bsr	init_pal_screen_rgb4_colors
-		bsr	init_pal_screen_tags
 		bsr	init_video_control_tags
 		bsr	init_invisible_extended_newwindow
 		bsr	init_invisible_window_tags
@@ -717,46 +717,6 @@ init_pal_extended_newscreen
 		rts
 
 
-
-; Input
-; Result
-		CNOP 0,4
-init_pal_screen_color_spec
-		lea	pal_screen_color_spec(pc),a0
-		move.w	pf1_rgb4_color_table(pc),d2	; COLOR00 RGB4
-		moveq	#NIBBLE_MASK_LOW,d0
-		and.w	d2,d0		; B4
-		move.w	d2,d1
-		lsr.w	#4,d1
-		and.w	#NIBBLE_MASK_LOW,d1 ;G4
-		lsr.w	#8,d2
-		and.w	#NIBBLE_MASK_LOW,d2 ;R4
-		moveq	#0,d3		: color index
-		MOVEF.W	pal_screen_max_colors_number-1,d7
-init_pal_screen_color_spec_loop
-		move.w	d3,(a0)+	; color index
-		move.w	d2,(a0)+	; R4
-		move.w	d1,(a0)+	; G4
-		addq.w	#1,d3
-		move.w	d0,(a0)+	; B4
-		dbf	d7,init_pal_screen_color_spec_loop
-		move.w	#-1,(a0)	; terminate array
-		rts
-
-
-; Input
-; Result
-		CNOP 0,4
-init_pal_screen_rgb4_colors
-		lea	pal_screen_rgb4_colors(pc),a0
-		move.w	pf1_rgb4_color_table(pc),d0
-		MOVEF.W	pal_screen_colors_number-1,d7
-init_pal_screen_rgb4_colors_loop
-		move.w	d0,(a0)+ ; RGB4
-		dbf	d7,init_pal_screen_rgb4_colors_loop
-		rts
-
-
 ; Input
 ; Result
 		CNOP 0,4
@@ -820,6 +780,45 @@ init_pal_screen_tags
 		move.l	d2,(a0)+
 		moveq	#TAG_DONE,d2
 		move.l	d2,(a0)
+		rts
+
+
+; Input
+; Result
+		CNOP 0,4
+init_pal_screen_color_spec
+		lea	pal_screen_color_spec(pc),a0
+		move.w	pf1_rgb4_color_table(pc),d2	; COLOR00 RGB4
+		moveq	#NIBBLE_MASK_LOW,d0
+		and.w	d2,d0		; B4
+		move.w	d2,d1
+		lsr.w	#4,d1
+		and.w	#NIBBLE_MASK_LOW,d1 ;G4
+		lsr.w	#8,d2
+		and.w	#NIBBLE_MASK_LOW,d2 ;R4
+		moveq	#0,d3		: color index
+		MOVEF.W	pal_screen_max_colors_number-1,d7
+init_pal_screen_color_spec_loop
+		move.w	d3,(a0)+	; color index
+		move.w	d2,(a0)+	; R4
+		move.w	d1,(a0)+	; G4
+		addq.w	#1,d3
+		move.w	d0,(a0)+	; B4
+		dbf	d7,init_pal_screen_color_spec_loop
+		move.w	#-1,(a0)	; terminate array
+		rts
+
+
+; Input
+; Result
+		CNOP 0,4
+init_pal_screen_rgb4_colors
+		lea	pal_screen_rgb4_colors(pc),a0
+		move.w	pf1_rgb4_color_table(pc),d0
+		MOVEF.W	pal_screen_colors_number-1,d7
+init_pal_screen_rgb4_colors_loop
+		move.w	d0,(a0)+ ; RGB4
+		dbf	d7,init_pal_screen_rgb4_colors_loop
 		rts
 
 
