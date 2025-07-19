@@ -1,4 +1,4 @@
-; Requirements
+ü; Requirements
 ; 68000+
 ; OCS+
 ; OS1.2+
@@ -67,7 +67,7 @@
 
 		bsr	get_active_screen
 		move.l	d0,active_screen(a3)
-		bsr	check_system_properties
+		bsr	get_system_props
 
 		IFEQ requires_030_cpu
 			bsr	check_cpu_requirements
@@ -254,12 +254,14 @@
 	IFND SYS_TAKEN_OVER
 		bsr	wait_drives_motor
 
+		bsr	get_screen_depth
 		bsr	get_sprite_resolution
 		bsr	get_first_window
 		move.l	d0,first_window(a3)
 		bsr	check_screen_mode
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
+		
 		IFEQ screen_fader_enabled
 			bsr	sf_get_screen_colors
 			bsr	sf_copy_screen_color_table
@@ -582,6 +584,7 @@ init_structures
 	IFNE pf_extra_number
 		bsr	init_pf_extra_structure
 	ENDC
+
 	IFNE spr_x_size1|spr_x_size2
 		bsr	spr_init_structure
 	ENDC
@@ -671,6 +674,7 @@ init_auto_request_texts
 			INIT_INTUI_TEXT monitor_request_intui_text_pos,0,1,5,3,monitor_request_string_pos
 			INIT_INTUI_TEXT monitor_request_intui_text_neg,0,1,5,3,monitor_request_string_neg
 		ENDC
+
 		IFNE intena_bits&INTF_PORTS
 			INIT_INTUI_TEXT tcp_stack_request_intui_text_body,0,1,10,10,tcp_stack_request_string_body
 			INIT_INTUI_TEXT tcp_stack_request_intui_text_pos,0,1,5,3,tcp_stack_request_string_pos
@@ -788,16 +792,20 @@ init_pal_screen_tags
 		CNOP 0,4
 init_pal_screen_color_spec
 		lea	pal_screen_color_spec(pc),a0
-		move.w	pf1_rgb4_color_table(pc),d2	; COLOR00 RGB4
+		move.w	pf1_rgb4_color_table(pc),d2 ; COLOR00 RGB4
 		moveq	#NIBBLE_MASK_LOW,d0
-		and.w	d2,d0		; B4
+		and.w	d2,d0		; COLOR00 B4
 		move.w	d2,d1
 		lsr.w	#4,d1
-		and.w	#NIBBLE_MASK_LOW,d1 ;G4
+		and.w	#NIBBLE_MASK_LOW,d1 ; COLOR00  G4
 		lsr.w	#8,d2
-		and.w	#NIBBLE_MASK_LOW,d2 ;R4
+		and.w	#NIBBLE_MASK_LOW,d2 ; COLOR00 R4
 		moveq	#0,d3		: color index
-		MOVEF.W	pal_screen_max_colors_number-1,d7
+		IFEQ screen_fader_enabled
+			MOVEF.W	pal_screen_max_colors_number-1,d7
+		ELSE
+			MOVEF.W	pal_screen_colors_number-1,d7
+		ENDC
 init_pal_screen_color_spec_loop
 		move.w	d3,(a0)+	; color index
 		move.w	d2,(a0)+	; R4
@@ -813,11 +821,15 @@ init_pal_screen_color_spec_loop
 ; Result
 		CNOP 0,4
 init_pal_screen_rgb4_colors
-		lea	pal_screen_rgb4_colors(pc),a0
+		lea	pal_screen_rgb4_colors(pc),a0 ; for LoadRGB4()
 		move.w	pf1_rgb4_color_table(pc),d0
-		MOVEF.W	pal_screen_colors_number-1,d7
+		IFEQ screen_fader_enabled
+			MOVEF.W	pal_screen_max_colors_number-1,d7
+		ELSE
+			MOVEF.W	pal_screen_colors_number-1,d7
+		ENDC
 init_pal_screen_rgb4_colors_loop
-		move.w	d0,(a0)+ ; RGB4
+		move.w	d0,(a0)+	; RGB4
 		dbf	d7,init_pal_screen_rgb4_colors_loop
 		rts
 
@@ -890,7 +902,7 @@ init_invisible_window_tags
 		lea	invisible_window_name(pc),a1
 		move.l	a1,(a0)+
 		move.l	#WA_CustomScreen,(a0)+
-		move.l	d0,(a0)+		; will be initialized later
+		move.l	d0,(a0)+	; will be initialized later
 		move.l	#WA_MinWidth,(a0)+
 		moveq	#invisible_window_x_size,d2
 		move.l	d2,(a0)+
@@ -1101,7 +1113,7 @@ spr_init_structure
 		IFEQ workbench_start_enabled
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 			CNOP 0,4
 check_workbench_start
 			sub.l	a1,a1	; own task
@@ -1113,7 +1125,7 @@ check_workbench_start_quit
 			rts
 			CNOP 0,4
 check_workbench_start_skip1
-			move.l	d0,a2	; aktueller Task
+			move.l	d0,a2
 			tst.l	pr_CLI(a2)
 			beq.s	check_workbench_start_skip2
 check_workbench_start_ok
@@ -1132,7 +1144,7 @@ check_workbench_start_skip2
 
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 		CNOP 0,4
 open_dos_library
 		lea	dos_name(pc),a1
@@ -1153,7 +1165,7 @@ open_dos_library_ok
 		IFEQ text_output_enabled
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 			CNOP 0,4
 get_output
 			CALLDOS Output
@@ -1171,7 +1183,7 @@ get_output_ok
 
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 		CNOP 0,4
 open_graphics_library
 		lea	graphics_name(pc),a1
@@ -1191,7 +1203,7 @@ open_graphics_library_ok
 
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 		CNOP 0,4
 open_intuition_library
 		lea	intuition_name(pc),a1
@@ -1226,23 +1238,23 @@ get_active_screen
 ; Input
 ; Result
 		CNOP 0,4
-check_system_properties
+get_system_props
 		move.l	_SysBase(pc),a6
 		move.w	AttnFlags(a6),cpu_flags(a3)
 		move.w	Lib_Version(a6),os_version(a3)
 		moveq	#MEMF_FAST,d1
 		CALLLIBS AvailMem
 		tst.l	d0
-		beq.s	check_system_properties_quit
+		beq.s	get_system_props_quit
 		clr.w	fast_memory_available(a3)
-check_system_properties_quit
+get_system_props_quit
 		rts
 
 
 		IFEQ requires_030_cpu
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 			CNOP 0,4
 check_cpu_requirements
 			btst	#AFB_68030,cpu_flags+BYTE_SIZE(a3)
@@ -1259,7 +1271,7 @@ check_cpu_requirements_ok
 		IFEQ requires_040_cpu
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 			CNOP 0,4
 check_cpu_requirements
 			btst	#AFB_68040,cpu_flags+BYTE_SIZE(a3)
@@ -1276,7 +1288,7 @@ check_cpu_requirements_ok
 		IFEQ requires_060_cpu
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 			CNOP 0,4
 check_cpu_requirements
 			tst.b	cpu_flags+BYTE_SIZE(a3)
@@ -1295,7 +1307,7 @@ check_cpu_requirements_ok
 		IFEQ requires_fast_memory
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 			CNOP 0,4
 check_memory_requirements
 			tst.w	fast_memory_available(a3)
@@ -1314,10 +1326,10 @@ check_memory_requirements_ok
 		IFEQ requires_multiscan_monitor
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 			CNOP 0,4
 do_monitor_request
-			sub.l	a0,a0	; requester appears on Workbench/public screen
+			sub.l	a0,a0   ; requester on workbench/public screen
                         lea	monitor_request_intui_text_body(pc),a1
                         lea	monitor_request_intui_text_pos(pc),a2
 			move.l	a3,-(a7)
@@ -1328,7 +1340,7 @@ do_monitor_request
 			moveq	#monitor_request_y_size,d3
 			CALLINT AutoRequest
 			move.l	(a7)+,a3
-			CMPF.L	BOOL_FALSE,d0 ; Gadget "Quit" clicked ?
+			CMPF.L	BOOL_FALSE,d0 ; gadget "Quit" clicked ?
 			bne.s	do_monitor_request_ok
 			moveq	#RETURN_FAIL,d0
 do_monitor_request_quit
@@ -1343,7 +1355,7 @@ do_monitor_request_ok
 		IFNE intena_bits&INTF_PORTS
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 			CNOP 0,4
 check_tcp_stack
 			CALLEXEC Forbid
@@ -1351,18 +1363,18 @@ check_tcp_stack
 			lea	bsdsocket_name(pc),a1
 			CALLLIBS FindName
 			tst.l	d0
-			beq.s	check_tcp_stack_skip
+			beq.s	check_tcp_stack_skip1
 			move.l	d0,a0
 			tst.w	LIB_OPENCNT(a0)
-			bne.s	do_tcp_stack_request
-check_tcp_stack_skip
+			bne.s	check_tcp_stack_skip2
+check_tcp_stack_skip1
 			CALLLIBS Permit
-do_tcp_stack_request_ok
+check_tcp_stack_ok
 			moveq	#RETURN_OK,d0
 check_tcp_stack_quit
 			rts
 			CNOP 0,4
-do_tcp_stack_request
+check_tcp_stack_skip2
 			CALLLIBS Permit
 			sub.l	a0,a0	; requester appears on Workbench/public screen
                         lea	tcp_stack_request_intui_text_body(pc),a1
@@ -1376,7 +1388,7 @@ do_tcp_stack_request
 			CALLINT AutoRequest
 			move.l	(a7)+,a3
 			CMPF.L	BOOL_FALSE,d0 ; Gadget "Quit" clicked ?
-			bne.s	do_tcp_stack_request_ok
+			bne.s	check_tcp_stack_ok
 			moveq	#RETURN_FAIL,d0
 			bra.s	check_tcp_stack_quit
 		ENDC
@@ -1384,7 +1396,7 @@ do_tcp_stack_request
 
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 		CNOP 0,4
 open_ciaa_resource
 		lea	CIAA_name(pc),a1
@@ -1407,7 +1419,7 @@ open_ciaa_resource_skip
 
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 		CNOP 0,4
 open_ciab_resource	
 		lea	CIAB_name(pc),a1
@@ -1430,7 +1442,7 @@ open_ciab_resource_skip
 
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 		CNOP 0,4
 open_timer_device
 		lea	timer_device_name(pc),a0
@@ -1454,7 +1466,7 @@ open_timer_device_ok
 	IFNE cl1_size1
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_cl1_memory1
 		MOVEF.L	cl1_size1,d0
@@ -1473,7 +1485,7 @@ alloc_cl1_memory1_ok
 	IFNE cl1_size2
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_cl1_memory2
 		MOVEF.L	cl1_size2,d0
@@ -1492,7 +1504,7 @@ alloc_cl1_memory2_ok
 	IFNE cl1_size3
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_cl1_memory3
 		MOVEF.L	cl1_size3,d0
@@ -1513,7 +1525,7 @@ alloc_cl1_memory3_ok
 	IFNE cl2_size1
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_cl2_memory1
 		MOVEF.L	cl2_size1,d0
@@ -1532,7 +1544,7 @@ alloc_cl2_memory1_ok
 	IFNE cl2_size2
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_cl2_memory2
 		MOVEF.L	cl2_size2,d0
@@ -1551,7 +1563,7 @@ alloc_cl2_memory2_ok
 	IFNE cl2_size3
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_cl2_memory3
 		MOVEF.L	cl2_size3,d0
@@ -1572,7 +1584,7 @@ alloc_cl2_memory3_ok
 	IFNE pf1_x_size1
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_pf1_memory1
 		MOVEF.L	(pf1_x_size1/8)*pf1_y_size1*pf1_depth1,d0 ; total size
@@ -1592,7 +1604,7 @@ alloc_pf1_memory1_ok
 	IFNE pf1_x_size2
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_pf1_memory2
 		MOVEF.L	(pf1_x_size2/8)*pf1_y_size2*pf1_depth2,d0 ; total size
@@ -1612,7 +1624,7 @@ alloc_pf1_memory2_ok
 	IFNE pf1_x_size3
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_pf1_memory3
 		MOVEF.L	(pf1_x_size3/8)*pf1_y_size3*pf1_depth3,d0 ; total size
@@ -1634,7 +1646,7 @@ alloc_pf1_memory3_ok
 	IFNE pf2_x_size1
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_pf2_memory1
 		MOVEF.L	(pf2_x_size1/8)*pf2_y_size1*pf2_depth1,d0 ; total size
@@ -1654,7 +1666,7 @@ alloc_pf2_memory1_ok
 	IFNE pf2_x_size2
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_pf2_memory2
 		MOVEF.L	(pf2_x_size2/8)*pf2_y_size2*pf2_depth2,d0 ; total size
@@ -1674,7 +1686,7 @@ alloc_pf2_memory2_ok
 	IFNE pf2_x_size3
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_pf2_memory3
 		MOVEF.L	(pf2_x_size3/8)*pf2_y_size3*pf2_depth3,d0 ; total size
@@ -1696,7 +1708,7 @@ alloc_pf2_memory3_ok
 	IFNE pf_extra_number
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_pf_extra_memory
 		lea	pf_extra_bitmap1(a3),a2
@@ -1704,21 +1716,21 @@ alloc_pf_extra_memory
 		lea	pf_extra_attributes(pc),a5
 		moveq	#pf_extra_number-1,d7
 alloc_pf_extra_memory_loop
-		move.l	(a5)+,d0	; playfield x size in bytes
-		move.l	(a5)+,d1	; playfield y size
-		move.l	(a5)+,d2	; playfield depth
+		move.l	(a5)+,d0	; width in bytes
+		move.l	(a5)+,d1	; height
+		move.l	(a5)+,d2	; depth
 		mulu.w	d2,d1
-		mulu.w	d1,d0
+		mulu.w	d1,d0           ; total size
 		bsr	do_alloc_bitmap_memory
-		move.l	d0,(a2)+	; pointer bitmap
-		bne.s	alloc_pf_extra_memory_ok
+		move.l	d0,(a2)+	; bitmap
+		bne.s	alloc_pf_extra_memory_skip
 		move.w	#PF_EXTRA_NO_MEMORY,custom_error_code(a3)
 		moveq	#ERROR_NO_FREE_STORE,d0
 alloc_pf_extra_memory_quit
 		rts
 		CNOP 0,4
-alloc_pf_extra_memory_ok
-		move.l	d0,(a4)+
+alloc_pf_extra_memory_skip
+		move.l	d0,(a4)+        ; 1st bitplane
 		dbf	d7,alloc_pf_extra_memory_loop
 		moveq	#RETURN_OK,d0
 		bra.s	alloc_pf_extra_memory_quit
@@ -1728,7 +1740,7 @@ alloc_pf_extra_memory_ok
 	IFNE spr_x_size1
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_sprite_memory1
 		lea	spr0_bitmap1(a3),a2
@@ -1736,13 +1748,13 @@ alloc_sprite_memory1
 		lea	sprite_attributes1(pc),a5
 		moveq	#spr_number-1,d7
 alloc_sprite_memory1_loop
-		move.l	(a5)+,d0	; sprite x size in bytes
-		move.l	(a5)+,d1	; sprite y size
-		move.l	(a5)+,d2	; sprite depth
+		move.l	(a5)+,d0	; width in bytes
+		move.l	(a5)+,d1	; height
+		move.l	(a5)+,d2	; deh
 		mulu.w	d2,d1
-		mulu.w	d1,d0
+		mulu.w	d1,d0           ; total size
 		bsr	do_alloc_bitmap_memory
-		move.l	d0,(a2)+	; pointer bitmap
+		move.l	d0,(a2)+	; bitmap
 		bne.s	alloc_sprite_memory1_ok
 		move.w	#SPR_CONSTR_NO_MEMORY,custom_error_code(a3)
 		moveq	#ERROR_NO_FREE_STORE,d0
@@ -1750,7 +1762,7 @@ alloc_sprite_memory1_quit
 		rts
 		CNOP 0,4
 alloc_sprite_memory1_ok
-		move.l	d0,(a4)+
+		move.l	d0,(a4)+        ; 1st bitplane
 		dbf	d7,alloc_sprite_memory1_loop
 		moveq	#RETURN_OK,d0
 		bra.s	alloc_sprite_memory1_quit
@@ -1760,7 +1772,7 @@ alloc_sprite_memory1_ok
 	IFNE spr_x_size2
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_sprite_memory2
 		lea	spr0_bitmap2(a3),a2
@@ -1768,21 +1780,21 @@ alloc_sprite_memory2
 		lea	sprite_attributes2(pc),a5
 		moveq	#spr_number-1,d7
 alloc_sprite_memory2_loop
-		move.l	(a5)+,d0	; sprite x size in bytes
-		move.l	(a5)+,d1	; sprite y size
-		move.l	(a5)+,d2	; sprite depth
+		move.l	(a5)+,d0	; width in bytes
+		move.l	(a5)+,d1	; height
+		move.l	(a5)+,d2	; depth
 		mulu.w	d2,d1
 		mulu.w	d1,d0
 		bsr	do_alloc_bitmap_memory
-		move.l	d0,(a2)+	; pointer bitmap
-		bne.s	alloc_sprite_memory2_ok
+		move.l	d0,(a2)+	; bitmap
+		bne.s	alloc_sprite_memory2_skip
 		move.w	#SPR_DISPLAY_NO_MEMORY,custom_error_code(a3)
 		moveq	#ERROR_NO_FREE_STORE,d0
 alloc_sprite_memory2_quit
 		rts
 		CNOP 0,4
-alloc_sprite_memory2_ok
-		move.l	d0,(a4)+
+alloc_sprite_memory2_skip
+		move.l	d0,(a4)+        ; 1st bitplane
 		dbf	d7,alloc_sprite_memory2_loop
 		moveq	#RETURN_OK,d0
 		bra.s	alloc_sprite_memory2_quit
@@ -1792,7 +1804,7 @@ alloc_sprite_memory2_ok
 	IFNE audio_memory_size
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_audio_memory
 		MOVEF.L	audio_memory_size,d0
@@ -1813,7 +1825,7 @@ alloc_audio_memory_ok
 	IFNE disk_memory_size
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 		CNOP 0,4
 alloc_disk_memory
 		MOVEF.L disk_memory_size,d0
@@ -1834,7 +1846,7 @@ alloc_disk_memory_ok
 	IFNE extra_memory_size
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_extra_memory
 		MOVEF.L	extra_memory_size,d0
@@ -1855,7 +1867,7 @@ alloc_extra_memory_ok
 	IFNE chip_memory_size
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_chip_memory
 		MOVEF.L	chip_memory_size,d0
@@ -1875,7 +1887,7 @@ alloc_chip_memory_ok
 	IFND SYS_TAKEN_OVER
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_vectors_base_memory
 		btst	#AFB_68020,cpu_flags+BYTE_SIZE(a3)
@@ -1907,12 +1919,11 @@ alloc_vectors_base_memory_ok
 
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 		CNOP 0,4
 alloc_mouse_pointer_data
 		moveq	#cleared_pointer_data_size,d0
-		MOVEF.L	MEMF_CLEAR|MEMF_CHIP|MEMF_PUBLIC,d1
-		CALLEXEC AllocMem
+		bsr	do_alloc_chip_memory
 		move.l	d0,mouse_pointer_data(a3)
 		bne.s	alloc_mouse_pointer_data_ok
 		move.w	#CLEARED_SPRITE_NO_MEMORY,custom_error_code(a3)
@@ -1928,7 +1939,7 @@ alloc_mouse_pointer_data_ok
 		IFEQ screen_fader_enabled
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 			CNOP 0,4
 sf_alloc_screen_color_table
 			MOVEF.L	sf_rgb4_colors_number*WORD_SIZE,d0
@@ -1948,7 +1959,7 @@ sf_alloc_screen_color_table_ok
 
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 			CNOP 0,4
 sf_alloc_screen_color_cache
 			MOVEF.L	sf_rgb4_colors_number*WORD_SIZE,d0
@@ -1969,7 +1980,7 @@ sf_alloc_screen_color_cache_ok
 		IFD PASS_GLOBAL_REFERENCES
 ; Input
 ; Result
-; d0.l	return code/error code
+; d0.l	Return code/error code
 			CNOP 0,4
 init_global_references_table
 			lea	global_references_table(pc),a0
@@ -1984,7 +1995,8 @@ init_global_references_table
 		CNOP 0,4
 wait_drives_motor
 		MOVEF.L	drives_motor_delay,d1
-		CALLDOSQ Delay
+		CALLDOS Delay
+		rts
 
 
 ; Input
@@ -2008,16 +2020,13 @@ get_screen_depth_skip
 		CNOP 0,4
 get_sprite_resolution
 		cmp.w	#OS3_VERSION,os_version(a3)
-		bge.s	get_sprite_resolution_skip1
+		bge.s	get_sprite_resolution_skip
 get_sprite_resolution_quit
 		rts
 		CNOP 0,4
-get_sprite_resolution_skip1
+get_sprite_resolution_skip
 		move.l	active_screen(a3),d0
-		bne.s	get_sprite_resolution_skip2
-		bra.s	get_sprite_resolution_quit
-		CNOP 0,4
-get_sprite_resolution_skip2
+		beq.s	get_sprite_resolution_quit
 		move.l	d0,a0
 		move.l  sc_ViewPort+vp_ColorMap(a0),a0
 		lea	video_control_tags(pc),a1
@@ -2047,32 +2056,29 @@ get_first_window_skip
 
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 		CNOP 0,4
 check_screen_mode
 		cmp.w	#OS2_VERSION,os_version(a3)
-		bge.s   check_screen_mode_skip1
+		bge.s   check_screen_mode_skip
 check_screen_mode_ok
 		moveq	#RETURN_OK,d0
 check_screen_mode_quit
 		rts
 		CNOP 0,4
-check_screen_mode_skip1
+check_screen_mode_skip
 		move.l	active_screen(a3),d0
-		bne.s	check_screen_mode_skip2
-		bra.s	check_screen_mode_ok
-		CNOP 0,4
-check_screen_mode_skip2
+		beq.s	check_screen_mode_ok
 		move.l	d0,a0
 		ADDF.W	sc_ViewPort,a0
 		CALLGRAF GetVPModeID
 		cmp.l	#INVALID_ID,d0
-		bne.s	check_screen_mode_skip3
+		bne.s	check_screen_mode_skip2
 		move.w	#VIEWPORT_MONITOR_ID_NOT_FOUND,custom_error_code(a3)
 		moveq	#RETURN_FAIL,d0
 		bra.s	check_screen_mode_quit
 		CNOP 0,4
-check_screen_mode_skip3
+check_screen_mode_skip2
 		and.l	#MONITOR_ID_MASK,d0	; without resolution
 		move.l	d0,screen_mode(a3)
 		bra.s	check_screen_mode_ok
@@ -2120,7 +2126,7 @@ sf_copy_screen_color_table
 			move.l	sf_screen_color_cache(a3),a1 ; destination
 			MOVEF.W	sf_rgb4_colors_number-1,d7
 sf_copy_screen_color_table_loop
-			move.w	(a0)+,(a1)+ ; RGB4-Wert
+			move.w	(a0)+,(a1)+ ; RGB4
 			dbf	d7,sf_copy_screen_color_table_loop
 			rts
 
@@ -2148,43 +2154,43 @@ sf_fade_out_screen_loop
 			CNOP 0,4
 rgb4_screen_fader_out
 			MOVEF.W	sf_rgb4_colors_number*3,d6 ; RGB counter
-			move.l	sf_screen_color_cache(a3),a0
+			move.l	sf_screen_color_cache(a3),a0 ; destination calues
 			move.w	pf1_rgb4_color_table(pc),a1 ; destination COLOR00 from table
 			move.w  #sfo_fader_speed,a4 ; decrement/increment RGB values
 			MOVEF.W sf_rgb4_colors_number-1,d7
 rgb4_screen_fader_out_loop
 			move.w  (a0),d0
-			lsr.w	#8,d0	; R4
+			lsr.w	#8,d0	; source R4
 			move.w  a1,d3
-			lsr.w	#8,d3	; R4 destination
+			lsr.w	#8,d3	; destination R4
 			moveq	#0,d1
 			move.b  1(a0),d1
 			moveq	#NIBBLE_MASK_LOW,d2
-			and.b	d1,d2	; B4
+			and.b	d1,d2	; source B4
 			move.w  a1,d5
-			and.w	#$000f,d5 ; B4 destination
-			lsr.b	#4,d1	; G4
+			and.w	#$000f,d5 ; destination B4
+			lsr.b	#4,d1	; source G4
 			move.w  a1,d4
 			lsr.b   #4,d4	
-			and.w	#$000f,d4 ; G4 destination
+			and.w	#NIBBLE_MASK_LOW,d4 ; destination G4
 
 			cmp.w	d3,d0
 			bgt.s	sfo_rgb4_decrease_red
 			blt.s	sfo_rgb4_increase_red
 sfo_rgb4_matched_red
-			subq.w  #1,d6	; R4 destination reached
+			subq.w	#1,d6	; destination R4 reached
 sfo_rgb4_check_green
 			cmp.w	d4,d1
 			bgt.s	sfo_rgb4_decrease_green
 			blt.s	sfo_rgb4_increase_green
 sfo_rgb4_matched_green
-			subq.w  #1,d6	; G4 destination reached
+			subq.w	#1,d6	; destination G4 reached
 sfo_rgb4_check_blue
 			cmp.w	d5,d2
 			bgt.s	sfo_rgb4_decrease_blue
 			blt.s	sfo_rgb4_increase_blue
 sfo_rgb4_matched_blue
-			subq.w	#1,d6	; B4 destination reached
+			subq.w	#1,d6	; destination B4 reached
 sfo_set_rgb4
 			lsl.w	#8,d0	; R4
 			move.b	d1,d0
@@ -2193,30 +2199,30 @@ sfo_set_rgb4
 			move.w	d0,(a0)+ ; RGB4
 			dbf	d7,rgb4_screen_fader_out_loop
 			tst.w   d6	; fading finished ?
-			bne.s   sfo_rgb4_flush_caches_skip
+			bne.s   sfo_rgb4_quit
 			move.w  #FALSE,sfo_rgb4_active(a3)
-sfo_rgb4_flush_caches_skip
+sfo_rgb4_quit
 			rts
 			CNOP 0,4
 sfo_rgb4_decrease_red
 			sub.w	a4,d0	; decrement R4
-			cmp.w	d3,d0	; R4 destination reached ?
+			cmp.w	d3,d0	; destination R4 ?
 			bgt.s	sfo_rgb4_check_green
-			move.w	d3,d0	; R4 destination
+			move.w	d3,d0	; destination R4
 			bra.s	sfo_rgb4_matched_red
 			CNOP 0,4
 sfo_rgb4_increase_red
 			add.w	a4,d0	; increment R4
-			cmp.w	d3,d0	; R4 destination reached ?
+			cmp.w	d3,d0	; destination R4 ?
 			blt.s	sfo_rgb4_check_green
-			move.w	d3,d0	; R4 destination
+			move.w	d3,d0	; destination R4
 			bra.s	sfo_rgb4_matched_red
 			CNOP 0,4
 sfo_rgb4_decrease_green
 			sub.w	a4,d1	; decrement G4
-			cmp.w	d4,d1	; G4 destination reached ?
+			cmp.w	d4,d1	; destination G4 ?
 			bgt.s	sfo_rgb4_check_blue
-			move.w	d4,d1	; G4 destination
+			move.w	d4,d1	; destination G4
 			bra.s	sfo_rgb4_matched_green
 			CNOP 0,4
 sfo_rgb4_increase_green
@@ -2262,7 +2268,7 @@ sf_rgb4_set_new_colors_skip
 
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 		CNOP 0,4
 open_pal_screen
 		lea	pal_extended_newscreen(pc),a0
@@ -2281,24 +2287,24 @@ open_pal_screen_ok
 
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 		CNOP 0,4
 load_pal_screen_colors
 		move.l	pal_screen(a3),a0
 		ADDF.W	sc_ViewPort,a0
+		lea	pal_screen_rgb4_colors(pc),a1
 		IFEQ screen_fader_enabled
-                        move.l	sf_screen_color_cache(a3),a1
-		ELSE
-			lea	pal_screen_rgb4_colors(pc),a1
+			MOVEF.L	pal_screen_max_colors_number,d0
+ 		ELSE
+			MOVEF.L	pal_screen_colors_number,d0
 		ENDC
-		moveq	#pal_screen_colors_number,d0
 		CALLGRAF LoadRGB4
 		rts
 
 
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 		CNOP 0,4
 check_pal_screen_mode
 		cmp.w	#OS2_VERSION,os_version(a3)
@@ -2325,7 +2331,7 @@ check_pal_screen_mode_skip
 
 ; Input
 ; Result
-; d0.l	return code
+; d0.l	Return code
 		CNOP 0,4
 open_invisible_window
 		move.l	pal_screen(a3),d0
@@ -2373,8 +2379,8 @@ blank_display_loop
 		sub.l	a1,a1			; no view
 		CALLGRAF LoadView
 		CALLLIBS WaitTOF
-		CALLLIBS WaitTOF		; wait for interlace screens with two copperlists
-		tst.l	gb_ActiView(a6)		; did another view appear in the meantime ?
+		CALLLIBS WaitTOF		; interlace screens with two copperlists
+		tst.l	gb_ActiView(a6)		; did a different view appear ?
 		bne.s	blank_display_loop
 		bra.s	blank_display_quit
 
@@ -2547,7 +2553,7 @@ save_copperlist_pointers
 			move.l	gb_Copinit(a0),old_cop1lc(a3)
 		ENDC
 		IFNE cl2_size3
-			move.l	gb_LOFlist(a0),old_cop2lc(a3) ; OS always sets LOF bit
+			move.l	gb_LOFlist(a0),old_cop2lc(a3) ; OS generally sets LOF bit
 		ENDC
 		rts
 
@@ -2577,7 +2583,7 @@ save_chips_registers
 		move.b	CIAPRA(a4),old_ciaa_pra(a3)
 		move.b	CIACRA(a4),d0
 		move.b	d0,old_ciaa_cra(a3)
-		and.b	#~CIACRAF_START,d0 ; CIA-A stop timer a
+		and.b	#~CIACRAF_START,d0 ; stop timer a
 		or.b	#CIACRAF_LOAD,d0
 		move.b	d0,CIACRA(a4)
 		nop
@@ -2586,7 +2592,7 @@ save_chips_registers
 	
 		move.b	CIACRB(a4),d0
 		move.b	d0,old_ciaa_crb(a3)
-		and.b	#(~(CIACRBF_ALARM&(~CIACRBF_START)))&$ff,d0 ; CIA-A stop timer B
+		and.b	#(~(CIACRBF_ALARM&(~CIACRBF_START)))&$ff,d0 ; stop timer b
 		or.b	#CIACRBF_LOAD,d0
 		move.b	d0,CIACRB(a4)
 		nop
@@ -2596,7 +2602,7 @@ save_chips_registers
 		move.b	CIAPRB(a5),old_ciab_prb(a3)
 		move.b	CIACRA(a5),d0
 		move.b	d0,old_ciaa_cra(a3)
-		and.b	#~CIACRAF_START,d0 ; CIA-B stop timer A
+		and.b	#~CIACRAF_START,d0 ; stop timer a
 		or.b	#CIACRAF_LOAD,d0
 		move.b	d0,CIACRA(a5)
 		nop
@@ -2605,7 +2611,7 @@ save_chips_registers
 	
 		move.b	CIACRB(a5),d0
 		move.b	d0,old_ciab_crb(a3)
-		and.b	#(~(CIACRBF_ALARM&(~CIACRBF_START)))&$ff,d0 ; CIA-B stop timer B
+		and.b	#(~(CIACRBF_ALARM&(~CIACRBF_START)))&$ff,d0 ; stop timer b
 		or.b	#CIACRBF_LOAD,d0
 		move.b	d0,CIACRB(a5)
 		nop
@@ -2671,7 +2677,7 @@ start_own_display
 		moveq	#0,d0
 		move.w	d0,COPJMP1-DMACONR(a6)
 	ENDC
-	move.w	#dma_bits&(DMAF_SPRITE|DMAF_COPPER|DMAF_RASTER|DMAF_SETCLR),DMACON-DMACONR(a6) ; enable sprite/copper/bitplane- DMA
+	move.w	#dma_bits&(DMAF_SPRITE|DMAF_COPPER|DMAF_RASTER|DMAF_SETCLR),DMACON-DMACONR(a6) ; enable sprite/copper/bitplane DMA
 	rts
 
 
@@ -2708,6 +2714,7 @@ start_cia_timers
 			moveq	#CIACRBF_START,d0
 			or.b	d0,CIACRB(a4)
 		ENDC
+
 		IFEQ ciab_ta_continuous_enabled
 			moveq	#CIACRAF_START,d0
 			or.b	d0,CIACRA(a5)
@@ -2727,19 +2734,20 @@ start_cia_timers
 stop_cia_timers
 		IFNE ciaa_ta_time
 			moveq	#~CIACRAF_START,d0
-			and.b	d0,CIACRA(a4) ; CIA-A stop timer a
+			and.b	d0,CIACRA(a4) ; stop timer a
 		ENDC
 		IFNE ciaa_tb_time
 			moveq	#~CIACRBF_START,d0
-			and.b	d0,CIACRB(a4) ; CIA-A stop timer b
+			and.b	d0,CIACRB(a4) ; stop timer b
 		ENDC
+
 		IFNE ciab_ta_time
 			moveq	#~CIACRAF_START,d0
-			and.b	d0,CIACRA(a5) ; CIA-B stop timer a
+			and.b	d0,CIACRA(a5) ; stop timer a
 		ENDC
 		IFNE ciab_tb_time
 			moveq	#~CIACRBF_START,d0
-			and.b	d0,CIACRB(a5) ; CIA-B stop timer b
+			and.b	d0,CIACRB(a5) ; stop timer b
 		ENDC
 		rts
 	ENDC
@@ -2836,7 +2844,7 @@ restore_chips_registers_skip1
 		move.b	d0,CIACRA(a4)
 	
 		move.b	old_ciaa_crb(a3),d0
-		btst	#CIACRBB_RUNMODE,d0 ;continuous mode ?
+		btst	#CIACRBB_RUNMODE,d0 ; continuous mode ?
 		bne.s	restore_chips_registers_skip2
 		or.b	#CIACRBF_START,d0
 restore_chips_registers_skip2
@@ -2959,7 +2967,8 @@ restore_vbr_skip
 ; Result
 		CNOP 0,4
 enable_system
-		CALLEXECQ Enable
+		CALLEXEC Enable
+                rts
 
 
 ; Input
@@ -3018,7 +3027,8 @@ restore_sprite_resolution_skip
 		CNOP 0,4
 close_invisible_window
 		move.l	invisible_window(a3),a0
-		CALLINTQ CloseWindow
+		CALLINT CloseWindow
+		rts
 
 
 ; Input
@@ -3026,7 +3036,8 @@ close_invisible_window
 		CNOP 0,4
 close_pal_screen
 		move.l	pal_screen(a3),a0
-		CALLINTQ CloseScreen
+		CALLINT CloseScreen
+		rts
 
 
 ; Input
@@ -3122,44 +3133,44 @@ sfi_rgb4_screen_fader_quit
 			CNOP 0,4
 sfi_rgb4_decrease_red
 			sub.w	a4,d0	; decrease R4
-			cmp.w	d3,d0
+			cmp.w	d3,d0	; R4 destination ?
 			bgt.s	sfi_rgb4_check_green
-			move.w	d3,d0	; destination R4
+			move.w	d3,d0
 			bra.s	sfi_rgb4_matched_red
 			CNOP 0,4
 sfi_rgb4_increase_red
 			add.w   a4,d0	; increase R4
-			cmp.w   d3,d0
+			cmp.w   d3,d0	; R4 destination ?
 			blt.s   sfi_rgb4_check_green
-			move.w  d3,d0	; destination R4
+			move.w  d3,d0
 			bra.s   sfi_rgb4_matched_red
 			CNOP 0,4
 sfi_rgb4_decrease_green
 			sub.w	a4,d1	; decrease G4
-			cmp.w	d4,d1
+			cmp.w	d4,d1	; G4 destination ?
 			bgt.s	sfi_rgb4_check_blue
-			move.w	d4,d1	; destination G4
+			move.w	d4,d1
 			bra.s	sfi_rgb4_matched_green
 			CNOP 0,4
 sfi_rgb4_increase_green
 			add.w	a4,d1	; increase G4
-			cmp.w	d4,d1
+			cmp.w	d4,d1	; destination G4 ?
 			blt.s	sfi_rgb4_check_blue
-			move.w	d4,d1	; destination G4
+			move.w	d4,d1
 			bra.s	sfi_rgb4_matched_green
 			CNOP 0,4
 sfi_rgb4_decrease_blue
 			sub.w	a4,d2	; decrease B4
-			cmp.w	d5,d2
+			cmp.w	d5,d2	; destination B4 ?
 			bgt.s	sfi_set_rgb4
-			move.w	d5,d2	; destination B4
+			move.w	d5,d2
 			bra.s	sfi_rgb4_matched_blue
 			CNOP 0,4
 sfi_rgb4_increase_blue
 			add.w	a4,d2	; increase B4
-			cmp.w	d5,d2
+			cmp.w	d5,d2	; destination B4 ?
 			blt.s	sfi_set_rgb4
-			move.w	d5,d2	; destination B4
+			move.w	d5,d2
 			bra.s	sfi_rgb4_matched_blue
 		ENDC
 
@@ -3170,7 +3181,7 @@ sfi_rgb4_increase_blue
 			CNOP 0,4
 print_formatted_text
 			lea	format_string(pc),a0
-			lea	data_stream(pc),a1
+			lea	data_stream(pc),a1 ; data format string
 			lea	put_ch_process(pc),a2 ; copy routine
 			move.l	a3,-(a7)
 			lea	put_ch_data(pc),a3 ; output string
@@ -3291,15 +3302,15 @@ free_sprite_memory2
 		lea	sprite_attributes2(pc),a4
 		moveq	#spr_number-1,d7
 free_sprite_memory2_loop
-		move.l	(a2)+,d0	; memory block
+		move.l	(a2)+,d0
 		bne.s	free_sprite_memory2_skip
 free_sprite_memory2_quit
 		rts
 		CNOP 0,4
 free_sprite_memory2_skip
 		move.l	d0,a1
-		move.l	(a4)+,d0	; x size in bytes
-		move.l	(a4)+,d1	; y size
+		move.l	(a4)+,d0	; width in bytes
+		move.l	(a4)+,d1	; height
 		move.l	(a4)+,d2        ; depth
 		mulu.w	d2,d1
 		mulu.w	d1,d0		; total size
@@ -3318,15 +3329,15 @@ free_sprite_memory1
 		lea	sprite_attributes1(pc),a4
 		moveq	#spr_number-1,d7
 free_sprite_memory1_loop
-		move.l	(a2)+,d0	; memory block
+		move.l	(a2)+,d0
 		bne.s	free_sprite_memory1_skip
 free_sprite_memory1_quit
 		rts
 		CNOP 0,4
 free_sprite_memory1_skip
 		move.l	d0,a1
-		move.l	(a4)+,d0	; x size in bytes
-		move.l	(a4)+,d1	; y size
+		move.l	(a4)+,d0	; width in bytes
+		move.l	(a4)+,d1	; height
 		move.l	(a4)+,d2        ; depth
 		mulu.w	d2,d1
 		mulu.w	d1,d0		; total size
@@ -3345,7 +3356,7 @@ free_pf_extra_memory
 		lea	pf_extra_attributes(pc),a4
 		moveq	#pf_extra_number-1,d7
 free_pf_extra_memory_loop
-		move.l	(a2)+,d0	; pointer memory block
+		move.l	(a2)+,d0
 		bne.s	free_pf_extra_memory_skip
 free_pf_extra_memory_quit
 		rts
@@ -3620,7 +3631,8 @@ free_mouse_pointer_data_skip
 		CNOP 0,4
 close_timer_device
 		lea	timer_io(pc),a1
-		CALLEXECQ CloseDevice
+		CALLEXEC CloseDevice
+		rts
 
 
 ; Input
@@ -3628,7 +3640,8 @@ close_timer_device
 		CNOP 0,4
 close_intuition_library
 		move.l	_IntuitionBase(pc),a1
-		CALLEXECQ CloseLibrary
+		CALLEXEC CloseLibrary
+		rts
 
 
 ; Input
@@ -3636,7 +3649,8 @@ close_intuition_library
 		CNOP 0,4
 close_graphics_library
 		move.l	_GfxBase(pc),a1
-		CALLEXECQ CloseLibrary
+		CALLEXEC CloseLibrary
+		rts
 
 	
 ; Input
@@ -3661,17 +3675,17 @@ print_error_message_skip
 		MULUF.W	8,d4,d1
 		lea	custom_error_table(pc),a0
 		move.l	(a0,d4.w),d2	; error text
-		move.l	4(a0,d4.w),d3	; length error text
+		move.l	LONGWORD_SIZE(a0,d4.w),d3 ; length error text
 		move.l	d0,d1		; file handle
 		CALLLIBS Write
 		move.l	raw_handle(a3),d1
 		lea	raw_buffer(a3),a0
 		move.l	a0,d2		; buffer
-		moveq	#1,d3		; number of characters to read
+		moveq	#1,d3		; read 1 character
 		CALLLIBS Read
 		move.l	raw_handle(a3),d1
 		CALLLIBS Close
-		bsr	original_screen_to_front
+		bsr.s	original_screen_to_front
 print_error_message_ok
 		moveq	#RETURN_OK,d0
 		bra.s	print_error_message_quit
@@ -3698,7 +3712,7 @@ original_screen_to_front_skip
 
 ; Input
 ; Result
-; d0.l	Pointer screen structure first screen
+; d0.l	Pointer screen structure 1st screen
 		CNOP 0,4
 get_first_screen
 		moveq	#0,d0		; all locks
@@ -3715,7 +3729,8 @@ get_first_screen
 		CNOP 0,4
 close_dos_library
 		move.l	_DOSBase(pc),a1
-		CALLEXECQ CloseLibrary
+		CALLEXEC CloseLibrary
+		rts
 
 
 		IFEQ workbench_start_enabled
@@ -3724,11 +3739,11 @@ close_dos_library
 			CNOP 0,4
 reply_workbench_message
 			move.l	workbench_message(a3),d2
-			bne.s	workbench_message_ok
+			bne.s	workbench_message_skip
 reply_workbench_message_quit
 			rts
 			CNOP 0,4
-workbench_message_ok
+workbench_message_skip
 			CALLEXEC Forbid
 			move.l	d2,a1
 			CALLLIBS ReplyMsg

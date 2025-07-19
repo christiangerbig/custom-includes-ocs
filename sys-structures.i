@@ -51,11 +51,18 @@ pal_screen_tags
 
 		CNOP 0,2
 pal_screen_color_spec
-		DS.B cs2_SIZEOF*(pal_screen_max_colors_number+1)
-
+		IFEQ screen_fader_enabled
+			DS.B cs2_SIZEOF*(pal_screen_max_colors_number+1)
+		ELSE
+			DS.B cs2_SIZEOF*(pal_screen_colors_number+1)
+		ENDC
 		CNOP 0,2
 pal_screen_rgb4_colors
-		DS.W pal_screen_colors_number
+		IFEQ screen_fader_enabled
+			DS.W pal_screen_max_colors_number
+		ELSE
+			DS.W pal_screen_colors_number
+		ENDC
 
 
 		CNOP 0,4
