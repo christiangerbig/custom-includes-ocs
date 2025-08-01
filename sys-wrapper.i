@@ -1,4 +1,4 @@
-ü; Requirements
+; Requirements
 ; 68000+
 ; OCS+
 ; OS1.2+
@@ -18,7 +18,7 @@
 
 
 	IFND SYS_TAKEN_OVER
-		INCLUDE "cleared-pointer-data.i"
+		INCLUDE "pointer-data.i"
 
 		INCLUDE "custom-error-entry.i"
 
@@ -65,9 +65,17 @@
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_graphics_library
 
+		bsr	get_system_props
+
 		bsr	get_active_screen
 		move.l	d0,active_screen(a3)
-		bsr	get_system_props
+		bsr	get_first_window
+		move.l	d0,first_window(a3)
+		bsr	check_screen_mode
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_intuition_library
+		bsr	get_screen_depth
+		bsr	get_sprite_resolution
 
 		IFEQ requires_030_cpu
 			bsr	check_cpu_requirements
@@ -231,7 +239,7 @@
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
 
-		bsr	alloc_mouse_pointer_data
+		bsr	alloc_pointer_data
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
 	
@@ -254,14 +262,6 @@
 	IFND SYS_TAKEN_OVER
 		bsr	wait_drives_motor
 
-		bsr	get_screen_depth
-		bsr	get_sprite_resolution
-		bsr	get_first_window
-		move.l	d0,first_window(a3)
-		bsr	check_screen_mode
-		move.l	d0,dos_return_code(a3)
-		bne	cleanup_all_memory
-		
 		IFEQ screen_fader_enabled
 			bsr	sf_get_screen_colors
 			bsr	sf_copy_screen_color_table
@@ -275,14 +275,16 @@
 		bsr	check_pal_screen_mode
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_original_screen
+
 		bsr	open_invisible_window
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_pal_screen
-		bsr	clear_mousepointer
+		bsr	clear_mouse_pointer
 		bsr	blank_display
 		bsr	wait_monitor_switch
 
 		bsr	enable_exclusive_blitter
+
 		bsr	get_system_time
 
 		bsr	disable_system
@@ -354,6 +356,7 @@
 	IFND SYS_TAKEN_OVER
 		bsr	clear_chips_registers2
 		bsr	restore_chips_registers
+
 		bsr	get_tod_duration
 
 		bsr	restore_exception_vectors
@@ -572,7 +575,6 @@ init_structures
 	IFND SYS_TAKEN_OVER
 		bsr	init_custom_error_table
 		bsr	init_auto_request_texts
-		bsr	init_timer_io
 		bsr	init_pal_extended_newscreen
 		bsr	init_pal_screen_tags
 		bsr	init_pal_screen_color_spec
@@ -580,7 +582,8 @@ init_structures
 		bsr	init_video_control_tags
 		bsr	init_invisible_extended_newwindow
 		bsr	init_invisible_window_tags
-	ENDC
+		bsr	init_timer_io
+		ENDC
 	IFNE pf_extra_number
 		bsr	init_pf_extra_structure
 	ENDC
@@ -649,7 +652,7 @@ init_custom_error_table
 
 		INIT_CUSTOM_ERROR_ENTRY EXCEPTION_VECTORS_NO_MEMORY,error_text_exception_vectors,error_text_exception_vectors_end-error_text_exception_vectors
 
-		INIT_CUSTOM_ERROR_ENTRY CLEARED_SPRITE_NO_MEMORY,error_text_cleared_sprite,error_text_cleared_sprite_end-error_text_cleared_sprite
+		INIT_CUSTOM_ERROR_ENTRY POINTER_NO_MEMORY,error_text_pointer,error_text_pointer_end-error_text_pointer
 
 		INIT_CUSTOM_ERROR_ENTRY VIEWPORT_MONITOR_ID_NOT_FOUND,error_text_viewport,error_text_viewport_end-error_text_viewport
 
@@ -680,19 +683,6 @@ init_auto_request_texts
 			INIT_INTUI_TEXT tcp_stack_request_intui_text_pos,0,1,5,3,tcp_stack_request_string_pos
 			INIT_INTUI_TEXT tcp_stack_request_intui_text_neg,0,1,5,3,tcp_stack_request_string_neg
 		ENDC
-		rts
-
-
-; Input
-; Result
-		CNOP 0,4
-init_timer_io
-		lea	timer_io(pc),a0
-		moveq	#0,d0
-		move.b	d0,LN_Type(a0)
-		move.b	d0,LN_Pri(a0)
-		move.l	d0,LN_Name(a0)
-		move.l	d0,MN_ReplyPort(a0)
 		rts
 
 
@@ -760,8 +750,6 @@ init_pal_screen_tags
 		move.l	a1,(a0)+
 		move.l	#SA_VideoControl,(a0)+
 		lea	video_control_tags(pc),a1
-		move.l	#VTAG_SPRITERESN_SET,vctl_VTAG_SPRITERESN+ti_Tag(a1)
-		move.l	#SPRITERESN_140NS,vctl_VTAG_SPRITERESN+ti_Data(a1)
 		move.l	a1,(a0)+
 		move.l	#SA_Font,(a0)+
 		move.l	d0,(a0)+
@@ -791,15 +779,15 @@ init_pal_screen_tags
 ; Result
 		CNOP 0,4
 init_pal_screen_color_spec
-		lea	pal_screen_color_spec(pc),a0 ; OS2.x
+		lea	pal_screen_color_spec(pc),a0
 		move.w	pf1_rgb4_color_table(pc),d2 ; COLOR00 RGB4
 		moveq	#NIBBLE_MASK_LOW,d0
-		and.w	d2,d0		; COLOR00 B4
+		and.w	d2,d0		; B4
 		move.w	d2,d1
 		lsr.w	#4,d1
-		and.w	#NIBBLE_MASK_LOW,d1 ; COLOR00  G4
+		and.w	#NIBBLE_MASK_LOW,d1 ; G4
 		lsr.w	#8,d2
-		and.w	#NIBBLE_MASK_LOW,d2 ; COLOR00 R4
+		and.w	#NIBBLE_MASK_LOW,d2 ; R4
 		moveq	#0,d3		: color index
 		IFEQ screen_fader_enabled
 			MOVEF.W	pal_screen_max_colors_number-1,d7
@@ -822,7 +810,7 @@ init_pal_screen_color_spec_loop
 		CNOP 0,4
 init_pal_screen_rgb4_colors
 		lea	pal_screen_rgb4_colors(pc),a0 ; for LoadRGB4()
-		move.w	pf1_rgb4_color_table(pc),d0
+		move.w	pf1_rgb4_color_table(pc),d0 ; COLOR00 RGB
 		IFEQ screen_fader_enabled
 			MOVEF.W	pal_screen_max_colors_number-1,d7
 		ELSE
@@ -840,7 +828,8 @@ init_pal_screen_rgb4_colors_loop
 init_video_control_tags
 		lea	video_control_tags(pc),a0
 		moveq	#TAG_DONE,d2
-		move.l	d2,vctl_TAG_DONE(a0)
+		move.l	d2,vctl_VTAG_SPRITERESN+ti_Tag(a0)
+		move.l	d2,vctl_TAG_DONE+ti_Tag(a0)
 		rts
 
 
@@ -923,6 +912,19 @@ init_invisible_window_tags
 		moveq	#TAG_DONE,d2
 		move.l	d2,(a0)
 		rts
+
+
+; Input
+; Result
+		CNOP 0,4
+init_timer_io
+		lea	timer_io(pc),a0
+		moveq	#0,d0
+		move.b	d0,LN_Type(a0)
+		move.b	d0,LN_Pri(a0)
+		move.l	d0,LN_Name(a0)
+		move.l	d0,MN_ReplyPort(a0)
+		rts	
 	ENDC
 
 
@@ -1223,7 +1225,7 @@ open_intuition_library_ok
 
 ; Input
 ; Result
-; d0.l	Pointer screen structure active screen
+; d0.l	Screen structure active screen
 		CNOP 0,4
 get_active_screen
 		moveq	#0,d0		; all locks
@@ -1233,6 +1235,92 @@ get_active_screen
 		CALLLIBS UnlockIBase
 		move.l	a2,d0
 		rts
+
+
+; Input
+; Result
+; d0.l  Window structure first window
+		CNOP 0,4
+get_first_window
+		move.l	active_screen(a3),d0
+		bne.s	get_first_window_skip
+get_first_window_quit
+		rts
+		CNOP 0,4
+get_first_window_skip
+		move.l	d0,a0
+		move.l	sc_FirstWindow(a0),d0
+		bra.s	get_first_window_quit
+
+
+; Input
+; Result
+; d0.l	Return code
+		CNOP 0,4
+check_screen_mode
+		cmp.w	#OS2_VERSION,os_version(a3)
+		bge.s   check_screen_mode_skip
+check_screen_mode_ok
+		moveq	#RETURN_OK,d0
+check_screen_mode_quit
+		rts
+		CNOP 0,4
+check_screen_mode_skip
+		move.l	active_screen(a3),d0
+		beq.s	check_screen_mode_ok
+		move.l	d0,a0
+		ADDF.W	sc_ViewPort,a0
+		CALLGRAF GetVPModeID
+		cmp.l	#INVALID_ID,d0
+		bne.s	check_screen_mode_skip2
+		move.w	#VIEWPORT_MONITOR_ID_NOT_FOUND,custom_error_code(a3)
+		moveq	#RETURN_FAIL,d0
+		bra.s	check_screen_mode_quit
+		CNOP 0,4
+check_screen_mode_skip2
+		and.l	#MONITOR_ID_MASK,d0	; without resolution
+		move.l	d0,screen_mode(a3)
+		bra.s	check_screen_mode_ok		
+
+
+; Input
+; Result
+	CNOP 0,4
+get_screen_depth
+		move.l	active_screen(a3),d0
+		bne.s	get_screen_depth_skip
+get_screen_depth_quit
+		rts
+		CNOP 0,4
+get_screen_depth_skip
+		move.l	d0,a0
+		ADDF.W	sc_BitMap,a0
+		move.b	bm_depth(a0),screen_depth(a3)
+		bra.s	get_screen_depth_quit
+
+
+; Input
+; Result
+		CNOP 0,4
+get_sprite_resolution
+		cmp.w	#OS3_VERSION,os_version(a3)
+		bge.s	get_sprite_resolution_skip
+get_sprite_resolution_quit
+		rts
+		CNOP 0,4
+get_sprite_resolution_skip
+		move.l	active_screen(a3),d0
+		beq.s	get_sprite_resolution_quit
+		move.l	d0,a0
+		move.l  sc_ViewPort+vp_ColorMap(a0),a0
+		lea	video_control_tags(pc),a1
+		move.l	a1,a2
+		move.l	#VTAG_SPRITERESN_GET,vctl_VTAG_SPRITERESN+ti_tag(a1)
+		moveq	#0,d0
+		move.l	d0,vctl_VTAG_SPRITERESN+ti_Data(a1)
+		CALLGRAF VideoControl
+		move.l  vctl_VTAG_SPRITERESN+ti_Data(a2),old_sprite_resolution(a3)
+		bra.s	get_sprite_resolution_quit
 
 
 ; Input
@@ -1921,19 +2009,19 @@ alloc_vectors_base_memory_ok
 ; Result
 ; d0.l	Return code/error code
 		CNOP 0,4
-alloc_mouse_pointer_data
-		moveq	#cleared_pointer_data_size,d0
+alloc_pointer_data
+		moveq	#pointer_data_size,d0
 		bsr	do_alloc_chip_memory
-		move.l	d0,mouse_pointer_data(a3)
-		bne.s	alloc_mouse_pointer_data_ok
-		move.w	#CLEARED_SPRITE_NO_MEMORY,custom_error_code(a3)
+		move.l	d0,pointer_data(a3)
+		bne.s	alloc_pointer_data_ok
+		move.w	#POINTER_NO_MEMORY,custom_error_code(a3)
 		moveq	#ERROR_NO_FREE_STORE,d0
-alloc_mouse_pointer_data_quit
+alloc_pointer_data_quit
 		rts
 		CNOP 0,4
-alloc_mouse_pointer_data_ok
+alloc_pointer_data_ok
 		moveq	#RETURN_OK,d0
-		bra.s	alloc_mouse_pointer_data_quit
+		bra.s	alloc_pointer_data_quit
 
 
 		IFEQ screen_fader_enabled
@@ -1999,92 +2087,6 @@ wait_drives_motor
 		rts
 
 
-; Input
-; Result
-	CNOP 0,4
-get_screen_depth
-		move.l	active_screen(a3),d0
-		bne.s	get_screen_depth_skip
-get_screen_depth_quit
-		rts
-		CNOP 0,4
-get_screen_depth_skip
-		move.l	d0,a0
-		ADDF.W	sc_BitMap,a0
-		move.b	bm_depth(a0),screen_depth(a3)
-		bra.s	get_screen_depth_quit
-
-
-; Input
-; Result
-		CNOP 0,4
-get_sprite_resolution
-		cmp.w	#OS3_VERSION,os_version(a3)
-		bge.s	get_sprite_resolution_skip
-get_sprite_resolution_quit
-		rts
-		CNOP 0,4
-get_sprite_resolution_skip
-		move.l	active_screen(a3),d0
-		beq.s	get_sprite_resolution_quit
-		move.l	d0,a0
-		move.l  sc_ViewPort+vp_ColorMap(a0),a0
-		lea	video_control_tags(pc),a1
-		move.l	#VTAG_SPRITERESN_GET,vctl_VTAG_SPRITERESN+ti_tag(a1)
-		move.l	a1,a2
-		clr.l	vctl_VTAG_SPRITERESN+ti_Data(a1)
-		CALLGRAF VideoControl
-		move.l  vctl_VTAG_SPRITERESN+ti_Data(a2),old_sprite_resolution(a3)
-		bra.s	get_sprite_resolution_quit
-
-
-; Input
-; Result
-; d0.l	Window structure first window
-		CNOP 0,4
-get_first_window
-		move.l	active_screen(a3),d0
-		bne.s	get_first_window_skip
-get_first_window_quit
-		rts
-		CNOP 0,4
-get_first_window_skip
-		move.l	d0,a0
-		move.l	sc_FirstWindow(a0),d0
-		bra.s	get_first_window_quit
-
-
-; Input
-; Result
-; d0.l	Return code
-		CNOP 0,4
-check_screen_mode
-		cmp.w	#OS2_VERSION,os_version(a3)
-		bge.s   check_screen_mode_skip
-check_screen_mode_ok
-		moveq	#RETURN_OK,d0
-check_screen_mode_quit
-		rts
-		CNOP 0,4
-check_screen_mode_skip
-		move.l	active_screen(a3),d0
-		beq.s	check_screen_mode_ok
-		move.l	d0,a0
-		ADDF.W	sc_ViewPort,a0
-		CALLGRAF GetVPModeID
-		cmp.l	#INVALID_ID,d0
-		bne.s	check_screen_mode_skip2
-		move.w	#VIEWPORT_MONITOR_ID_NOT_FOUND,custom_error_code(a3)
-		moveq	#RETURN_FAIL,d0
-		bra.s	check_screen_mode_quit
-		CNOP 0,4
-check_screen_mode_skip2
-		and.l	#MONITOR_ID_MASK,d0	; without resolution
-		move.l	d0,screen_mode(a3)
-		bra.s	check_screen_mode_ok
-
-
-
 		IFEQ screen_fader_enabled
 ; Input
 ; Result
@@ -2098,7 +2100,7 @@ sf_get_screen_colors_quit
 sf_get_screen_colors_skip1
 			move.l	d0,a0
 			move.l	sc_ViewPort+vp_ColorMap(a0),a0
-			moveq	#0,d2	; index in color table
+			moveq	#0,d2	; counter index in color table
 			move.l	a0,a2   ; color map
 			move.l	sf_screen_color_table(a3),a4
 			move.l	_GfxBase(pc),a6
@@ -2272,6 +2274,9 @@ sf_rgb4_set_new_colors_skip
 		CNOP 0,4
 open_pal_screen
 		lea	pal_extended_newscreen(pc),a0
+		lea	video_control_tags(pc),a1
+		move.l	#VTAG_SPRITERESN_SET,vctl_VTAG_SPRITERESN+ti_Tag(a1)
+		move.l	#SPRITERESN_140NS,vctl_VTAG_SPRITERESN+ti_Data(a1)
 		CALLINT OpenScreen
 		move.l	d0,pal_screen(a3)
 		bne.s	open_pal_screen_ok
@@ -2355,13 +2360,13 @@ open_invisible_window_ok
 ; Input
 ; Result
 		CNOP 0,4
-clear_mousepointer
+clear_mouse_pointer
 		move.l	invisible_window(a3),a0
 		move.l	mouse_pointer_data(a3),a1
-		moveq	#cleared_sprite_y_size,d0
-		moveq	#cleared_sprite_x_size,d1
-		moveq	#cleared_sprite_x_offset,d2
-		moveq	#cleared_sprite_y_offset,d3
+		moveq	#pointer_y_size,d0
+		moveq	#pointer_x_size,d1
+		moveq	#pointer_x_offset,d2
+		moveq	#pointer_y_offset,d3
 		CALLINT SetPointer
 		rts
 
@@ -2914,7 +2919,7 @@ get_tod_duration
 		cmp.l	d0,d1		; TOD overflow ?
 		bge.s	get_tod_duration_skip1
 		move.l	#TOD_MAX,d2
-		sub.l	d0,d2
+		sub.l	d0,d2		; difference until overflow
 		add.l	d2,d1           ; adjust time
 		bra.s	get_tod_duration_skip2
 		CNOP 0,4
@@ -2984,8 +2989,8 @@ update_system_time
 		move.w	#TR_SETSYSTIME,IO_command(a1)
 		move.l	d0,d1
 		ext.l	d0
-		swap	d1		; remainder
 		add.l	d0,IO_size+TV_SECS(a1)
+		swap	d1		; remainder
 		mulu.w	#10000,d1	; convert to micro seconds
 		add.l	d1,IO_size+TV_MICRO(a1)
 		CALLLIBS DoIO
@@ -3016,7 +3021,7 @@ restore_sprite_resolution_skip
 		move.l	#VTAG_SPRITERESN_SET,vctl_VTAG_SPRITERESN+ti_tag(a1)
 		move.l	old_sprite_resolution(a3),vctl_VTAG_SPRITERESN+ti_data(a1)
 		CALLGRAF VideoControl
-		move.l	a2,a0			; screen
+		move.l	a2,a0			; screen structure
 		CALLINT MakeScreen
 		CALLLIBS RethinkDisplay
 		bra.s	restore_sprite_resolution_quit
@@ -3621,7 +3626,7 @@ free_mouse_pointer_data_quit
 		CNOP 0,4
 free_mouse_pointer_data_skip
 		move.l	d0,a1
-		moveq	#cleared_pointer_data_size,d0
+		moveq	#pointer_data_size,d0
 		CALLEXEC FreeMem
 		bra.s	free_mouse_pointer_data_quit
 
