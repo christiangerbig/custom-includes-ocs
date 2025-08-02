@@ -58,14 +58,15 @@
 			move.l	d0,dos_return_code(a3)
 			bne	cleanup_dos_library
 		ENDC
+
+		bsr	get_system_props
+
 		bsr	open_graphics_library
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_dos_library
 		bsr	open_intuition_library
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_graphics_library
-
-		bsr	get_system_props
 
 		bsr	get_active_screen
 		move.l	d0,active_screen(a3)
@@ -279,6 +280,7 @@
 		bsr	open_invisible_window
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_pal_screen
+
 		bsr	clear_mouse_pointer
 		bsr	blank_display
 		bsr	wait_monitor_switch
@@ -299,7 +301,7 @@
 	ENDC
 
 	move.l	#_CIAB,a5
-	lea	_CIAA-_CIAB(a5),a4	; CIA-A-Base
+	lea	_CIAA-_CIAB(a5),a4	; CIA-A base
 	move.l	#_CUSTOM+DMACONR,a6
 	
 	IFND SYS_TAKEN_OVER
@@ -398,7 +400,7 @@ cleanup_all_memory
 			bsr	sf_free_screen_color_table
 		ENDC
 
-		bsr	free_mouse_pointer_data
+		bsr	free_pointer_data
 
 		bsr	free_vectors_base_memory
 	ENDC
@@ -574,14 +576,19 @@ init_variables
 init_structures
 	IFND SYS_TAKEN_OVER
 		bsr	init_custom_error_table
+
 		bsr	init_auto_request_texts
+
 		bsr	init_pal_extended_newscreen
 		bsr	init_pal_screen_tags
 		bsr	init_pal_screen_color_spec
 		bsr	init_pal_screen_rgb4_colors
+
 		bsr	init_video_control_tags
+
 		bsr	init_invisible_extended_newwindow
 		bsr	init_invisible_window_tags
+
 		bsr	init_timer_io
 		ENDC
 	IFNE pf_extra_number
@@ -810,7 +817,7 @@ init_pal_screen_color_spec_loop
 		CNOP 0,4
 init_pal_screen_rgb4_colors
 		lea	pal_screen_rgb4_colors(pc),a0 ; for LoadRGB4()
-		move.w	pf1_rgb4_color_table(pc),d0 ; COLOR00 RGB
+		move.w	pf1_rgb4_color_table(pc),d0 ; COLOR00 RGB4
 		IFEQ screen_fader_enabled
 			MOVEF.W	pal_screen_max_colors_number-1,d7
 		ELSE
@@ -1182,6 +1189,21 @@ get_output_ok
 			bra.s	get_output_quit
 		ENDC
 
+; Input
+; Result
+		CNOP 0,4
+get_system_props
+		move.l	_SysBase(pc),a6
+		move.w	AttnFlags(a6),cpu_flags(a3)
+		move.w	Lib_Version(a6),os_version(a3)
+		moveq	#MEMF_FAST,d1
+		CALLLIBS AvailMem
+		tst.l	d0
+		beq.s	get_system_props_quit
+		clr.w	fast_memory_available(a3)
+get_system_props_quit
+		rts
+
 
 ; Input
 ; Result
@@ -1321,22 +1343,6 @@ get_sprite_resolution_skip
 		CALLGRAF VideoControl
 		move.l  vctl_VTAG_SPRITERESN+ti_Data(a2),old_sprite_resolution(a3)
 		bra.s	get_sprite_resolution_quit
-
-
-; Input
-; Result
-		CNOP 0,4
-get_system_props
-		move.l	_SysBase(pc),a6
-		move.w	AttnFlags(a6),cpu_flags(a3)
-		move.w	Lib_Version(a6),os_version(a3)
-		moveq	#MEMF_FAST,d1
-		CALLLIBS AvailMem
-		tst.l	d0
-		beq.s	get_system_props_quit
-		clr.w	fast_memory_available(a3)
-get_system_props_quit
-		rts
 
 
 		IFEQ requires_030_cpu
@@ -2012,7 +2018,7 @@ alloc_vectors_base_memory_ok
 alloc_pointer_data
 		moveq	#pointer_data_size,d0
 		bsr	do_alloc_chip_memory
-		move.l	d0,pointer_data(a3)
+		move.l	d0,mouse_pointer(a3)
 		bne.s	alloc_pointer_data_ok
 		move.w	#POINTER_NO_MEMORY,custom_error_code(a3)
 		moveq	#ERROR_NO_FREE_STORE,d0
@@ -2042,7 +2048,6 @@ sf_alloc_screen_color_table_quit
 sf_alloc_screen_color_table_ok
 			moveq	#RETURN_OK,d0
 			bra.s	sf_alloc_screen_color_table_quit
-
 
 
 ; Input
@@ -2362,7 +2367,7 @@ open_invisible_window_ok
 		CNOP 0,4
 clear_mouse_pointer
 		move.l	invisible_window(a3),a0
-		move.l	mouse_pointer_data(a3),a1
+		move.l	mouse_pointer(a3),a1
 		moveq	#pointer_y_size,d0
 		moveq	#pointer_x_size,d1
 		moveq	#pointer_x_offset,d2
@@ -2980,7 +2985,7 @@ enable_system
 ; Result
 		CNOP 0,4
 update_system_time
-		move.l	exec_base.w,a6
+		move.l	_SysBase(pc),a6
 		move.l	tod_time(a3),d0 ; time the system was disabled
 		moveq	#0,d1
 		move.b	VBlankFrequency(a6),d1
@@ -3086,7 +3091,7 @@ rgb4_screen_fader_in
 			MOVEF.W	sf_rgb4_colors_number*3,d6 ; RGB counter
 			move.l	sf_screen_color_cache(a3),a0
 			move.l	sf_screen_color_table(a3),a1 ; destination colors
-			move.w	#sfi_fader_speed,a4 ; increment/decrement for RGB values
+			move.w	#sfi_fader_speed,a4 ; increase/decrease RGB
 			MOVEF.W	sf_rgb4_colors_number-1,d7
 rgb4_screen_fader_in_loop
 			move.w  (a0),d0
@@ -3207,6 +3212,22 @@ put_ch_process
 			move.b	d0,(a3)+ ; write data to output string
 			rts
 		ENDC
+
+
+; Input
+; Result
+		CNOP 0,4
+free_pointer_data
+		move.l	mouse_pointer(a3),d0
+		bne.s	free_pointer_data_skip
+free_pointer_data_quit
+		rts
+		CNOP 0,4
+free_pointer_data_skip
+		move.l	d0,a1
+		moveq	#pointer_data_size,d0
+		CALLEXEC FreeMem
+		bra.s	free_pointer_data_quit
 
 
 ; Input
@@ -3618,49 +3639,6 @@ sf_free_screen_color_table_skip
 ; Input
 ; Result
 		CNOP 0,4
-free_mouse_pointer_data
-		move.l	mouse_pointer_data(a3),d0
-		bne.s	free_mouse_pointer_data_skip
-free_mouse_pointer_data_quit
-		rts
-		CNOP 0,4
-free_mouse_pointer_data_skip
-		move.l	d0,a1
-		moveq	#pointer_data_size,d0
-		CALLEXEC FreeMem
-		bra.s	free_mouse_pointer_data_quit
-
-
-; Input
-; Result
-		CNOP 0,4
-close_timer_device
-		lea	timer_io(pc),a1
-		CALLEXEC CloseDevice
-		rts
-
-
-; Input
-; Result
-		CNOP 0,4
-close_intuition_library
-		move.l	_IntuitionBase(pc),a1
-		CALLEXEC CloseLibrary
-		rts
-
-
-; Input
-; Result
-		CNOP 0,4
-close_graphics_library
-		move.l	_GfxBase(pc),a1
-		CALLEXEC CloseLibrary
-		rts
-
-	
-; Input
-; Result
-		CNOP 0,4
 print_error_message
 		move.w	custom_error_code(a3),d4
 		beq.s	print_error_message_ok
@@ -3732,12 +3710,39 @@ get_first_screen
 ; Input
 ; Result
 		CNOP 0,4
+close_timer_device
+		lea	timer_io(pc),a1
+		CALLEXEC CloseDevice
+		rts
+
+
+; Input
+; Result
+		CNOP 0,4
+close_intuition_library
+		move.l	_IntuitionBase(pc),a1
+		CALLEXEC CloseLibrary
+		rts
+
+
+; Input
+; Result
+		CNOP 0,4
+close_graphics_library
+		move.l	_GfxBase(pc),a1
+		CALLEXEC CloseLibrary
+		rts
+
+
+; Input
+; Result
+		CNOP 0,4
 close_dos_library
 		move.l	_DOSBase(pc),a1
 		CALLEXEC CloseLibrary
 		rts
 
-
+	
 		IFEQ workbench_start_enabled
 ; Input
 ; Result
