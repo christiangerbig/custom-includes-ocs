@@ -2278,10 +2278,11 @@ sf_rgb4_set_new_colors_skip
 ; d0.l	Return code
 		CNOP 0,4
 open_pal_screen
+		lea	video_control_tags(pc),a0
+		move.l	#VTAG_SPRITERESN_SET,vctl_VTAG_SPRITERESN+ti_Tag(a0)
+		move.l	#SPRITERESN_140NS,vctl_VTAG_SPRITERESN+ti_Data(a0)
+
 		lea	pal_extended_newscreen(pc),a0
-		lea	video_control_tags(pc),a1
-		move.l	#VTAG_SPRITERESN_SET,vctl_VTAG_SPRITERESN+ti_Tag(a1)
-		move.l	#SPRITERESN_140NS,vctl_VTAG_SPRITERESN+ti_Data(a1)
 		CALLINT OpenScreen
 		move.l	d0,pal_screen(a3)
 		bne.s	open_pal_screen_ok
