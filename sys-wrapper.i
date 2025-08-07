@@ -59,8 +59,6 @@
 			bne	cleanup_dos_library
 		ENDC
 
-		bsr	get_system_props
-
 		bsr	open_graphics_library
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_dos_library
@@ -68,15 +66,7 @@
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_graphics_library
 
-		bsr	get_active_screen
-		move.l	d0,active_screen(a3)
-		bsr	get_first_window
-		move.l	d0,first_window(a3)
-		bsr	check_screen_mode
-		move.l	d0,dos_return_code(a3)
-		bne	cleanup_intuition_library
-		bsr	get_screen_depth
-		bsr	get_sprite_resolution
+		bsr	get_system_props
 
 		IFEQ requires_030_cpu
 			bsr	check_cpu_requirements
@@ -93,11 +83,13 @@
 			move.l	d0,dos_return_code(a3)
 			bne	cleanup_error_message
 		ENDC
+
 		IFEQ requires_fast_memory
 			bsr	check_memory_requirements
 			move.l	d0,dos_return_code(a3)
 			bne	cleanup_error_message
 		ENDC
+
 		IFEQ requires_multiscan_monitor
 			bsr	do_monitor_request
 			move.l	d0,dos_return_code(a3)
@@ -120,7 +112,18 @@
 		bsr	open_timer_device
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_error_message
+
+		bsr	get_active_screen
+		move.l	d0,active_screen(a3)
+		bsr	get_first_window
+		move.l	d0,first_window(a3)
+		bsr	check_screen_mode
+		move.l	d0,dos_return_code(a3)
+		bne	cleanup_error_message
+		bsr	get_screen_depth
+		bsr	get_sprite_resolution		
 	ENDC
+
 
 	IFNE cl1_size1
 		bsr	alloc_cl1_memory1
@@ -138,6 +141,7 @@
 		bne	cleanup_all_memory
 	ENDC
 
+
 	IFNE cl2_size1
 		bsr	alloc_cl2_memory1
 		move.l	d0,dos_return_code(a3)
@@ -154,6 +158,7 @@
 		bne	cleanup_all_memory
 	ENDC
 
+
 	IFNE pf1_x_size1
 		bsr	alloc_pf1_memory1
 		move.l	d0,dos_return_code(a3)
@@ -169,6 +174,7 @@
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
 	ENDC
+
 	
 	IFNE pf2_x_size1
 		bsr	alloc_pf2_memory1
@@ -186,11 +192,13 @@
 		bne	cleanup_all_memory
 	ENDC
 
+
 	IFNE pf_extra_number
 		bsr	alloc_pf_extra_memory
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
 	ENDC
+
 
 	IFNE spr_number
 		IFNE spr_x_size1
@@ -205,11 +213,13 @@
 		ENDC
 	ENDC
 
+
 	IFNE audio_memory_size
 		bsr	alloc_audio_memory
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
 	ENDC
+
 
 	IFNE disk_memory_size
 		bsr	alloc_disk_memory
@@ -217,17 +227,20 @@
 		bne	cleanup_all_memory
 	ENDC
 
+
 	IFNE extra_memory_size
 		bsr	alloc_extra_memory
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_all_memory
 	ENDC
 
+
 	IFNE chip_memory_size
 		bsr	alloc_chip_memory
 		move.l	d0,dos_return_code(a3)
 		bne.s	cleanup_all_memory
 	ENDC
+
 	
 	IFD SYS_TAKEN_OVER
 		IFD CUSTOM_MEMORY_USED
@@ -269,6 +282,7 @@
 			bsr	sf_fade_out_screen
 		ENDC
 
+
 		bsr	open_pal_screen
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_original_screen
@@ -276,11 +290,9 @@
 		bsr	check_pal_screen_mode
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_original_screen
-
 		bsr	open_invisible_window
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_pal_screen
-
 		bsr	clear_mouse_pointer
 		bsr	blank_display
 		bsr	wait_monitor_switch
@@ -312,14 +324,14 @@
 		bsr	turn_off_drive_motors
 	ENDC
 
-	move.w	#dma_bits&(~(DMAF_SPRITE|DMAF_COPPER|DMAF_RASTER)),DMACON-DMACONR(a6) ; enable DMA excluded Sprite/Copper/Bitplane DMA
+	move.w	#dma_bits&(~(DMAF_SPRITE|DMAF_COPPER|DMAF_RASTER)),DMACON-DMACONR(a6) ; enable DMA and exclude sprite/copper/bitplane DMA
 	bsr	init_main		; external routine
 	bsr	start_own_display
 	IFNE (intena_bits&(~INTF_SETCLR))|(ciaa_icr_bits&(~CIAICRF_SETCLR))|(ciab_icr_bits&(~CIAICRF_SETCLR))
 		bsr	start_own_interrupts
 	ENDC
 	IFEQ ciaa_ta_continuous_enabled&ciaa_tb_continuous_enabled&ciab_ta_continuous_enabled&ciab_tb_continuous_enabled
-		bsr	start_CIA_timers
+		bsr	start_cia_timers
 	ENDC
 
 	IFD SYS_TAKEN_OVER
@@ -376,7 +388,6 @@
 		bsr	close_invisible_window
 cleanup_pal_screen
 		bsr	close_pal_screen
-
 cleanup_original_screen
 		bsr	activate_first_window
 
@@ -405,21 +416,26 @@ cleanup_all_memory
 		bsr	free_vectors_base_memory
 	ENDC
 
+
 	IFNE chip_memory_size
 		bsr	free_chip_memory
 	ENDC
+
 
 	IFNE extra_memory_size
 		bsr	free_extra_memory
 	ENDC
 
+
 	IFNE disk_memory_size
 		bsr	free_disk_memory
 	ENDC
 
+
 	IFNE audio_memory_size
 		bsr	free_audio_memory
 	ENDC
+
 
 	IFNE spr_x_size2
 		bsr	free_sprite_memory2
@@ -431,6 +447,7 @@ cleanup_all_memory
 	IFNE pf_extra_number
 		bsr	free_pf_extra_memory
 	ENDC
+
 
 	IFNE pf2_x_size3
 		bsr	free_pf2_memory3
@@ -462,6 +479,7 @@ cleanup_all_memory
 		bsr	free_cl2_memory1
 	ENDC
 
+
 	IFNE cl1_size3
 		bsr	free_cl1_memory3
 	ENDC
@@ -471,6 +489,7 @@ cleanup_all_memory
 	IFNE cl1_size1
 		bsr	free_cl1_memory1
 	ENDC
+
 
 	IFND SYS_TAKEN_OVER
 cleanup_timer_device
@@ -482,10 +501,8 @@ cleanup_error_message
 
 cleanup_intuition_library
 		bsr	close_intuition_library
-
 cleanup_graphics_library
 		bsr	close_graphics_library
-
 cleanup_dos_library
 		bsr	close_dos_library
 
@@ -583,14 +600,13 @@ init_structures
 		bsr	init_pal_screen_tags
 		bsr	init_pal_screen_color_spec
 		bsr	init_pal_screen_rgb4_colors
-
 		bsr	init_video_control_tags
-
 		bsr	init_invisible_extended_newwindow
 		bsr	init_invisible_window_tags
 
 		bsr	init_timer_io
 		ENDC
+
 	IFNE pf_extra_number
 		bsr	init_pf_extra_structure
 	ENDC
@@ -1024,6 +1040,7 @@ init_pf_extra_structure
 		rts
 	ENDC
 
+
 	IFNE spr_x_size1|spr_x_size2
 ; Input
 ; Result
@@ -1118,6 +1135,7 @@ spr_init_structure
 		rts
 	ENDC
 
+
 	IFND SYS_TAKEN_OVER
 		IFEQ workbench_start_enabled
 ; Input
@@ -1189,21 +1207,6 @@ get_output_ok
 			bra.s	get_output_quit
 		ENDC
 
-; Input
-; Result
-		CNOP 0,4
-get_system_props
-		move.l	_SysBase(pc),a6
-		move.w	AttnFlags(a6),cpu_flags(a3)
-		move.w	Lib_Version(a6),os_version(a3)
-		moveq	#MEMF_FAST,d1
-		CALLLIBS AvailMem
-		tst.l	d0
-		beq.s	get_system_props_quit
-		clr.w	fast_memory_available(a3)
-get_system_props_quit
-		rts
-
 
 ; Input
 ; Result
@@ -1247,102 +1250,18 @@ open_intuition_library_ok
 
 ; Input
 ; Result
-; d0.l	Screen structure active screen
 		CNOP 0,4
-get_active_screen
-		moveq	#0,d0		; all locks
-		CALLINT LockIBase
-		move.l	d0,a0
-		move.l	ib_ActiveScreen(a6),a2
-		CALLLIBS UnlockIBase
-		move.l	a2,d0
+get_system_props
+		move.l	_SysBase(pc),a6
+		move.w	AttnFlags(a6),cpu_flags(a3)
+		move.w	Lib_Version(a6),os_version(a3)
+		moveq	#MEMF_FAST,d1
+		CALLLIBS AvailMem
+		tst.l	d0
+		beq.s	get_system_props_quit
+		clr.w	fast_memory_available(a3)
+get_system_props_quit
 		rts
-
-
-; Input
-; Result
-; d0.l  Window structure first window
-		CNOP 0,4
-get_first_window
-		move.l	active_screen(a3),d0
-		bne.s	get_first_window_skip
-get_first_window_quit
-		rts
-		CNOP 0,4
-get_first_window_skip
-		move.l	d0,a0
-		move.l	sc_FirstWindow(a0),d0
-		bra.s	get_first_window_quit
-
-
-; Input
-; Result
-; d0.l	Return code
-		CNOP 0,4
-check_screen_mode
-		cmp.w	#OS2_VERSION,os_version(a3)
-		bge.s   check_screen_mode_skip
-check_screen_mode_ok
-		moveq	#RETURN_OK,d0
-check_screen_mode_quit
-		rts
-		CNOP 0,4
-check_screen_mode_skip
-		move.l	active_screen(a3),d0
-		beq.s	check_screen_mode_ok
-		move.l	d0,a0
-		ADDF.W	sc_ViewPort,a0
-		CALLGRAF GetVPModeID
-		cmp.l	#INVALID_ID,d0
-		bne.s	check_screen_mode_skip2
-		move.w	#VIEWPORT_MONITOR_ID_NOT_FOUND,custom_error_code(a3)
-		moveq	#RETURN_FAIL,d0
-		bra.s	check_screen_mode_quit
-		CNOP 0,4
-check_screen_mode_skip2
-		and.l	#MONITOR_ID_MASK,d0	; without resolution
-		move.l	d0,screen_mode(a3)
-		bra.s	check_screen_mode_ok		
-
-
-; Input
-; Result
-	CNOP 0,4
-get_screen_depth
-		move.l	active_screen(a3),d0
-		bne.s	get_screen_depth_skip
-get_screen_depth_quit
-		rts
-		CNOP 0,4
-get_screen_depth_skip
-		move.l	d0,a0
-		ADDF.W	sc_BitMap,a0
-		move.b	bm_depth(a0),screen_depth(a3)
-		bra.s	get_screen_depth_quit
-
-
-; Input
-; Result
-		CNOP 0,4
-get_sprite_resolution
-		cmp.w	#OS3_VERSION,os_version(a3)
-		bge.s	get_sprite_resolution_skip
-get_sprite_resolution_quit
-		rts
-		CNOP 0,4
-get_sprite_resolution_skip
-		move.l	active_screen(a3),d0
-		beq.s	get_sprite_resolution_quit
-		move.l	d0,a0
-		move.l  sc_ViewPort+vp_ColorMap(a0),a0
-		lea	video_control_tags(pc),a1
-		move.l	a1,a2
-		move.l	#VTAG_SPRITERESN_GET,vctl_VTAG_SPRITERESN+ti_tag(a1)
-		moveq	#0,d0
-		move.l	d0,vctl_VTAG_SPRITERESN+ti_Data(a1)
-		CALLGRAF VideoControl
-		move.l  vctl_VTAG_SPRITERESN+ti_Data(a2),old_sprite_resolution(a3)
-		bra.s	get_sprite_resolution_quit
 
 
 		IFEQ requires_030_cpu
@@ -1555,6 +1474,106 @@ open_timer_device_ok
 		moveq	#RETURN_OK,d0
 		bra.s	open_timer_device_quit
 	ENDC
+
+
+; Input
+; Result
+; d0.l	Screen structure active screen
+		CNOP 0,4
+get_active_screen
+		moveq	#0,d0		; all locks
+		CALLINT LockIBase
+		move.l	d0,a0
+		move.l	ib_ActiveScreen(a6),a2
+		CALLLIBS UnlockIBase
+		move.l	a2,d0
+		rts
+
+
+; Input
+; Result
+; d0.l  Window structure first window
+		CNOP 0,4
+get_first_window
+		move.l	active_screen(a3),d0
+		bne.s	get_first_window_skip
+get_first_window_quit
+		rts
+		CNOP 0,4
+get_first_window_skip
+		move.l	d0,a0
+		move.l	sc_FirstWindow(a0),d0
+		bra.s	get_first_window_quit
+
+
+; Input
+; Result
+; d0.l	Return code
+		CNOP 0,4
+check_screen_mode
+		cmp.w	#OS2_VERSION,os_version(a3)
+		bge.s   check_screen_mode_skip
+check_screen_mode_ok
+		moveq	#RETURN_OK,d0
+check_screen_mode_quit
+		rts
+		CNOP 0,4
+check_screen_mode_skip
+		move.l	active_screen(a3),d0
+		beq.s	check_screen_mode_ok
+		move.l	d0,a0
+		ADDF.W	sc_ViewPort,a0
+		CALLGRAF GetVPModeID
+		cmp.l	#INVALID_ID,d0
+		bne.s	check_screen_mode_skip2
+		move.w	#VIEWPORT_MONITOR_ID_NOT_FOUND,custom_error_code(a3)
+		moveq	#RETURN_FAIL,d0
+		bra.s	check_screen_mode_quit
+		CNOP 0,4
+check_screen_mode_skip2
+		and.l	#MONITOR_ID_MASK,d0	; without resolution
+		move.l	d0,screen_mode(a3)
+		bra.s	check_screen_mode_ok		
+
+
+; Input
+; Result
+	CNOP 0,4
+get_screen_depth
+		move.l	active_screen(a3),d0
+		bne.s	get_screen_depth_skip
+get_screen_depth_quit
+		rts
+		CNOP 0,4
+get_screen_depth_skip
+		move.l	d0,a0
+		ADDF.W	sc_BitMap,a0
+		move.b	bm_depth(a0),screen_depth(a3)
+		bra.s	get_screen_depth_quit
+
+
+; Input
+; Result
+		CNOP 0,4
+get_sprite_resolution
+		cmp.w	#OS3_VERSION,os_version(a3)
+		bge.s	get_sprite_resolution_skip
+get_sprite_resolution_quit
+		rts
+		CNOP 0,4
+get_sprite_resolution_skip
+		move.l	active_screen(a3),d0
+		beq.s	get_sprite_resolution_quit
+		move.l	d0,a0
+		move.l  sc_ViewPort+vp_ColorMap(a0),a0
+		lea	video_control_tags(pc),a1
+		move.l	a1,a2
+		move.l	#VTAG_SPRITERESN_GET,vctl_VTAG_SPRITERESN+ti_tag(a1)
+		moveq	#0,d0
+		move.l	d0,vctl_VTAG_SPRITERESN+ti_Data(a1)
+		CALLGRAF VideoControl
+		move.l  vctl_VTAG_SPRITERESN+ti_Data(a2),old_sprite_resolution(a3)
+		bra.s	get_sprite_resolution_quit
 
 
 	IFNE cl1_size1
@@ -3345,7 +3364,6 @@ free_sprite_memory2_skip
 		dbf	d7,free_sprite_memory2_loop
 		bra.s	free_sprite_memory2_quit
 	ENDC
-
 
 	IFNE spr_x_size1
 ; Input
