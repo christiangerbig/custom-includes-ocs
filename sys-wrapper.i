@@ -1473,7 +1473,6 @@ open_timer_device_quit
 open_timer_device_ok
 		moveq	#RETURN_OK,d0
 		bra.s	open_timer_device_quit
-	ENDC
 
 
 ; Input
@@ -1574,7 +1573,8 @@ get_sprite_resolution_skip
 		CALLGRAF VideoControl
 		move.l  vctl_VTAG_SPRITERESN+ti_Data(a2),old_sprite_resolution(a3)
 		bra.s	get_sprite_resolution_quit
-
+	ENDC
+	
 
 	IFNE cl1_size1
 ; Input
@@ -2146,7 +2146,7 @@ sf_get_screen_colors_skip
 
 ; Input
 ; Result
-	CNOP 0,4
+			CNOP 0,4
 sf_copy_screen_color_table
 			move.l	sf_screen_color_table(a3),a0 ; source
 			move.l	sf_screen_color_cache(a3),a1 ; destination
