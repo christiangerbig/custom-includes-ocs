@@ -946,7 +946,7 @@ init_timer_io
 		move.b	d0,LN_Type(a0)
 		move.b	d0,LN_Pri(a0)
 		move.l	d0,LN_Name(a0)
-		move.l	d0,MN_ReplyPort(a0)
+		move.l	d0,MN_ReplyPort(a0)	; no message port
 		rts	
 	ENDC
 
