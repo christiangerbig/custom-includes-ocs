@@ -371,7 +371,7 @@ COP_INIT_COLOR00_SCREEN	MACRO
 	move.l	#$01000000,d6
 	MOVEF.W	\1_display_y_size-1,d7
 \1_init_color00_loop
-	move.l	d0,(a0)+		; CWAIT x,y
+	move.l	d0,(a0)+		; CWAIT
 	move.l	d1,(a0)+		; COLOR00
 	IFC "YWRAP","\2"
 		cmp.l	d5,d0		; y wrapping ?
@@ -447,7 +447,7 @@ COP_INIT_COLOR00_CHUNKY		MACRO
 	move.l	#$01000000,d2
 	MOVEF.W	\5-1,d7		; number of lines
 \1_init_color00_chunky_loop1
-	move.l	d0,(a0)+	; CWAIT x,y
+	move.l	d0,(a0)+	; CWAIT
 	moveq	#(\4/8)-1,d6	; number of columns
 \1_init_color00_chunky_loop2
 	move.l	d1,(a0)+	; COLOR00
@@ -495,7 +495,7 @@ COP_INIT_BPLCON1_CHUNKY	MACRO
 	move.l	#$01000000,d3
 	MOVEF.W \5-1,d7
 \1_init_bplcon1s_loop1
-	move.l	d0,(a0)+		; CWAIT x,y
+	move.l	d0,(a0)+		; CWAIT
 	moveq	 #(\4/8)-1,d6		; number of colums
 \1_init_bplcon1s_loop2
 	move.l	d1,(a0)+		; BPLCON1

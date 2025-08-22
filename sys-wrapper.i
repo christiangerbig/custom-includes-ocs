@@ -260,7 +260,7 @@
 		IFEQ screen_fader_enabled
 			bsr	sf_alloc_screen_color_table
 			move.l	d0,dos_return_code(a3)
-			bne     cleanup_all_memory
+			bne   cleanup_all_memory
 			bsr	sf_alloc_screen_color_cache
 			move.l	d0,dos_return_code(a3)
 			bne	cleanup_all_memory
