@@ -6,7 +6,7 @@
 ; Input
 ; d0.l	Memory size
 ; Result
-; d0.l	Pointer to memory block if successful or 0
+; d0.l	 memory block if successful or 0
 	CNOP 0,4
 do_alloc_memory
 	move.l	#MEMF_CLEAR|MEMF_PUBLIC,d1
@@ -16,7 +16,7 @@ do_alloc_memory
 ; Input
 ; d0.l	Memory size
 ; Result
-; d0.l	Pointer to memory block if successful or 0
+; d0.l	 memory block if successful or 0
 	CNOP 0,4
 do_alloc_chip_memory
 	move.l	#MEMF_CLEAR|MEMF_CHIP|MEMF_PUBLIC,d1
@@ -26,7 +26,7 @@ do_alloc_chip_memory
 ; Input
 ; d0.l	Memory size
 ; Result
-; d0.l	Pointer to memory block if successful, otherwise 0
+; d0.l	 memory block if successful, otherwise 0
 	CNOP 0,4
 do_alloc_fast_memory
 	move.l	#MEMF_CLEAR|MEMF_FAST|MEMF_PUBLIC,d1
@@ -36,7 +36,7 @@ do_alloc_fast_memory
 ; Input
 ; d0.l	total playfield size in bytes
 ; Result
-; d0.l	Pointer to memory block if successful or 0
+; d0.l	 memory block if successful or 0
 	CNOP 0,4
 do_alloc_bitmap_memory
 	move.l	#MEMF_CLEAR|MEMF_CHIP|MEMF_PUBLIC,d1
@@ -127,17 +127,17 @@ wait_vbi_loop
 	CNOP 0,4
 wait_copint
 	lea	INTREQR-DMACONR(a6),a0
-wait_copint_loop
+wait_coploop
 	moveq	#INTF_COPER,d0
 	and.w	(a0),d0
-	beq.s	wait_copint_loop
+	beq.s	wait_coploop
 	move.w	d0,INTREQ-DMACONR(a6)	; clear interrupt
 	rts
 
 
 ; Input
-; a0.l	Pointer copperlist
-; a1.l	Pointer color table
+; a0.l	 copperlist
+; a1.l	 color table
 ; d3.w	Offset first color register
 ; d7.w	Number of colors
 ; Result
@@ -153,7 +153,7 @@ cop_init_colors
 
 ; Input
 ; a0.l	Offset first color register
-; a1.l	Pointer color table
+; a1.l	 color table
 ; d7.w	Number of colors
 ; Result
 ; d0	Kein Rückgabewert
@@ -169,7 +169,7 @@ cpu_init_colors
 ; d0.w	RGB4 current value
 ; d6.w	RGB4 destination value
 ; d7.w	Number of colors
-; a0.l	Pointer color table
+; a0.l	 color table
 ; a1.w	Increase/decrease red
 ; a2.w	Increase/decrease green
 ; a4.w	Increase/decrease blue

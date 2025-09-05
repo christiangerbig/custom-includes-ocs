@@ -54,7 +54,7 @@ pt_music_fader_skip2
 
 	IFD PROTRACKER_VERSION_2
 ; Input
-; a0.l	Pointer temporary audio data
+; a0.l	 temporary audio data
 ; Result
 		CNOP 0,4
 pt_decrease_channel_volume
@@ -181,7 +181,7 @@ PT_EXAMINE_SONG_STRUCTURE	MACRO
 pt_ExamineSongStruc
 	moveq	#0,d0			; first pattern number (count starts at 0)
 	moveq	#0,d1			; counter highest pattern number
-	move.l	pt_SongDataPointer(a3),a0
+	move.l	pt_Song(a3),a0
 	move.b	pt_sd_numofpatt(a0),pt_SongLength(a3)
 	lea	pt_sd_pattpos(a0),a1	; pointer table with pattern positions in song
 	MOVEF.W pt_maxsongpos-1,d7
@@ -204,7 +204,7 @@ pt_InitSkip
 	IFNE pt_split_module_enabled
 		lea	pt_sd_patterndata-pt_sd_id(a1,d1.l),a2 ; pointer first sample data in module
 	ELSE
-		move.l	pt_SamplesDataPointer(a3),a2 ; pointer first sample data in module
+		move.l	pt_Samples(a3),a2 ; pointer first sample data in module
 	ENDC
 	lea	pt_SampleStarts(pc),a1
 	moveq	#pt_sampleinfo_size,d1
@@ -237,7 +237,7 @@ pt_InitFtuPeriodTableStarts
 	moveq	#pt_finetunenum-1,d7
 pt_InitFtuPeriodTableStartsLoop
 	move.l	a0,(a1)+		; period table pointer
-	add.l	d0,a0			; next period table pointer									;Pointer to next period table, finetune + n
+	add.l	d0,a0			; next period table pointer									; next period table, finetune + n
 	dbf	d7,pt_InitFtuPeriodTableStartsLoop
 	rts
 	ENDM
@@ -350,7 +350,7 @@ pt_RtnInitChan4Loop
 
 
 ; Input
-; a0.l	Pointer temporary audio data
+; a0.l	 temporary audio data
 ; d0.w	DMA bit audio channel [0,2,4,8]
 ; Result
 		CNOP 0,4
