@@ -21,7 +21,7 @@ pt_music_fader
 		bsr.s	pt_decrease_channel_volume
 		lea	pt_audchan4temp(pc),a0
 		bsr.s	pt_decrease_channel_volume
-        ENDC
+	ENDC
 	move.w	pt_fade_out_delay_counter(a3),d0
 	subq.w	#1,d0
 	bne.s	pt_music_fader_skip1

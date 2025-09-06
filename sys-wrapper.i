@@ -1343,10 +1343,10 @@ check_memory_requirements_ok
 			CNOP 0,4
 do_monitor_request
 			sub.l	a0,a0   ; requester on workbench/public screen
-                        lea	monitor_request_intui_text_body(pc),a1
-                        lea	monitor_request_intui_text_pos(pc),a2
+			lea	monitor_request_intui_text_body(pc),a1
+			lea	monitor_request_intui_text_pos(pc),a2
 			move.l	a3,-(a7)
-                        lea	monitor_request_intui_text_neg(pc),a3
+			lea	monitor_request_intui_text_neg(pc),a3
 			moveq	#0,d0	; no positive flags
 			moveq	#0,d1	; no negative flags
 			MOVEF.L	monitor_request_x_size,d2
@@ -1390,10 +1390,10 @@ check_tcp_stack_quit
 check_tcp_stack_skip2
 			CALLLIBS Permit
 			sub.l	a0,a0	; requester appears on Workbench/public screen
-                        lea	tcp_stack_request_intui_text_body(pc),a1
-                        lea	tcp_stack_request_intui_text_pos(pc),a2
+			lea	tcp_stack_request_intui_text_body(pc),a1
+			lea	tcp_stack_request_intui_text_pos(pc),a2
 			move.l	a3,-(a7)
-                        lea	tcp_stack_request_intui_text_neg(pc),a3
+			lea	tcp_stack_request_intui_text_neg(pc),a3
 			moveq	#0,d0	; no positive flags
 			moveq	#0,d1	; no negative flags
 			MOVEF.L	tcp_stack_request_x_size,d2
@@ -1833,7 +1833,7 @@ alloc_pf_extra_memory_loop
 		move.l	(a5)+,d1	; height
 		move.l	(a5)+,d2	; depth
 		mulu.w	d2,d1
-		mulu.w	d1,d0           ; total size
+		mulu.w	d1,d0		; total size
 		bsr	do_alloc_bitmap_memory
 		move.l	d0,(a2)+	; bitmap
 		bne.s	alloc_pf_extra_memory_skip
@@ -1843,7 +1843,7 @@ alloc_pf_extra_memory_quit
 		rts
 		CNOP 0,4
 alloc_pf_extra_memory_skip
-		move.l	d0,(a4)+        ; 1st bitplane
+		move.l	d0,(a4)+	; 1st bitplane
 		dbf	d7,alloc_pf_extra_memory_loop
 		moveq	#RETURN_OK,d0
 		bra.s	alloc_pf_extra_memory_quit
@@ -1865,7 +1865,7 @@ alloc_sprite_memory1_loop
 		move.l	(a5)+,d1	; height
 		move.l	(a5)+,d2	; deh
 		mulu.w	d2,d1
-		mulu.w	d1,d0           ; total size
+		mulu.w	d1,d0		; total size
 		bsr	do_alloc_bitmap_memory
 		move.l	d0,(a2)+	; bitmap
 		bne.s	alloc_sprite_memory1_ok
@@ -1875,7 +1875,7 @@ alloc_sprite_memory1_quit
 		rts
 		CNOP 0,4
 alloc_sprite_memory1_ok
-		move.l	d0,(a4)+        ; 1st bitplane
+		move.l	d0,(a4)+	; 1st bitplane
 		dbf	d7,alloc_sprite_memory1_loop
 		moveq	#RETURN_OK,d0
 		bra.s	alloc_sprite_memory1_quit
@@ -1907,7 +1907,7 @@ alloc_sprite_memory2_quit
 		rts
 		CNOP 0,4
 alloc_sprite_memory2_skip
-		move.l	d0,(a4)+        ; 1st bitplane
+		move.l	d0,(a4)+	; 1st bitplane
 		dbf	d7,alloc_sprite_memory2_loop
 		moveq	#RETURN_OK,d0
 		bra.s	alloc_sprite_memory2_quit
@@ -2945,7 +2945,7 @@ get_tod_duration
 		bge.s	get_tod_duration_skip1
 		move.l	#TOD_MAX,d2
 		sub.l	d0,d2		; difference until overflow
-		add.l	d2,d1           ; adjust time
+		add.l	d2,d1		; adjust time
 		bra.s	get_tod_duration_skip2
 		CNOP 0,4
 get_tod_duration_skip1
@@ -2998,7 +2998,7 @@ restore_vbr_skip
 		CNOP 0,4
 enable_system
 		CALLEXEC Enable
-                rts
+		rts
 
 
 ; Input
@@ -3357,7 +3357,7 @@ free_sprite_memory2_skip
 		move.l	d0,a1
 		move.l	(a4)+,d0	; width in bytes
 		move.l	(a4)+,d1	; height
-		move.l	(a4)+,d2        ; depth
+		move.l	(a4)+,d2	; depth
 		mulu.w	d2,d1
 		mulu.w	d1,d0		; total size
 		CALLEXEC FreeMem
@@ -3383,7 +3383,7 @@ free_sprite_memory1_skip
 		move.l	d0,a1
 		move.l	(a4)+,d0	; width in bytes
 		move.l	(a4)+,d1	; height
-		move.l	(a4)+,d2        ; depth
+		move.l	(a4)+,d2	; depth
 		mulu.w	d2,d1
 		mulu.w	d1,d0		; total size
 		CALLEXEC FreeMem
@@ -3410,7 +3410,7 @@ free_pf_extra_memory_skip
 		move.l	d0,a1
 		move.l	(a4)+,d0	; x size in bytes
 		move.l	(a4)+,d1	; y size
-		move.l	(a4)+,d2        ; depth
+		move.l	(a4)+,d2	; depth
 		mulu.w	d2,d1
 		mulu.w	d1,d0		; total size
 		CALLEXEC FreeMem

@@ -2313,7 +2313,7 @@ INIT_INTUI_TEXT			MACRO
 		FAIL Macro INIT_INTUI_TEXT: Text missing
 	ENDC
 	lea	\1(pc),a0
-        move.b	#\2,it_FrontPen(a0)
+	move.b	#\2,it_FrontPen(a0)
 	move.b	#\3,it_BackPen(a0)
 	moveq	#0,d0
 	move.b	d0,it_DrawMode(a0)
