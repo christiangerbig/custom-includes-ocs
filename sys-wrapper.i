@@ -66,6 +66,11 @@
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_graphics_library
 
+		bsr	get_active_screen
+		move.l	d0,active_screen(a3)
+		bsr	get_first_window
+		move.l	d0,first_window(a3)
+
 		bsr	get_system_props
 
 		IFEQ requires_030_cpu
@@ -113,10 +118,6 @@
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_error_message
 
-		bsr	get_active_screen
-		move.l	d0,active_screen(a3)
-		bsr	get_first_window
-		move.l	d0,first_window(a3)
 		bsr	check_screen_mode
 		move.l	d0,dos_return_code(a3)
 		bne	cleanup_error_message
@@ -1250,6 +1251,36 @@ open_intuition_library_ok
 
 ; Input
 ; Result
+; d0.l	Screen structure active screen
+		CNOP 0,4
+get_active_screen
+		moveq	#0,d0		; all locks
+		CALLINT LockIBase
+		move.l	d0,a0
+		move.l	ib_ActiveScreen(a6),a2
+		CALLLIBS UnlockIBase
+		move.l	a2,d0
+		rts
+
+
+; Input
+; Result
+; d0.l  Window structure first window
+		CNOP 0,4
+get_first_window
+		move.l	active_screen(a3),d0
+		bne.s	get_first_window_skip
+get_first_window_quit
+		rts
+		CNOP 0,4
+get_first_window_skip
+		move.l	d0,a0
+		move.l	sc_FirstWindow(a0),d0
+		bra.s	get_first_window_quit
+
+
+; Input
+; Result
 		CNOP 0,4
 get_system_props
 		move.l	_SysBase(pc),a6
@@ -1473,36 +1504,6 @@ open_timer_device_quit
 open_timer_device_ok
 		moveq	#RETURN_OK,d0
 		bra.s	open_timer_device_quit
-
-
-; Input
-; Result
-; d0.l	Screen structure active screen
-		CNOP 0,4
-get_active_screen
-		moveq	#0,d0		; all locks
-		CALLINT LockIBase
-		move.l	d0,a0
-		move.l	ib_ActiveScreen(a6),a2
-		CALLLIBS UnlockIBase
-		move.l	a2,d0
-		rts
-
-
-; Input
-; Result
-; d0.l  Window structure first window
-		CNOP 0,4
-get_first_window
-		move.l	active_screen(a3),d0
-		bne.s	get_first_window_skip
-get_first_window_quit
-		rts
-		CNOP 0,4
-get_first_window_skip
-		move.l	d0,a0
-		move.l	sc_FirstWindow(a0),d0
-		bra.s	get_first_window_quit
 
 
 ; Input
