@@ -2286,7 +2286,7 @@ INIT_CUSTOM_ERROR_ENTRY		MACRO
 	lea	\2(pc),a1
 	move.l	a1,(a0,d0.w)
 	moveq	#\3,d1
-	move.l	d1,4(a0,d0.w)
+	move.l	d1,LONGWORD_SIZE(a0,d0.w)
 	ENDM
 
 
