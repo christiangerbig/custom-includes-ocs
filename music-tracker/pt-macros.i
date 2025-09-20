@@ -67,7 +67,7 @@ pt_decrease_channel_volume
 		lsr.w	#6,d0
 pt_decrease_channel_volume_skip
 		move.w	d0,(a1)		; AUDxVOL
-		ADDF.W	16,a1		; next audio channel
+		ADDF.W	ac_SIZEOF,a1	; next audio channel
 		rts
 	ENDC
 	ENDM
