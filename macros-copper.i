@@ -452,7 +452,7 @@ COP_INIT_COLOR00_CHUNKY		MACRO
 \1_init_color00_chunky_loop2
 	move.l	d1,(a0)+	; COLOR00
 	dbf	d6,\1_init_color00_chunky_loop2
-	add.l	d2,d0		; next line in cl
+	add.l	d2,d0		; next line
 	dbf	d7,\1_init_color00_chunky_loop1
 	rts
 	ENDM
@@ -942,7 +942,7 @@ CLEAR_COLOR00_SCREEN		MACRO
 			move.w	d0,\2_\4_size*12(a0)
 			move.w	d0,\2_\4_size*13(a0)
 			move.w	d0,\2_\4_size*14(a0)
-			add.l	d1,a0	; next line in cl
+			add.l	d1,a0	; next line
 			move.w	d0,(\2_\4_size*15)-(\2_\4_size*16)(a0)
 			dbf	d7,\1_clear_first_copperlist_loop
 			rts
@@ -985,7 +985,7 @@ CLEAR_COLOR00_SCREEN		MACRO
 			move.w	d0,\2_\4_size*28(a0)
 			move.w	d0,\2_\4_size*29(a0)
 			move.w	d0,\2_\4_size*30(a0)
-			add.l	d1,a0	; next line in cl
+			add.l	d1,a0	; next line
 			move.w	d0,(\2_\4_size*31)-(\2_\4_size*32)(a0)
 			dbf	d7,\1_clear_first_copperlist_loop
 			rts
@@ -1110,7 +1110,7 @@ CLEAR_COLOR00_CHUNKY		MACRO
 \1_clear_first_copperlist_init
 		move.w	#DMAF_BLITHOG|DMAF_SETCLR,DMACON-DMACONR(a6)
 		WAITBLIT
-		move.l	#(BC0F_DEST|ANBNC|ANBC|ABNC|ABC)<<16,BLTCON0-DMACONR(a6) ; minterm D=A
+		move.l	#(BC0F_DEST|ANBNC|ANBC|ABNC|ABC)<<16,BLTCON0-DMACONR(a6) ; minterm D = A
 		moveq	#-1,d0
 		move.l	d0,BLTAFWM-DMACONR(a6)
 		move.w	#\2_\4_size-\1_clear_blit_width,BLTDMOD-DMACONR(a6)
@@ -1140,7 +1140,7 @@ CLEAR_COLOR00_CHUNKY		MACRO
 \1_clear_second_copperlist_init
 		move.w	#DMAF_BLITHOG|DMAF_SETCLR,DMACON-DMACONR(a6)
 		WAITBLIT
-		move.l	#(BC0F_DEST|ANBNC|ANBC|ABNC|ABC)<<16,BLTCON0-DMACONR(a6) ; minterm D=A
+		move.l	#(BC0F_DEST|ANBNC|ANBC|ABNC|ABC)<<16,BLTCON0-DMACONR(a6) ; minterm D = A
 		moveq	#-1,d0
 		move.l	d0,BLTAFWM-DMACONR(a6)
 		move.w	#\2_\4_size-\1_clear_blit_width,BLTDMOD-DMACONR(a6)
@@ -1222,7 +1222,7 @@ SET_TWISTED_BACKGROUND_BARS	MACRO
 	COPY_TWISTED_BAR \1,\2,\4,\5
 \1_no_background_bars_skip2
 	dbf	d6,\1_set_background_bars_loop2
-	addq.w	#LONGWORD_SIZE,a2	; next column in cl
+	addq.w	#LONGWORD_SIZE,a2	; next column
 	dbf	d7,\1_set_background_bars_loop1
 	movem.l	(a7)+,a4-a5
 	rts
@@ -1296,7 +1296,7 @@ SET_TWISTED_FOREGROUND_BARS	MACRO
 	COPY_TWISTED_BAR \1,\2,\4,\5
 \1_no_foreground_bars_skip2
 	dbf	d6,\1_set_foreground_bars_loop2
-	addq.w	#LONGWORD_SIZE,a2	; next column in cl
+	addq.w	#LONGWORD_SIZE,a2	; next column
 	dbf	d7,\1_set_foreground_bars_loop1
 	movem.l (a7)+,a4-a5
 	rts
