@@ -1012,9 +1012,9 @@ pt_ArpFound
 	moveq	#((pt_PeriodTableEnd-pt_PeriodTable)/WORD_SIZE)-1,d3
 	sub.b	d7,d3			; number of periods - loopcounter = offset in periods table
 	add.b	d0,d3			; + first or second halftone
-	cmp.b	#(pt_PeriodTableEnd-pt_PeriodTable)/WORD_SIZE,d3
+	cmp.b	#(pt_PeriodTableEnd-pt_PeriodTable)/WORD_SIZE,d3 ; unsupported Fasttracker period ?
 	blt.s	pt_ArpNoClip
-	moveq	#0,d0			; clip first or second halftone
+	moveq	#0,d0			; clip first or second halftone for PT compability
 pt_ArpNoClip
 	MULUF.W	WORD_SIZE,d0,d2
 	move.w	-WORD_SIZE(a1,d0.w),d2 ; original note period + first or second halftone offset
