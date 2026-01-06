@@ -5,7 +5,7 @@ PT2_INIT_VARIABLES		MACRO
 	IFC "","\1"
 		lea	pt_auddata,a0
 		move.l	a0,pt_Song(a3)
-   		IFEQ pt_split_module_enabled
+	 		IFEQ pt_split_module_enabled
 			lea	pt_audsmps,a0
 			move.l	a0,pt_Samples(a3)
 		ENDC
@@ -19,7 +19,7 @@ PT2_INIT_VARIABLES		MACRO
 
 ; E9x "Retrig Note" or ED "Note Delay"
 	IFNE pt_usedefx&(pt_ecmdbitretrignote|pt_ecmdbitnotedelay)
-		  move.w	d0,pt_RtnDMACONtemp(a3)
+			move.w	d0,pt_RtnDMACONtemp(a3)
 	ENDC
 	moveq	#FALSE,d1
 	IFEQ pt_music_fader_enabled
@@ -840,7 +840,7 @@ pt_DskipA
 	IFNE pt_usedefx&pt_ecmdbitjumptoloop
 		tst.b	pt_PBreakFlag(a3)
 		beq.s	pt_Nnpysk
-		move.b	d5,pt_PBreakFlag(a3)
+		sf.b	pt_PBreakFlag(a3)
 		moveq	#0,d0
 		move.b	pt_PBreakPosition(a3),d0
 		move.b	d5,pt_PBreakPosition(a3)
@@ -1361,7 +1361,7 @@ pt_PositionJump
 	move.b	d5,pt_PBreakPosition(a3)
 	subq.b	#1,d0
 	move.w	d0,pt_SongPosition(a3)
-	move.b	d6,pt_PosJumpFlag(a3)
+	st.b	pt_PosJumpFlag(a3)
 	rts
 	ENDM
 
@@ -1413,12 +1413,12 @@ pt_PatternBreak
 	cmp.b	#pt_maxpattpos-1,d0	; break position > last position in pattern ?
 	bhi.s	pt_PB2
 	move.b	d0,pt_PBreakPosition(a3)
-	move.b	d6,pt_PosJumpFlag(a3)
+	st.b	pt_PosJumpFlag(a3)
 	rts
 	CNOP 0,4
 pt_PB2
 	move.b	d5,pt_PBreakPosition(a3)
-	move.b	d6,pt_PosJumpFlag(a3)
+	st.b	pt_PosJumpFlag(a3)
 	rts
 	ENDM
 
@@ -1535,7 +1535,7 @@ pt_JumpToLoop
 	beq.s	pt_JmpLoopEnd
 pt_JmpLoop
 	move.b	n_pattpos(a2),pt_PBreakPosition(a3)
-	move.b	d6,pt_PBreakFlag(a3)
+	st.b	pt_PBreakFlag(a3)
 pt_JmpLoopEnd
 	rts
 	CNOP 0,4
