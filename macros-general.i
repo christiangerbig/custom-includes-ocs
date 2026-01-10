@@ -107,8 +107,8 @@ MOVEF				MACRO
 		FAIL Macro MOVEF: Target missing
 	ENDC
 	IFC "B","\0"
-		IFLE $80-(\1)
-			IFGE $ff-(\1)
+		IFGT (\1)-$80
+			IFLT (\1)-$ff
 				moveq #-((-(\1)&$ff)),\2
 			ENDC
 		ELSE
@@ -171,7 +171,7 @@ ADDF				MACRO
 		MEXIT
 	ENDC
 	IFC "B","\0"
-		IFGE (\1)-$8000
+		IFGE (\1)-$80
 			add.b	#\1,\2
 		ELSE
 			IFLE (\1)-8
@@ -197,14 +197,18 @@ ADDF				MACRO
 					addq.w	#8,\2
 					addq.w	#\1-8,\2
 				ELSE
-					add.w	#\1,\2
+					IFC "a","\*LEFT(\2,1)"
+						lea	\1(\2),\2
+					ELSE
+						add.w	#\1,\2
+					ENDC
 				ENDC
 			ENDC
 		ENDC
 	ENDC
 	IFC "L","\0"
 		IFGE (\1)-$8000
-		add.l	#\1,\2
+			add.l	#\1,\2
 		ELSE
 			IFLE (\1)-8
 				addq.l	#(\1),\2
@@ -215,9 +219,6 @@ ADDF				MACRO
 				ELSE
 					add.l	#\1,\2
 				ENDC
-			ENDC
-			IFGE (\1)-$8000
-				add.l	#\1,\2
 			ENDC
 		ENDC
 	ENDC
@@ -255,26 +256,34 @@ SUBF				MACRO
 		ENDC
 	ENDC
 	IFC "W","\0"
-		IFLE (\1)-8
-			subq.w	#(\1),\2
+		IFGE (\1)-$8000
+			sub.w	#\1,\2
 		ELSE
-			IFLE (\1)-16
-				subq.w	#8,\2
-				subq.w	#\1-8,\2
+			IFLE (\1)-8
+				subq.w	#(\1),\2
 			ELSE
-				sub.w	#\1,\2
+				IFLE (\1)-16
+					subq.w	#8,\2
+					subq.w	#\1-8,\2
+				ELSE
+					IFC "a","\*LEFT(\2,1)"
+						lea	-\1(\2),\2
+					ELSE
+						sub.w	#\1,\2
+					ENDC
+				ENDC
 			ENDC
 		ENDC
-	ENDC
-	IFC "L","\0"
-		IFLE (\1)-8
-			subq.l	#(\1),\2
-		ELSE
-			IFLE (\1)-16
-				subq.l	#8,\2
-				subq.l	#\1-8,\2
+		IFC "L","\0"
+			IFLE (\1)-8
+				subq.l	#(\1),\2
 			ELSE
-				sub.l	#\1,\2
+				IFLE (\1)-16
+					subq.l	#8,\2
+					subq.l	#\1-8,\2
+				ELSE
+					sub.l	#\1,\2
+				ENDC
 			ENDC
 		ENDC
 	ENDC
