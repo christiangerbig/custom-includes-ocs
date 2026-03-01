@@ -1012,10 +1012,10 @@ CLEAR_COLOR00_CHUNKY		MACRO
 	move.l	d0,BLTAFWM-DMACONR(a6)	; no mask
 	move.w	#\2_\4_size-\1_clear_blit_width,BLTDMOD-DMACONR(a6)
 	IFEQ color00_bits
-		moveq	#\1_clear_color00_bits,d0
+		moveq	#color00_bits,d0
 		move.w	d0,BLTADAT-DMACONR(a6)
 	ELSE
-		move.w	#\_clear_color00_bits,BLTADAT-DMACONR(a6)
+		move.w	#color00_bits,BLTADAT-DMACONR(a6)
 	ENDC
 	rts
 	ENDM
