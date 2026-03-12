@@ -872,8 +872,8 @@ CLEAR_COLOR00_SCREEN		MACRO
 ; \4 STRING:	"extension[1..n]"
 ; \5 NUMBER:	[16, 32] number of commands per loop
 ; Global reference
-; \1_display_y_size
-; \2_clear_color00_bits
+; color00_bits
+; \1_clear_y_size
 ; Result
 	IFC "","\1"
 		FAIL Macro CLEAR_COLOR00_SCREEN: Labels prefix missing
@@ -897,7 +897,7 @@ CLEAR_COLOR00_SCREEN		MACRO
 		MOVEF.L	\2_\4_size*16,d1
 		move.l	\2_\3(a3),a0
 		ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00+WORD_SIZE,a0
-		moveq	#(\1_display_y_size/16)-1,d7
+		moveq	#(\1_clear_y_size/16)-1,d7
 \1_\2_clear_copperlist_loop
 		move.w	d0,(a0)	; COLOR00
 		move.w	d0,\2_\4_size*1(a0)
@@ -924,7 +924,7 @@ CLEAR_COLOR00_SCREEN		MACRO
 		MOVEF.L \2_\4_size*32,d1
 		move.l	\2_\3(a3),a0
 		ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00+WORD_SIZE,a0
-		moveq	#(\1_display_y_size/32)-1,d7
+		moveq	#(\1_clear_y_size/32)-1,d7
 \1_\2_clear_copperlist_loop
 		move.w	d0,(a0)	; COLOR00
 		move.w	d0,\2_\4_size*1(a0)
