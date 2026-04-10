@@ -216,7 +216,7 @@ SET_DUAL_PLAYFIELD		MACRO
 		FAIL Macro SET_DUAL_PLAYFIELD: Playfield depth missing
 	ENDC
 	CNOP 0,4
-set_dual_playfield\*RIGHT(\1,1)
+\1_set_dual_playfield
 	move.l	\1_display(a3),d0
 	IFNC "","\3"
 		ADDF.L	(\3/8)+(\4*\1_plane_width*\2),d0
@@ -225,13 +225,13 @@ set_dual_playfield\*RIGHT(\1,1)
 	move.l	cl1_display(a3),a0
 	ADDF.W	cl1_BPL\*RIGHT(\1,1)PTH+WORD_SIZE,a0
 	moveq	#\2-1,d7	; playfield depth
-set_dual_playfield\*RIGHT(\1,1)_loop
+\1_set_dual_playfield_loop
 	swap	d0
 	move.w	d0,(a0)		; BPLxPTH
 	ADDF.W	QUADWORD_SIZE*2,a0
 	swap	d0
 	move.w	d0,LONGWORD_SIZE-(QUADWORD_SIZE*2)(a0) ; BPLxPTL
 	add.l	d1,d0
-	dbf	d7,set_dual_playfield\*RIGHT(\1,1)_loop
+	dbf	d7,\1_set_dual_playfield_loop
 	rts
 	ENDM

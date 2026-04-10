@@ -203,6 +203,7 @@ COP_SET_BITPLANE_POINTERS	MACRO
 ; pf1_plane_width
 ; pf2_plane_width
 ; pf1_depth3
+; pf2_depth3
 ; Result
 	IFC "","\1"
 		FAIL Macro COP_SET_BITPLANE_POINTERS: Labels prefix missing
@@ -235,9 +236,9 @@ COP_SET_BITPLANE_POINTERS	MACRO
 	ELSE
 ; Dual playfield 1
 		move.l	pf1_display(a3),d0
-		MOVEF.L	p1_plane_width,d1
+		MOVEF.L	pf1_plane_width,d1
 		move.l	\1_\2(a3),a0
-		lea	\1_BPL2PTH+2(a0),a1
+		lea	\1_BPL2PTH+WORD_SIZE(a0),a1
 		ADDF.W	\1_BPL1PTH+WORD_SIZE,a0
 		moveq	#\3-1,d7	; number of bitplanes
 \1_set_plane_pointers_loop1
@@ -250,7 +251,7 @@ COP_SET_BITPLANE_POINTERS	MACRO
 		dbf	d7,\1_set_plane_pointers_loop1
 ; Dual playfield 2
 		move.l	pf2_display(a3),d0
-		move.w	#p2_plane_width,d1
+		MOVEF.L	pf2_plane_width,d1
 		moveq	#\4-1,d7	; number of bitplanes
 \1_set_plane_pointers_loop2
 		swap	d0
@@ -574,7 +575,7 @@ COPY_COPPERLIST			MACRO
 	IFEQ \2-2
 		move.l	\1_construction2(a3),a0 ; source
 		move.l	\1_display(a3),a1 ; destination
-		move.w	#(\1_copperlist_size/LONGWORD_SIZE)-1,d7 ; number of commands
+		MOVEF.W	(\1_copperlist_size/LONGWORD_SIZE)-1,d7 ; number of commands
 \1_copy_copperlist_loop
 		move.l	(a0)+,(a1)+
 		dbf	d7,\1_copy_copperlist_loop
@@ -582,7 +583,7 @@ COPY_COPPERLIST			MACRO
 	IFEQ \2-3
 		move.l	\1_construction1(a3),a0 ;Quelle
 		move.l	\1_construction2(a3),a1 ;1. Ziel
-		move.w	#(\1_copperlist_size/LONGWORD_SIZE)-1,d7 ; number of commands
+		MOVEF.W	(\1_copperlist_size/LONGWORD_SIZE)-1,d7 ; number of commands
 		move.l	\1_display(a3),a2 ;2. Ziel
 \1_copy_copperlist_loop
 		move.l	(a0),(a1)+

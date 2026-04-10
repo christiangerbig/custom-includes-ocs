@@ -36,6 +36,7 @@ GET_LINE_PARAMETERS		MACRO
 ; pf1_plane_width
 ; pf1_depth3
 ; Result
+; d0.l  high word: BLTCON0, low word BLTCON1
 	IFC "","\1"
 		FAIL Macro GET_LINE_PARAMETERS: Labels prefix missing
 	ENDC
@@ -77,7 +78,7 @@ GET_LINE_PARAMETERS		MACRO
 	move.w	d5,d0			; store octant
 	move.w	d3,d4			; 4*dy
 	swap	d4			; high word: 4*dy
-	MULUF.W	2,d2.d4			; dx*2
+	MULUF.W	2,d2,d4			; dx*2
 	move.w	d3,d4			; low word: 4*dy
 	sub.w	d2,d3			; (4*dy)-(2*dx)
 	bpl.s	\1_get_line_parameters_skip4
