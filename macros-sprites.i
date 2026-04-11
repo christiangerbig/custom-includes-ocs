@@ -56,6 +56,7 @@ INIT_SPRITE_POINTERS_TABLE	MACRO
 ; spr_pointers_display
 ; spr_number
 ; Result
+; no return value
 	CNOP 0,4
 spr_init_pointers_table
 	IFNE spr_x_size1
@@ -92,6 +93,7 @@ COPY_SPRITE_STRUCTURES		MACRO
 ; sprite6_size
 ; sprite7_size
 ; Result
+; no return value
 	CNOP 0,4
 spr_copy_structures
 	move.l	a4,-(a7)

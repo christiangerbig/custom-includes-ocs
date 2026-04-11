@@ -341,7 +341,7 @@ COP_INIT_COLOR			MACRO
 		FAIL Macro COP_INIT_COLOR: Number of color values missing
 	ENDC
 	move.w	#\1,d3			; first color register offset
-	moveq	#\2-1,d7		; number of colors
+	moveq	#\2-1,d7		; number of colours
 	IFNC "","\3"
 		lea	\3(pc),a1	; pointer color table
 	ENDC

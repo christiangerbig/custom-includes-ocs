@@ -43,31 +43,31 @@ cl2_SPR7PTH			RS.L 1
 cl2_SPR7PTL			RS.L 1
 	ENDC
 
-	IFGE pf1_colors_number-1	; number of colors >= 1
+	IFGE pf1_colors_number-1	; number of colours >= 1
 cl2_COLOR00			RS.L 1
 	ENDC
-	IFGE pf1_colors_number-2	; number of colors >= 2
+	IFGE pf1_colors_number-2	; number of colours >= 2
 cl2_COLOR01			RS.L 1
 	ENDC
-	IFGE pf1_colors_number-3	; number of colors >= 3
+	IFGE pf1_colors_number-3	; number of colours >= 3
 cl2_COLOR02			RS.L 1
 	ENDC
-	IFGE pf1_colors_number-4	; number of colors >= 4
+	IFGE pf1_colors_number-4	; number of colours >= 4
 cl2_COLOR03			RS.L 1
 	ENDC
-	IFGE pf1_colors_number-5	; number of colors >= 5
+	IFGE pf1_colors_number-5	; number of colours >= 5
 cl2_COLOR04			RS.L 1
 	ENDC
-	IFGE pf1_colors_number-6	; number of colors >= 6
+	IFGE pf1_colors_number-6	; number of colours >= 6
 cl2_COLOR05			RS.L 1
 	ENDC
-	IFGE pf1_colors_number-7	; number of colors >= 7
+	IFGE pf1_colors_number-7	; number of colours >= 7
 cl2_COLOR06			RS.L 1
 	ENDC
-	IFGE pf1_colors_number-8	; number of colors >= 8
+	IFGE pf1_colors_number-8	; number of colours >= 8
 cl2_COLOR07			RS.L 1
 	ENDC
-	IFGE pf1_colors_number-9	; number of colors >= 9
+	IFGE pf1_colors_number-9	; number of colours >= 9
 cl2_COLOR08			RS.L 1
 	ELSE
 		IFNE bplcon0_bits&BPLCON0F_DPF
@@ -76,7 +76,7 @@ cl2_COLOR08			RS.L 1
 			ENDC
 		ENDC
 	ENDC
-	IFGE pf1_colors_number-10	; number of colors >= 10
+	IFGE pf1_colors_number-10	; number of colours >= 10
 cl2_COLOR09			RS.L 1
 	ELSE
 		IFNE bplcon0_bits&BPLCON0F_DPF
@@ -85,7 +85,7 @@ cl2_COLOR09			RS.L 1
 			ENDC
 		ENDC
 	ENDC
-	IFGE pf1_colors_number-11	; number of colors >= 11
+	IFGE pf1_colors_number-11	; number of colours >= 11
 cl2_COLOR10			RS.L 1
 	ELSE
 		IFNE bplcon0_bits&BPLCON0F_DPF
@@ -94,7 +94,7 @@ cl2_COLOR10			RS.L 1
 			ENDC
 		ENDC
 	ENDC
-	IFGE pf1_colors_number-12	; number of colors >= 12
+	IFGE pf1_colors_number-12	; number of colours >= 12
 cl2_COLOR11			RS.L 1
 	ELSE
 		IFNE bplcon0_bits&BPLCON0F_DPF
@@ -103,7 +103,7 @@ cl2_COLOR11			RS.L 1
 			ENDC
 		ENDC
 	ENDC
-	IFGE pf1_colors_number-14	; number of colors >= 14
+	IFGE pf1_colors_number-14	; number of colours >= 14
 cl2_COLOR12			RS.L 1
 	ELSE
 		IFNE bplcon0_bits&BPLCON0F_DPF
@@ -112,7 +112,7 @@ cl2_COLOR12			RS.L 1
 			ENDC
 		ENDC
 	ENDC
-	IFGE pf1_colors_number-12	; number of colors >= 12
+	IFGE pf1_colors_number-12	; number of colours >= 12
 cl2_COLOR13			RS.L 1
 		IFNE bplcon0_bits&BPLCON0F_DPF
 			IFGE pf2_colors_number-6 ; number of colours >= 6
@@ -120,7 +120,7 @@ cl2_COLOR13			RS.L 1
 			ENDC
 		ENDC
 	ENDC
-	IFGE pf1_colors_number-15	; number of colors >= 15
+	IFGE pf1_colors_number-15	; number of colours >= 15
 cl2_COLOR14			RS.L 1
 	ELSE
 		IFNE bplcon0_bits&BPLCON0F_DPF
@@ -129,7 +129,7 @@ cl2_COLOR14			RS.L 1
 			ENDC
 		ENDC
 	ENDC
-	IFGE pf1_colors_number-16	; number of colors >= 16
+	IFGE pf1_colors_number-16	; number of colours >= 16
 cl2_COLOR15			RS.L 1
 	ELSE
 		IFNE bplcon0_bits&BPLCON0F_DPF

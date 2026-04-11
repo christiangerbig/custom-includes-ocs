@@ -1285,7 +1285,7 @@ CPU_INIT_COLOR			MACRO
 	IFNC "","\3"
 		lea	\3(pc),a1	; color table
 	ENDC
-	moveq	#\2-1,d7		; number of colors
+	moveq	#\2-1,d7		; number of colours
 	bsr	cpu_init_colors
 	ENDM
 
@@ -1303,6 +1303,7 @@ INIT_CHARS_OFFSETS MACRO
 ; _ascii
 ; _ascii_end
 ; Result
+; no return value
 	CNOP 0,4
 \1_init_chars_offsets
 	IFC "","\0"
@@ -1365,6 +1366,7 @@ INIT_CHARS_X_POSITIONS	MACRO
 ; _chars_x_positions
 ; _text_chars_number
 ; Result
+; no return value
 	CNOP 0,4
 \1_init_chars_x_positions
 	IFC "","\1"
@@ -1418,6 +1420,7 @@ INIT_CHARS_Y_POSITIONS	MACRO
 ; _chars_y_positions
 ; _text_chars_number
 ; Result
+; no return value
 	CNOP 0,4
 \1_init_chars_y_positions
 	IFC "","\1"
@@ -1447,6 +1450,7 @@ INIT_CHARS_IMAGES		MACRO
 ; _text_chars_number
 ; _get_new_char_image
 ; Result
+; no return value
 	CNOP 0,4
 \1_init_chars_images
 	IFC "","\1"
@@ -1673,7 +1677,7 @@ INIT_COLOR_GRADIENT_RGB4	MACRO
 	IFNC "","\7"
 		move.w	#(\8)*WORD_SIZE,a5 ; offset next entry
 	ENDC
-	MOVEF.W	\3-1,d7			; number of colors
+	MOVEF.W	\3-1,d7			; number of colours
 	bsr	init_color_gradient_RGB4_loop
 	ENDM
 
@@ -2361,6 +2365,7 @@ INIT_MIRROR_COLOR_TABLE		MACRO
 ; \5 POINTER:		Destination: color table
 ; \6 STRING:		["pc", "a3"] pointer base for destination
 ; Result
+; no return value
 	CNOP 0,4
 \1_init_mirror_color_table
 	IFC "","\1"

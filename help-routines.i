@@ -86,6 +86,7 @@ write_VBR
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 wait_beam_position
 	move.l	#VERT_POSITION_MASK<<8,d1
@@ -111,6 +112,7 @@ wait_beam_position_loop2
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 wait_vbi
 	lea	INTREQR-DMACONR(a6),a0
@@ -124,6 +126,7 @@ wait_vbi_loop
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 wait_copint
 	lea	INTREQR-DMACONR(a6),a0
@@ -136,9 +139,9 @@ wait_coploop
 
 
 ; Input
-; a0.l	 copperlist
-; a1.l	 color table
-; d3.w	Offset first color register
+; a0.l	Copperlist
+; a1.l	Pointer table RGB4 colours
+; d3.w	Offset 1st color register
 ; d7.w	Number of colors
 ; Result
 ; d0	Kein Rückgabewert
@@ -152,8 +155,8 @@ cop_init_colors
 
 
 ; Input
-; a0.l	Offset first color register
-; a1.l	 color table
+; a0.l	Offset 1st colour register
+; a1.l	Pointer table RGB4 colours
 ; d7.w	Number of colors
 ; Result
 ; d0	Kein Rückgabewert
@@ -166,14 +169,14 @@ cpu_init_colors
 
 	IFD COLOR_GRADIENT_RGB4
 ; Input
-; d0.w	RGB4 current value
-; d6.w	RGB4 destination value
-; d7.w	Number of colors
-; a0.l	 color table
+; d0.w	Current RGB4
+; d6.w	Destination RGB4
+; d7.w	Number of colours
+; a0.l	Pointer table RGB4 colours
 ; a1.w	Increase/decrease red
 ; a2.w	Increase/decrease green
 ; a4.w	Increase/decrease blue
-; a5	Offset to next entry in color table
+; a5.l	Offset to next entry in colour table
 ; Result
 		CNOP 0,4
 init_color_gradient_rgb4_loop

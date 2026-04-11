@@ -536,6 +536,7 @@ output_rasterlines_number
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 init_variables
 	IFD SYS_TAKEN_OVER
@@ -590,6 +591,7 @@ init_variables
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 init_structures
 	IFND SYS_TAKEN_OVER
@@ -1538,6 +1540,7 @@ check_screen_mode_skip2
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 get_screen_depth
 		move.l	active_screen(a3),d0
@@ -2478,6 +2481,7 @@ copy_exception_vectors_loop
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 init_exception_vectors
 	IFD SYS_TAKEN_OVER
@@ -2692,6 +2696,7 @@ turn_off_drive_motors
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 start_own_display
 	bsr	wait_vbi
@@ -2802,6 +2807,7 @@ stop_own_interrupts
 
 ; Input
 ; Result
+; no return value
 	CNOP 0,4
 stop_own_display
 	IFNE copcon_bits&COPCONF_CDANG
