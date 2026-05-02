@@ -119,14 +119,30 @@ COP_INIT_PLAYFIELD_REGISTERS	MACRO
 	IFC "","\3"
 \1_init_playfield_props
 		IFC "","\2"
-			COP_MOVEQ diwstrt_bits,DIWSTRT
-			COP_MOVEQ diwstop_bits,DIWSTOP
-			COP_MOVEQ ddfstrt_bits,DDFSTRT
-			COP_MOVEQ ddfstop_bits,DDFSTOP
-			COP_MOVEQ bplcon0_bits,BPLCON0
-			COP_MOVEQ bplcon1_bits,BPLCON1
-			COP_MOVEQ bplcon2_bits,BPLCON2
-			COP_MOVEQ pf1_plane_moduli,BPL1MOD
+			IFD diwstrt_bits
+				COP_MOVEQ diwstrt_bits,DIWSTRT
+			ENDC
+			IFD diwstop_bits
+				COP_MOVEQ diwstop_bits,DIWSTOP
+			ENDC
+			IFD ddfstrt_bits
+				COP_MOVEQ ddfstrt_bits,DDFSTRT
+			ENDC
+			IFD ddfstop_bits
+				COP_MOVEQ ddfstop_bits,DDFSTOP
+			ENDC
+			IFD bplcon0_bits
+				COP_MOVEQ bplcon0_bits,BPLCON0
+			ENDC
+			IFD bplcon1_bits
+				COP_MOVEQ bplcon1_bits,BPLCON1
+			ENDC
+			IFD bplcon2_bits
+				COP_MOVEQ bplcon2_bits,BPLCON2
+			ENDC
+			IFD pf1_plane_moduli
+				COP_MOVEQ pf1_plane_moduli,BPL1MOD
+			ENDC
 			IFGT pf_depth-1
 				IFD pf2_plane_moduli
 					COP_MOVEQ pf2_plane_moduli,BPL2MOD
@@ -137,26 +153,46 @@ COP_INIT_PLAYFIELD_REGISTERS	MACRO
 			rts
 		ELSE
 			IFC "NOBITPLANES","\2"
-				COP_MOVEQ diwstrt_bits,DIWSTRT
-				COP_MOVEQ diwstop_bits,DIWSTOP
-				COP_MOVEQ bplcon0_bits,BPLCON0
+				IFD diwstrt_bits
+					COP_MOVEQ diwstrt_bits,DIWSTRT
+				ENDC
+				IFD diwstop_bits
+					COP_MOVEQ diwstop_bits,DIWSTOP
+				ENDC
+				IFD bplcon0_bits
+					COP_MOVEQ bplcon0_bits,BPLCON0
+        			ENDC
 				rts
 			ENDC
 			IFC "BLANK","\2"
-				COP_MOVEQ bplcon0_bits,BPLCON0
+				IFD bplcon0_bits
+					COP_MOVEQ bplcon0_bits,BPLCON0
+				ENDC
 				rts
 			ENDC
 		ENDC
 	ELSE
 \1_\3_init_playfield_props
-		COP_MOVEQ \3_ddfstrt_bits,DDFSTRT
-		COP_MOVEQ \3_ddfstop_bits,DDFSTOP
-		IFC "TRIGGERBITPLANES","\4"
-			COP_MOVEQ \3_bplcon0_bits,BPLCON0
+		IFD \3_ddfstrt_bits
+			COP_MOVEQ \3_ddfstrt_bits,DDFSTRT
 		ENDC
-		COP_MOVEQ \3_bplcon1_bits,BPLCON1
-		COP_MOVEQ \3_bplcon2_bits,BPLCON2
-		COP_MOVEQ \3_pf1_plane_moduli,BPL1MOD
+		IFD \3_ddfstop_bits
+			COP_MOVEQ \3_ddfstop_bits,DDFSTOP
+		ENDC
+		IFC "TRIGGERBITPLANES","\4"
+			IFD \3_bplcon0_bits
+				COP_MOVEQ \3_bplcon0_bits,BPLCON0
+			ENDC
+		ENDC
+		IFD \3_bplcon1_bits
+			COP_MOVEQ \3_bplcon1_bits,BPLCON1
+		ENDC
+		IFD \3_bplcon2_bits
+			COP_MOVEQ \3_bplcon2_bits,BPLCON2
+		ENDC
+		IFD \3_pf1_plane_moduli
+			COP_MOVEQ \3_pf1_plane_moduli,BPL1MOD
+		ENDC
 		IFD \3_pf2_plane_moduli
 			COP_MOVEQ \3_pf2_plane_moduli,BPL2MOD
 		ELSE

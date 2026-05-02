@@ -160,26 +160,30 @@ swap_sprite_structures_loop
 
 SET_SPRITES			MACRO
 ; Input
-; \1 BYTE SIGNED:	Number of sprites
-; \2 NUMBER:		[1..7] sprite structure pointer index (optional)
+; \1 STRING:		["cl1", "cl2"] copperlist label prefix
+; \2 BYTE SIGNED:	Number of sprites
+; \3 NUMBER:		[1..7] sprite structure pointer index (optional)
 ; Global reference
 ; cl1_display
 ; spr_pointers_display
 ; Result
 	IFC "","\1"
+		FAIL Macro SWAP_SPRITE_STRUCTURES: Copperlist label prefix missing
+	ENDC
+	IFC "","\2"
 		FAIL Macro SWAP_SPRITE_STRUCTURES: Number of sprites missing
 	ENDC
 	CNOP 0,4
 set_sprite_pointers
-	move.l	cl1_display(a3),a0 
-	IFC "","\2"
+	move.l	\1_display(a3),a0
+	IFC "","\3"
 		lea	spr_pointers_display(pc),a1
-		ADDF.W	cl1_SPR0PTH+WORD_SIZE,a0
+		ADDF.W	\1_SPR0PTH+WORD_SIZE,a0
 	ELSE
 		lea	spr_pointers_display+(\2*LONGWORD_SIZE)(pc),a1
-		ADDF.W	cl1_SPR\3PTH+WORD_SIZE,a0
+		ADDF.W	\1_SPR\3PTH+WORD_SIZE,a0
 	ENDC
-	moveq	#\1-1,d7		; number of sprites
+	moveq	#\2-1,d7		; number of sprites
 set_sprite_pointers_loop
 	move.w	(a1)+,(a0)		; SPRxPTH
 	addq.w	#QUADWORD_SIZE,a0

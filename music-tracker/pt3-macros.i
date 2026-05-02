@@ -64,6 +64,8 @@ PT3_REPLAY			MACRO
 ; Input
 ; \1 LABEL: Subroutine for effect command 8 called at tick #1 (optional)
 ; Result
+; no return value
+	CNOP 0,4
 pt_PlayMusic
 	movem.l	a5-a6,-(a7)
 	moveq	#0,d5			; for all clear operations
@@ -373,8 +375,8 @@ pt_CheckMetronome
 		beq.s	pt_ChkMetroEnd
 		moveq	#0,d0
 		move.w	pt_PatternPosition(a3),d0
-		lsr.w	#4,d0		; /pt_pattposdata_size
-		divu.w	d2,d0		; pattern position / metronome speed
+		lsr.w	#4,d0		; offset in pattern
+		divu.w	d2,d0
 		swap	d0		; remainder
 		tst.w	d0		; remainder = 0 ?
 		bne.s	pt_ChkMetroEnd
@@ -635,7 +637,7 @@ pt_CheckMoreEffects
 		and.b	n_cmd(a2),d0
 		cmp.b	#pt_cmdnotused,d0
 
-; 8xy "Not used/custom"
+; 8xy "Not used or custom"
 		IFEQ pt_usedfx&pt_cmdbitnotused
 			ble.s	pt_ChkMoreEfxPerNop
 		ELSE
@@ -1090,7 +1092,7 @@ PT3_EFFECT_TONE_PORTAMENTO MACRO
 ; no return value
 	CNOP 0,4
 pt_TonePortamento
-	move.b	n_cmdlo(a2),d0		; command data: xx-up/down speed
+	move.b	n_cmdlo(a2),d0		; command data: xx-up or down speed
 	beq.s	pt_TonePortaNoChange
 	move.b	d0,n_toneportspeed(a2)
 	move.b	d5,n_cmdlo(a2)		; clear command data
@@ -1205,7 +1207,7 @@ pt_VibSet
 	and.b	n_vibratocmd(a2),d0	; depth
 	mulu.w	d0,d2			; depth * amplitude
 	move.w	n_period(a2),d0
-	lsr.w	#7,d2			; period amplitude = (depth * amplitude) / 128
+	lsr.w	#7,d2			; period amplitude
 	tst.b	n_vibratopos(a2)	; vibrato position negative ?
 	bmi.s	pt_VibratoNeg
 	add.w	d2,d0			; note period + period amplitude
@@ -1306,7 +1308,7 @@ pt_TreSet
 	and.b	n_tremolocmd(a2),d0	; depth
 	mulu.w	d0,d2			; depth * amplitude
 	move.b	n_volume(a2),d0
-	lsr.w	#6,d2			; volume amplitude = (depth * amplitude) / 64
+	lsr.w	#6,d2			; volume amplitude
 	tst.b	n_tremolopos(a2)	; tremolo position negative ?
 	bmi.s	pt_TremoloNeg
 	add.w	d2,d0			; volume + volume amplitude
@@ -1603,7 +1605,7 @@ pt_JmpLoopCnt
 	CNOP 0,4
 pt_SetLoop
 	move.w	pt_PatternPosition(a3),d0
-	lsr.w	#4,d0			; /pt_pattposdata_size
+	lsr.w	#4,d0			; offset in pattern
 	move.b	d0,n_pattpos(a2)
 	rts
 	ENDM
@@ -1850,7 +1852,7 @@ pt_SetSpeed
 		CNOP 0,4
 pt_SetTempo
 		move.l	pt_125bpmrate(a3),d2
-		divu.w	d0,d2		; /tempo = counter value
+		divu.w	d0,d2		; counter value
 		move.b	d2,CIATALO-CIACRB(a5)
 		lsr.w	#BYTE_SHIFT_BITS,d2 ; adjust bits
 		move.b	d2,CIATAHI-CIACRB(a5)
