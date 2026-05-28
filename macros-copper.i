@@ -362,7 +362,7 @@ COP_SET_SPRITE_POINTERS		MACRO
 	ENDM
 
 
-COP_INIT_COLOR			MACRO
+COP_LOAD_COLORMAP			MACRO
 ; Input
 ; \1 WORD:		First color register offset
 ; \2 BYTE_SIGNED:	Number of color values
@@ -371,10 +371,10 @@ COP_INIT_COLOR			MACRO
 ; cop_init_colors
 ; Result
 	IFC "","\1"
-		FAIL Macro COP_INIT_COLOR: First color register offset missing
+		FAIL Macro COP_LOAD_COLORMAP: First color register offset missing
 	ENDC
 	IFC "","\2"
-		FAIL Macro COP_INIT_COLOR: Number of color values missing
+		FAIL Macro COP_LOAD_COLORMAP: Number of color values missing
 	ENDC
 	move.w	#\1,d3			; first color register offset
 	moveq	#\2-1,d7		; number of colours
@@ -386,7 +386,7 @@ COP_INIT_COLOR			MACRO
 	ENDM
 
 
-COP_INIT_COLOR00_SCREEN		MACRO
+COP_LOAD_COLORMAP00_SCREEN		MACRO
 ; Input
 ; \1 STRING:	["cl1", "cl2"] copperlist label prefix
 ; \2 STRING:	["YWRAP"] (optional)
@@ -396,7 +396,7 @@ COP_INIT_COLOR00_SCREEN		MACRO
 ; \1_display_y_size
 ; Result
 	IFC "","\1"
-		FAIL Macro COP_INIT_COLOR00_SCREEN: Copperlist label prefix missing
+		FAIL Macro COP_LOAD_COLORMAP00_SCREEN: Copperlist label prefix missing
 	ENDC
 	CNOP 0,4
 \1_init_color00_screen
