@@ -386,7 +386,7 @@ COP_LOAD_COLORMAP			MACRO
 	ENDM
 
 
-COP_LOAD_COLORMAP00_SCREEN		MACRO
+COP_INIT_COLOR00_SCREEN		MACRO
 ; Input
 ; \1 STRING:	["cl1", "cl2"] copperlist label prefix
 ; \2 STRING:	["YWRAP"] (optional)
@@ -396,7 +396,7 @@ COP_LOAD_COLORMAP00_SCREEN		MACRO
 ; \1_display_y_size
 ; Result
 	IFC "","\1"
-		FAIL Macro COP_LOAD_COLORMAP00_SCREEN: Copperlist label prefix missing
+		FAIL Macro COP_INIT_COLOR00_SCREEN: Copperlist label prefix missing
 	ENDC
 	CNOP 0,4
 \1_init_color00_screen
