@@ -930,7 +930,7 @@ CLEAR_COLOR00_SCREEN		MACRO
 	CNOP 0,4
 \1_\2_clear_copperlist
 	IFC "16","\5"
-		move.w	#\2_clear_color00_bits,d0
+		move.w	#color00_bits,d0
 		MOVEF.L	\2_\4_size*16,d1
 		move.l	\2_\3(a3),a0
 		ADDF.W	\2_\4_entry+\2_ext\*RIGHT(\4,1)_COLOR00+WORD_SIZE,a0
